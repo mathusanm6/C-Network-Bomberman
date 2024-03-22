@@ -24,10 +24,10 @@ all: $(EXEC)
 main: $(OBJFILES) 
 	$(CC) -o $@ $^ $(CFLAGS)
 	
-.PHONY: format
+.PHONY: format fmt
 
-format:
-	clang-format -i $(SRCDIR)/*.c $(SRCDIR)/**/*.c
+format fmt:
+	clang-format -i $(ALLFILES)
 
 .PHONY: clean
 
