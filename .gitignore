@@ -1,0 +1,8 @@
+main
+obj/
+
+# Mac OS 
+.DS_Store
+
+# IDE stuff
+.vscode/
