@@ -32,4 +32,4 @@ Coming soon...
 
 ## Authors and acknowledgment
 
-This project was developed by a group of students from the Université Paris Cité, as part of the L3S6 course "Programmation Réseaux" (Network Programming). The group members are Gabin Dudillieu, Yago Iglesias Vázquez, and Mathusan Selvakumar.
+This project was developed by a group of students from Université Paris Cité, as part of the L3S6 course "Programmation Réseaux" (Network Programming). The group members are Gabin Dudillieu, Yago Iglesias Vázquez, and Mathusan Selvakumar.
