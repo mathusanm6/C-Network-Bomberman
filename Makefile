@@ -40,7 +40,7 @@ $(SRCOBJDIR)/%.o: $(SRCDIR)/%.c
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 $(TESTOBJDIR)/%.o: $(TESTDIR)/%.c
-	$(CC) -c -o $@ $< $(CFLAGS) 
+	$(CC) -c -o $@ $< $(CFLAGS)
 
 $(CINTAOBJ)/%.o: $(CINTA)/%.c
 	$(CC) -c -o $@ $< $(CFLAGS)
