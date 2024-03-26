@@ -3,8 +3,6 @@
 
 typedef enum ACTION { NONE, UP, DOWN, LEFT, RIGHT, QUIT } ACTION;
 
-#include "./model.h"
-
 /** Depending on the press key on the keyboard, returns the action, or adds the character to chat_line
  */
 ACTION control();

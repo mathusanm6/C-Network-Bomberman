@@ -3,6 +3,8 @@
 
 #define TEXT_SIZE 255
 
+#include "./controller.h"
+
 #include <stdbool.h>
 
 typedef struct board {
@@ -20,8 +22,6 @@ typedef struct pos {
     int x;
     int y;
 } pos;
-
-#include "./controller.h"
 
 extern board *game_board; // playing surface
 extern line *chat_line;   // line of text that can be filled in with chat
