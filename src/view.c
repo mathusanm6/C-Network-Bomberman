@@ -54,10 +54,11 @@ void refresh_game(board *b, line *l) {
     attron(COLOR_PAIR(1)); // Enable custom color 1
     attron(A_BOLD);        // Enable bold
     for (x = 0; x < b->width + 2; x++) {
-        if (x >= TEXT_SIZE || x >= l->cursor)
+        if (x >= TEXT_SIZE || x >= l->cursor) {
             mvaddch(b->height + 2, x, ' ');
-        else
+        } else {
             mvaddch(b->height + 2, x, l->data[x]);
+        }
     }
     attroff(A_BOLD);        // Disable bold
     attroff(COLOR_PAIR(1)); // Disable custom color 1

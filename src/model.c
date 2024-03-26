@@ -106,13 +106,15 @@ void set_grid(int x, int y, int v) {
 }
 
 void decrement_line() {
-    if (chat_line != NULL && chat_line->cursor > 0)
+    if (chat_line != NULL && chat_line->cursor > 0) {
         chat_line->cursor--;
+    }
 }
 
 void add_to_line(char c) {
-    if (chat_line != NULL && chat_line->cursor < TEXT_SIZE)
+    if (chat_line != NULL && chat_line->cursor < TEXT_SIZE) {
         chat_line->data[(chat_line->cursor)++] = c;
+    }
 }
 
 bool perform_action(ACTION a) {

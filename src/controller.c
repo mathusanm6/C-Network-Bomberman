@@ -46,8 +46,9 @@ ACTION control() {
             decrement_line();
             break;
         default:
-            if (prev_c >= ' ' && prev_c <= '~')
+            if (prev_c >= ' ' && prev_c <= '~') {
                 add_to_line(prev_c);
+            }
             break;
     }
     return a;
@@ -65,11 +66,12 @@ int init_game() {
     return EXIT_SUCCESS;
 }
 
-int game() {
+int game_loop() {
     while (true) {
         ACTION action = control();
-        if (perform_action(action))
+        if (perform_action(action)) {
             break;
+        }
         refresh_game(game_board, chat_line);
         usleep(30 * 1000);
     }

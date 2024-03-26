@@ -6,5 +6,5 @@ int main() {
     if (init_game() < 0) {
         return EXIT_FAILURE;
     }
-    return game();
+    return game_loop();
 }

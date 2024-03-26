@@ -3,7 +3,7 @@
 
 typedef enum ACTION { NONE, UP, DOWN, LEFT, RIGHT, QUIT } ACTION;
 
-/** Depending on the press key on the keyboard, returns the action, or adds the character to chat_line
+/** Depending on the pressed key on the keyboard, returns the action, or adds the character to chat_line
  */
 ACTION control();
 
@@ -13,6 +13,6 @@ int init_game();
 
 /** Game loop
  */
-int game();
+int game_loop();
 
 #endif // SRC_CONTROLLER_H_
