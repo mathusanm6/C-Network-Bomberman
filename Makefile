@@ -37,7 +37,7 @@ $(shell mkdir -p $(CINTAOBJ))
 
 
 $(SRCOBJDIR)/%.o: $(SRCDIR)/%.c
-	$(CC) -c -o $@ $< $(CFLAGS)
+	$(CC) -c -o $@ $< $(CFLAGS) -lncurses
 
 $(TESTOBJDIR)/%.o: $(TESTDIR)/%.c
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -51,7 +51,7 @@ $(CINTAOBJ)/%.o: $(CINTA)/%.c
 all: $(EXEC)
 
 $(EXEC): $(OBJFILES) 
-	$(CC) -o $@ $^ $(CFLAGS)
+	$(CC) -o $@ $^ $(CFLAGS) -lncurses
 	
 
 .PHONY: format fmt check-format
