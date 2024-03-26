@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-Wall -Wextra
+CFLAGS=-Wall -Wextra -lncurses
 EXEC=main
 
 TEST=test
@@ -37,7 +37,7 @@ $(shell mkdir -p $(CINTAOBJ))
 
 
 $(SRCOBJDIR)/%.o: $(SRCDIR)/%.c
-	$(CC) -c -o $@ $< $(CFLAGS) -lncurses
+	$(CC) -c -o $@ $< $(CFLAGS)
 
 $(TESTOBJDIR)/%.o: $(TESTDIR)/%.c
 	$(CC) -c -o $@ $< $(CFLAGS) 
@@ -51,7 +51,7 @@ $(CINTAOBJ)/%.o: $(CINTA)/%.c
 all: $(EXEC)
 
 $(EXEC): $(OBJFILES) 
-	$(CC) -o $@ $^ $(CFLAGS) -lncurses
+	$(CC) -o $@ $^ $(CFLAGS)
 	
 
 .PHONY: format fmt check-format
