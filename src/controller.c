@@ -67,7 +67,7 @@ int init_game() {
 
 int game() {
     while (true) {
-        ACTION action = control(chat_line);
+        ACTION action = control();
         if (perform_action(action))
             break;
         refresh_game(game_board, chat_line);
