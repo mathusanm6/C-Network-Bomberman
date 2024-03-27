@@ -1,6 +1,6 @@
-#include <ncurses.h>
-
 #include "./view.h"
+
+#include <ncurses.h>
 
 void init_view() {
     initscr();     /* Start curses mode */

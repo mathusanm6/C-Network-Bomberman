@@ -1,6 +1,6 @@
-#include "controller.h"
-#include "model.h"
-#include "view.h"
+#include "./controller.h"
+#include "./model.h"
+#include "./view.h"
 
 #include <ncurses.h>
 #include <stdlib.h>

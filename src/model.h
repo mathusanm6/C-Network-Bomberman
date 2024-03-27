@@ -3,9 +3,9 @@
 
 #define TEXT_SIZE 255
 
-#include "./controller.h"
-
 #include <stdbool.h>
+
+typedef enum ACTION { NONE, UP, DOWN, LEFT, RIGHT, QUIT } ACTION;
 
 typedef struct board {
     char *grid;
