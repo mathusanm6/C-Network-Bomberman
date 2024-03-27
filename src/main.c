@@ -1,8 +1,10 @@
-#include <stdio.h>
 #include <stdlib.h>
 
-int main(int argc, char *argv[]) {
-    printf("Hello, World!\n");
+#include "controller.h"
 
-    return EXIT_SUCCESS;
+int main() {
+    if (init_game() < 0) {
+        return EXIT_FAILURE;
+    }
+    return game_loop();
 }
