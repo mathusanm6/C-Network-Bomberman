@@ -5,7 +5,7 @@
 
 #include <stdbool.h>
 
-typedef enum ACTION { NONE, UP, DOWN, LEFT, RIGHT, QUIT } ACTION;
+typedef enum ACTION { UP = 0, RIGHT = 1, DOWN = 2, LEFT = 3, PLACE_BOMB = 4, NONE = 5, CHAT_WRITE = 6, CHAT_ERASE = 7, QUIT = 8 } ACTION;
 
 typedef struct board {
     char *grid;
@@ -58,6 +58,6 @@ void add_to_line(char);
 /** Depending on the action, changes the player's position in the table if a move has been made.
  * Returns true if the player has made the quit action.
  */
-bool perform_action(ACTION);
+void perform_move(ACTION);
 
 #endif // SRC_MODEL_H_

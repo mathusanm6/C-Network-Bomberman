@@ -112,12 +112,12 @@ void decrement_line() {
 }
 
 void add_to_line(char c) {
-    if (chat_line != NULL && chat_line->cursor < TEXT_SIZE) {
+    if (chat_line != NULL && chat_line->cursor < TEXT_SIZE && c >= ' ' && c <= '~') {
         chat_line->data[(chat_line->cursor)++] = c;
     }
 }
 
-bool perform_action(ACTION a) {
+void perform_move(ACTION a) {
     int xd = 0;
     int yd = 0;
     switch (a) {
@@ -137,8 +137,6 @@ bool perform_action(ACTION a) {
             xd = 0;
             yd = 1;
             break;
-        case QUIT:
-            return true;
         default:
             break;
     }
@@ -147,5 +145,4 @@ bool perform_action(ACTION a) {
     current_pos->x = (current_pos->x + game_board->width) % game_board->width;
     current_pos->y = (current_pos->y + game_board->height) % game_board->height;
     set_grid(current_pos->x, current_pos->y, 1);
-    return false;
 }
