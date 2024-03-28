@@ -46,7 +46,7 @@ ACTION get_action_with_control(int c) {
     return a;
 }
 
-char get_pressed_key() {
+int get_pressed_key() {
     int c;
     int prev_c = ERR;
     // We consume all similar consecutive key presses
@@ -61,7 +61,7 @@ char get_pressed_key() {
 }
 
 bool control() {
-    char c = get_pressed_key();
+    int c = get_pressed_key();
     ACTION a = get_action_with_control(c);
     switch (a)  {
         case UP:
