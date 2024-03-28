@@ -63,7 +63,7 @@ int get_pressed_key() {
 bool control() {
     int c = get_pressed_key();
     ACTION a = get_action_with_control(c);
-    switch (a)  {
+    switch (a) {
         case UP:
         case RIGHT:
         case DOWN:

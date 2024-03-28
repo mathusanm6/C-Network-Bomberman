@@ -92,14 +92,54 @@ void free_model() {
     free_current_position();
 }
 
-int get_grid(int x, int y) {
+char get_tile_into_char(TILE t) {
+    char c;
+    switch (t) {
+        case EMPTY:
+            c = ' ';
+            break;
+        case INDESTRUCTIBLE_WALL:
+            c = '#';
+            break;
+        case DESTRUCTIBLE_WALL:
+            c = '@';
+            break;
+        case BOMB:
+            c = 'o';
+            break;
+        case EXPLOSION:
+            c = '+';
+            break;
+        case PLAYER_1:
+            c = '1';
+            break;
+        case PLAYER_2:
+            c = '2';
+            break;
+        case PLAYER_3:
+            c = '3';
+            break;
+        case PLAYER_4:
+            c = '4';
+            break;
+        case VERTICAL_BORDER:
+            c = '|';
+            break;
+        case HORIZONTAL_BORDER:
+            c = '-';
+            break;
+    }
+    return c;
+}
+
+TILE get_grid(int x, int y) {
     if (game_board != NULL) {
         return game_board->grid[y * game_board->width + x];
     }
     return EXIT_FAILURE;
 }
 
-void set_grid(int x, int y, int v) {
+void set_grid(int x, int y, TILE v) {
     if (game_board != NULL) {
         game_board->grid[y * game_board->width + x] = v;
     }
@@ -144,5 +184,5 @@ void perform_move(ACTION a) {
     current_pos->y += yd;
     current_pos->x = (current_pos->x + game_board->width) % game_board->width;
     current_pos->y = (current_pos->y + game_board->height) % game_board->height;
-    set_grid(current_pos->x, current_pos->y, 1);
+    set_grid(current_pos->x, current_pos->y, PLAYER_1);
 }

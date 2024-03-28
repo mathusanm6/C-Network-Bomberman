@@ -5,7 +5,31 @@
 
 #include <stdbool.h>
 
-typedef enum ACTION { UP = 0, RIGHT = 1, DOWN = 2, LEFT = 3, PLACE_BOMB = 4, NONE = 5, CHAT_WRITE = 6, CHAT_ERASE = 7, QUIT = 8 } ACTION;
+typedef enum ACTION {
+    UP = 0,
+    RIGHT = 1,
+    DOWN = 2,
+    LEFT = 3,
+    PLACE_BOMB = 4,
+    NONE = 5,
+    CHAT_WRITE = 6,
+    CHAT_ERASE = 7,
+    QUIT = 8
+} ACTION;
+
+typedef enum TILE {
+    EMPTY = 0,
+    INDESTRUCTIBLE_WALL = 1,
+    DESTRUCTIBLE_WALL = 2,
+    BOMB = 3,
+    EXPLOSION = 4,
+    PLAYER_1 = 5,
+    PLAYER_2 = 6,
+    PLAYER_3 = 7,
+    PLAYER_4 = 8,
+    VERTICAL_BORDER = 9,
+    HORIZONTAL_BORDER = 10
+} TILE;
 
 typedef struct board {
     char *grid;
@@ -39,13 +63,17 @@ int init_model(int, int);
  */
 void free_model();
 
-/** Returns the character at the position (x, y) of game_board
+/** Returns the correspondant char of a tile
  */
-int get_grid(int, int);
+char get_tile_into_char(TILE);
 
-/** Sets the character to the last argument at the position (x, y) of game_board
+/** Returns the tile at the position (x, y) of game_board
  */
-void set_grid(int, int, int);
+TILE get_grid(int, int);
+
+/** Sets the tile to the last argument at the position (x, y) of game_board
+ */
+void set_grid(int, int, TILE);
 
 /** Decrements the line cursor
  */
