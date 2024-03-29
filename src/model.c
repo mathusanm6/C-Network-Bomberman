@@ -14,8 +14,8 @@ int init_game_board(int width, int height) {
             perror("malloc");
             return EXIT_FAILURE;
         }
-        game_board->height = width - 2 - 1; // 2 rows reserved for border, 1 row for chat
-        game_board->width = height - 2;     // 2 columns reserved for border
+        game_board->width = width - 2 - 1; // 2 rows reserved for border, 1 row for chat
+        game_board->height = height - 2;   // 2 columns reserved for border
         game_board->grid = calloc((game_board->width) * (game_board->height), sizeof(char));
         if (game_board->grid == NULL) {
             perror("calloc");
