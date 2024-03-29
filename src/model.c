@@ -139,6 +139,18 @@ char tile_to_char(TILE t) {
     return c;
 }
 
+bool is_outside_board(int x, int y) {
+    return x < 0 || x >= game_board->dim.width || y < 0 || y >= game_board->dim.height;
+}
+
+bool is_wall_of_grid(int x, int y) {
+    if (is_outside_board(x, y)) {
+        return true;
+    }
+    TILE t = get_grid(x, y);
+    return t == INDESTRUCTIBLE_WALL || t == DESTRUCTIBLE_WALL;
+}
+
 coord int_to_coord(int n) {
     coord c;
     c.y = n / game_board->dim.width;
@@ -191,38 +203,39 @@ TILE get_player(int player_id) {
     }
 }
 
-void perform_move(ACTION a, int player_id) {
-    int dx = 0;
-    int dy = 0;
-
+coord get_next_position(ACTION a, const coord *pos) {
+    coord c;
+    c.x = pos->x;
+    c.y = pos->y;
     switch (a) {
         case LEFT:
-            dx = -1;
-            dy = 0;
+            c.x--;
             break;
         case RIGHT:
-            dx = 1;
-            dy = 0;
+            c.x++;
             break;
         case UP:
-            dx = 0;
-            dy = -1;
+            c.y--;
             break;
         case DOWN:
-            dx = 0;
-            dy = 1;
+            c.y++;
             break;
         default:
             break;
     }
+    return c;
+}
 
+void perform_move(ACTION a, int player_id) {
     coord *current_pos = player_positions[player_id];
     coord old_pos = *current_pos;
 
-    current_pos->x += dx;
-    current_pos->y += dy;
-    current_pos->x = (current_pos->x + game_board->dim.width) % game_board->dim.width;
-    current_pos->y = (current_pos->y + game_board->dim.height) % game_board->dim.height;
+    coord c = get_next_position(a, current_pos);
+    if (is_wall_of_grid(c.x, c.y)) {
+        return;
+    }
+    current_pos->x = c.x;
+    current_pos->y = c.y;
     set_grid(current_pos->x, current_pos->y, get_player(player_id));
     set_grid(old_pos.x, old_pos.y, EMPTY);
 }

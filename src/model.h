@@ -91,6 +91,15 @@ TILE get_grid(int, int);
  */
 void set_grid(int, int, TILE);
 
+/** Returns true if (x, y) is a coordinate outside the game_board
+ */
+bool is_outside_board(int x, int y);
+
+/** Returns true if (x, y) is a coordinate outside the game_board (the border is considered as a wall),
+ * or if there is a DESTRUCTIBLE_WALL or a INDESTRUCTIBLE_WALL at the position (x, y) in game_board
+ */
+bool is_wall_of_grid(int x, int y);
+
 /** Decrements the line cursor
  */
 void decrement_line();
@@ -98,6 +107,10 @@ void decrement_line();
 /** Adds the character at the end of chat_line if it does not exceed TEXT_SIZE and increment the cursor
  */
 void add_to_line(char);
+
+/** Returns the next position after an action of the current position
+ */
+coord get_next_position(ACTION, const coord* pos);
 
 /** Depending on the action, changes the player's position in the table if the argument is a move.
  */
