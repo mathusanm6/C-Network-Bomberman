@@ -1,5 +1,4 @@
 #include "./view.h"
-#include "model.h"
 
 #include <ncurses.h>
 
