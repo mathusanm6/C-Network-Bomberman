@@ -3,11 +3,11 @@
 
 #include "./model.h"
 
-/** Initializes graphical interface
+/** Initializes graphical user interface
  */
 void init_view();
 
-/** Shutdown the graphic interface
+/** Shutdown the graphic user interface
  */
 void end_view();
 
