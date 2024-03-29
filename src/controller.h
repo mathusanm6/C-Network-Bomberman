@@ -3,7 +3,7 @@
 
 #include "./model.h"
 
-/** Depending on the pressed key on the keyboard, manage the player's actions and returns true if the user wants to quit
+/** Depending on the pressed key on the keyboard, manage the player's actions and return true if the user wants to quit
  */
 bool control();
 
