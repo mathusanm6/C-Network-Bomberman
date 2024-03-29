@@ -79,7 +79,7 @@ int coord_to_int(int, int);
  */
 TILE get_grid(int, int);
 
-/** Sets the tile at the position (x, y) to the last argument of game_board
+/** Sets the tile at the position (x, y) of game_board to the last argument
  */
 void set_grid(int, int, TILE);
 
