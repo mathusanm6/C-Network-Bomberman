@@ -65,6 +65,7 @@ void free_game_board() {
     if (game_board != NULL) {
         if (game_board->grid != NULL) {
             free(game_board->grid);
+            game_board->grid = NULL;
         }
         free(game_board);
         game_board = NULL;
