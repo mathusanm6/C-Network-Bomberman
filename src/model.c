@@ -164,7 +164,7 @@ void decrement_line() {
 
 void add_to_line(char c) {
     if (chat_line != NULL && chat_line->cursor < TEXT_SIZE && c >= ' ' && c <= '~') {
-        chat_line->data[(chat_line->cursor)++] = c;
+        chat_line->data[(chat_line->cursor)] = c;
         (chat_line->cursor)++;
     }
 }
