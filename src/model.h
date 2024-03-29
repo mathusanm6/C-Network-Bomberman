@@ -79,7 +79,7 @@ int coord_to_int(int, int);
  */
 TILE get_grid(int, int);
 
-/** Sets the tile to the last argument at the position (x, y) of game_board
+/** Sets the tile at the position (x, y) to the last argument of game_board
  */
 void set_grid(int, int, TILE);
 
@@ -91,8 +91,7 @@ void decrement_line();
  */
 void add_to_line(char);
 
-/** Depending on the action, changes the player's position in the table if a move has been made.
- * Returns true if the player has made the quit action.
+/** Depending on the action, changes the player's position in the table if the argument is a move.
  */
 void perform_move(ACTION);
 
