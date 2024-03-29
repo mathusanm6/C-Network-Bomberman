@@ -12,7 +12,7 @@ void init_controller() {
     nodelay(stdscr, TRUE);    /* Make getch non-blocking */
 }
 
-ACTION get_action_with_control(int c) {
+ACTION key_press_to_action(int c) {
     ACTION a = NONE;
     switch (c) {
         case ERR:
@@ -62,7 +62,7 @@ int get_pressed_key() {
 
 bool control() {
     int c = get_pressed_key();
-    ACTION a = get_action_with_control(c);
+    ACTION a = key_press_to_action(c);
     switch (a) {
         case UP:
         case RIGHT:

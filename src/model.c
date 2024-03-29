@@ -6,7 +6,7 @@
 
 board *game_board = NULL;
 line *chat_line = NULL;
-coor *current_pos = NULL;
+coord *current_pos = NULL;
 
 int init_game_board(int width, int height) {
     if (game_board == NULL) {
@@ -40,7 +40,7 @@ int init_chat_line() {
 
 int init_current_position() {
     if (current_pos == NULL) {
-        current_pos = malloc(sizeof(coor));
+        current_pos = malloc(sizeof(coord));
         if (current_pos == NULL) {
             perror("malloc");
             return EXIT_FAILURE;
@@ -92,7 +92,7 @@ void free_model() {
     free_current_position();
 }
 
-char get_tile_into_char(TILE t) {
+char tile_to_char(TILE t) {
     char c;
     switch (t) {
         case EMPTY:
@@ -132,27 +132,27 @@ char get_tile_into_char(TILE t) {
     return c;
 }
 
-coor get_int_into_coor(int n) {
-    coor c;
+coord int_to_coord(int n) {
+    coord c;
     c.y = n / game_board->width;
     c.x = n % game_board->width;
     return c;
 }
 
-int get_coor_into_int(int x, int y) {
+int coord_to_int(int x, int y) {
     return y * game_board->width + x;
 }
 
 TILE get_grid(int x, int y) {
     if (game_board != NULL) {
-        return game_board->grid[get_coor_into_int(x, y)];
+        return game_board->grid[coord_to_int(x, y)];
     }
     return EXIT_FAILURE;
 }
 
 void set_grid(int x, int y, TILE v) {
     if (game_board != NULL) {
-        game_board->grid[get_coor_into_int(x, y)] = v;
+        game_board->grid[coord_to_int(x, y)] = v;
     }
 }
 
@@ -165,6 +165,7 @@ void decrement_line() {
 void add_to_line(char c) {
     if (chat_line != NULL && chat_line->cursor < TEXT_SIZE && c >= ' ' && c <= '~') {
         chat_line->data[(chat_line->cursor)++] = c;
+        (chat_line->cursor)++;
     }
 }
 

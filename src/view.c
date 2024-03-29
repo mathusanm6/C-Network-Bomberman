@@ -26,13 +26,13 @@ void get_width_height_terminal(int *width, int *height) {
 void refresh_game(board *b, line *l) {
     // Update grid
     int x, y;
-    char vb = get_tile_into_char(VERTICAL_BORDER);
-    char hb = get_tile_into_char(HORIZONTAL_BORDER);
-    char e = get_tile_into_char(EMPTY);
+    char vb = tile_to_char(VERTICAL_BORDER);
+    char hb = tile_to_char(HORIZONTAL_BORDER);
+    char e = tile_to_char(EMPTY);
     for (y = 0; y < b->height; y++) {
         for (x = 0; x < b->width; x++) {
             char c;
-            c = get_tile_into_char(get_grid(x, y));
+            c = tile_to_char(get_grid(x, y));
             mvaddch(y + 1, x + 1, c);
         }
     }
