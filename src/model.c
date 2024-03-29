@@ -6,7 +6,7 @@
 
 board *game_board = NULL;
 line *chat_line = NULL;
-pos *current_pos = NULL;
+coor *current_pos = NULL;
 
 int init_game_board(int width, int height) {
     if (game_board == NULL) {
@@ -40,7 +40,7 @@ int init_chat_line() {
 
 int init_current_position() {
     if (current_pos == NULL) {
-        current_pos = malloc(sizeof(pos));
+        current_pos = malloc(sizeof(coor));
         if (current_pos == NULL) {
             perror("malloc");
             return EXIT_FAILURE;
@@ -132,16 +132,27 @@ char get_tile_into_char(TILE t) {
     return c;
 }
 
+coor get_int_into_coor(int n) {
+    coor c;
+    c.y = n / game_board->width;
+    c.x = n % game_board->width;
+    return c;
+}
+
+int get_coor_into_int(int x, int y) {
+    return y * game_board->width + x;
+}
+
 TILE get_grid(int x, int y) {
     if (game_board != NULL) {
-        return game_board->grid[y * game_board->width + x];
+        return game_board->grid[get_coor_into_int(x, y)];
     }
     return EXIT_FAILURE;
 }
 
 void set_grid(int x, int y, TILE v) {
     if (game_board != NULL) {
-        game_board->grid[y * game_board->width + x] = v;
+        game_board->grid[get_coor_into_int(x, y)] = v;
     }
 }
 

@@ -42,14 +42,14 @@ typedef struct line {
     int cursor;
 } line;
 
-typedef struct pos {
+typedef struct coor {
     int x;
     int y;
-} pos;
+} coor;
 
 extern board *game_board; // playing surface
 extern line *chat_line;   // line of text that can be filled in with chat
-extern pos *current_pos;  // current position of the player
+extern coor *current_pos; // current position of the player
 
 /** Initializes - The game board with the width and the height
  *              - The chat line
@@ -66,6 +66,14 @@ void free_model();
 /** Returns the correspondant char of a tile
  */
 char get_tile_into_char(TILE);
+
+/** Returns the correspondant coordinate of an int in flatten list
+ */
+coor get_int_into_coor(int);
+
+/** Returns the correspondant int of coordinate in flatten list
+ */
+int get_coor_into_int(int, int);
 
 /** Returns the tile at the position (x, y) of game_board
  */
