@@ -169,30 +169,30 @@ void add_to_line(char c) {
 }
 
 void perform_move(ACTION a) {
-    int xd = 0;
-    int yd = 0;
+    int dx = 0;
+    int dy = 0;
     switch (a) {
         case LEFT:
-            xd = -1;
-            yd = 0;
+            dx = -1;
+            dy = 0;
             break;
         case RIGHT:
-            xd = 1;
-            yd = 0;
+            dx = 1;
+            dy = 0;
             break;
         case UP:
-            xd = 0;
-            yd = -1;
+            dx = 0;
+            dy = -1;
             break;
         case DOWN:
-            xd = 0;
-            yd = 1;
+            dx = 0;
+            dy = 1;
             break;
         default:
             break;
     }
-    current_pos->x += xd;
-    current_pos->y += yd;
+    current_pos->x += dx;
+    current_pos->y += dy;
     current_pos->x = (current_pos->x + game_board->width) % game_board->width;
     current_pos->y = (current_pos->y + game_board->height) % game_board->height;
     set_grid(current_pos->x, current_pos->y, PLAYER_1);
