@@ -1,5 +1,4 @@
 #include "./controller.h"
-#include "./model.h"
 #include "./view.h"
 
 #include <ncurses.h>
@@ -12,7 +11,41 @@ void init_controller() {
     nodelay(stdscr, TRUE);    /* Make getch non-blocking */
 }
 
-ACTION control() {
+ACTION key_press_to_action(int c) {
+    ACTION a = NONE;
+    switch (c) {
+        case ERR:
+            break;
+        case KEY_UP:
+            a = UP;
+            break;
+        case KEY_RIGHT:
+            a = RIGHT;
+            break;
+        case KEY_DOWN:
+            a = DOWN;
+            break;
+        case KEY_LEFT:
+            a = LEFT;
+            break;
+        case ' ':
+            a = PLACE_BOMB;
+            break;
+        case KEY_BACKSPACE:
+            a = CHAT_ERASE;
+            break;
+        case '~':
+            a = QUIT;
+            break;
+        default:
+            a = CHAT_WRITE;
+            break;
+    }
+
+    return a;
+}
+
+int get_pressed_key() {
     int c;
     int prev_c = ERR;
     // We consume all similar consecutive key presses
@@ -23,35 +56,34 @@ ACTION control() {
         }
         prev_c = c;
     }
-    ACTION a = NONE;
-    switch (prev_c) {
-        case ERR:
+    return prev_c;
+}
+
+bool control() {
+    int c = get_pressed_key();
+    ACTION a = key_press_to_action(c);
+    switch (a) {
+        case UP:
+        case RIGHT:
+        case DOWN:
+        case LEFT:
+            perform_move(a);
             break;
-        case KEY_LEFT:
-            a = LEFT;
+        case PLACE_BOMB:
+            // TODO
             break;
-        case KEY_RIGHT:
-            a = RIGHT;
+        case NONE:
             break;
-        case KEY_UP:
-            a = UP;
+        case CHAT_WRITE:
+            add_to_line(c);
             break;
-        case KEY_DOWN:
-            a = DOWN;
-            break;
-        case '~':
-            a = QUIT;
-            break;
-        case KEY_BACKSPACE:
+        case CHAT_ERASE:
             decrement_line();
             break;
-        default:
-            if (prev_c >= ' ' && prev_c <= '~') {
-                add_to_line(prev_c);
-            }
-            break;
+        case QUIT:
+            return true;
     }
-    return a;
+    return false;
 }
 
 int init_game() {
@@ -68,8 +100,7 @@ int init_game() {
 
 int game_loop() {
     while (true) {
-        ACTION action = control();
-        if (perform_action(action)) {
+        if (control()) {
             break;
         }
         refresh_game(game_board, chat_line);

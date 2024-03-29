@@ -5,7 +5,31 @@
 
 #include <stdbool.h>
 
-typedef enum ACTION { NONE, UP, DOWN, LEFT, RIGHT, QUIT } ACTION;
+typedef enum ACTION {
+    UP = 0,
+    RIGHT = 1,
+    DOWN = 2,
+    LEFT = 3,
+    PLACE_BOMB = 4,
+    NONE = 5,
+    CHAT_WRITE = 6,
+    CHAT_ERASE = 7,
+    QUIT = 8
+} ACTION;
+
+typedef enum TILE {
+    EMPTY = 0,
+    INDESTRUCTIBLE_WALL = 1,
+    DESTRUCTIBLE_WALL = 2,
+    BOMB = 3,
+    EXPLOSION = 4,
+    PLAYER_1 = 5,
+    PLAYER_2 = 6,
+    PLAYER_3 = 7,
+    PLAYER_4 = 8,
+    VERTICAL_BORDER = 9,
+    HORIZONTAL_BORDER = 10
+} TILE;
 
 typedef struct board {
     char *grid;
@@ -18,14 +42,14 @@ typedef struct line {
     int cursor;
 } line;
 
-typedef struct pos {
+typedef struct coord {
     int x;
     int y;
-} pos;
+} coord;
 
-extern board *game_board; // playing surface
-extern line *chat_line;   // line of text that can be filled in with chat
-extern pos *current_pos;  // current position of the player
+extern board *game_board;  // playing surface
+extern line *chat_line;    // line of text that can be filled in with chat
+extern coord *current_pos; // current position of the player
 
 /** Initializes - The game board with the width and the height
  *              - The chat line
@@ -39,13 +63,25 @@ int init_model(int, int);
  */
 void free_model();
 
-/** Returns the character at the position (x, y) of game_board
+/** Returns the corresponding char of a tile
  */
-int get_grid(int, int);
+char tile_to_char(TILE);
 
-/** Sets the character to the last argument at the position (x, y) of game_board
+/** Returns the corresponding coordinate of an int in flatten list
  */
-void set_grid(int, int, int);
+coord int_to_coord(int);
+
+/** Returns the corresponding int of coordinate in flatten list
+ */
+int coord_to_int(int, int);
+
+/** Returns the tile at the position (x, y) of game_board
+ */
+TILE get_grid(int, int);
+
+/** Sets the tile at the position (x, y) of game_board to the last argument
+ */
+void set_grid(int, int, TILE);
 
 /** Decrements the line cursor
  */
@@ -55,9 +91,8 @@ void decrement_line();
  */
 void add_to_line(char);
 
-/** Depending on the action, changes the player's position in the table if a move has been made.
- * Returns true if the player has made the quit action.
+/** Depending on the action, changes the player's position in the table if the argument is a move.
  */
-bool perform_action(ACTION);
+void perform_move(ACTION);
 
 #endif // SRC_MODEL_H_
