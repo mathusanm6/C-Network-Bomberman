@@ -5,7 +5,8 @@
 
 board *game_board = NULL;
 line *chat_line = NULL;
-coord *player_positions[PLAYER_NUM] = {NULL, NULL, NULL, NULL};
+
+static coord *player_positions[PLAYER_NUM] = {NULL, NULL, NULL, NULL};
 
 int init_game_board(int width, int height) {
     if (game_board == NULL) {
