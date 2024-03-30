@@ -72,8 +72,8 @@ int init_game_board(dimension dim) {
             perror("malloc");
             return EXIT_FAILURE;
         }
-        game_board->dim.height = dim.height - 2 - 1; // 2 rows reserved for border, 1 row for chat
-        game_board->dim.width = dim.width - 2;       // 2 columns reserved for border
+        game_board->dim.height = dim.height - 2; // 2 rows reserved for border
+        game_board->dim.width = dim.width - 2;   // 2 columns reserved for border
         game_board->grid = calloc((game_board->dim.width) * (game_board->dim.height), sizeof(char));
         if (game_board->grid == NULL) {
             perror("calloc");
@@ -248,6 +248,12 @@ void decrement_line() {
     }
 }
 
+void clear_line() {
+    if (chat_line != NULL) {
+        chat_line->cursor = 0;
+    }
+}
+
 void add_to_line(char c) {
     if (chat_line != NULL && chat_line->cursor < TEXT_SIZE && c >= ' ' && c <= '~') {
         chat_line->data[(chat_line->cursor)] = c;
@@ -270,21 +276,21 @@ TILE get_player(int player_id) {
     }
 }
 
-coord get_next_position(ACTION a, const coord *pos) {
+coord get_next_position(GAME_ACTION a, const coord *pos) {
     coord c;
     c.x = pos->x;
     c.y = pos->y;
     switch (a) {
-        case LEFT:
+        case GAME_LEFT:
             c.x--;
             break;
-        case RIGHT:
+        case GAME_RIGHT:
             c.x++;
             break;
-        case UP:
+        case GAME_UP:
             c.y--;
             break;
-        case DOWN:
+        case GAME_DOWN:
             c.y++;
             break;
         default:
@@ -293,7 +299,7 @@ coord get_next_position(ACTION a, const coord *pos) {
     return c;
 }
 
-void perform_move(ACTION a, int player_id) {
+void perform_move(GAME_ACTION a, int player_id) {
     coord *current_pos = player_positions[player_id];
     coord old_pos = *current_pos;
 

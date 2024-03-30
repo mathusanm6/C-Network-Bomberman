@@ -7,6 +7,7 @@
 #include <unistd.h>
 
 int current_player = 0;
+bool is_chat_on_focus = false;
 
 void init_controller() {
     intrflush(stdscr, FALSE); /* No need to flush when intr key is pressed */
@@ -14,34 +15,58 @@ void init_controller() {
     nodelay(stdscr, TRUE);    /* Make getch non-blocking */
 }
 
-ACTION key_press_to_action(int c) {
-    ACTION a = NONE;
+GAME_ACTION key_press_to_game_action(int c) {
+    GAME_ACTION a = GAME_NONE;
     switch (c) {
         case ERR:
             break;
         case KEY_UP:
-            a = UP;
+            a = GAME_UP;
             break;
         case KEY_RIGHT:
-            a = RIGHT;
+            a = GAME_RIGHT;
             break;
         case KEY_DOWN:
-            a = DOWN;
+            a = GAME_DOWN;
             break;
         case KEY_LEFT:
-            a = LEFT;
+            a = GAME_LEFT;
             break;
         case ' ':
-            a = PLACE_BOMB;
+            a = GAME_PLACE_BOMB;
             break;
-        case KEY_BACKSPACE:
-            a = CHAT_ERASE;
+        case '\\':
+            a = GAME_ACTIVATE_CHAT;
             break;
         case '~':
-            a = QUIT;
+            a = GAME_QUIT;
             break;
         case '|':
             a = SWITCH_PLAYER;
+            break;
+    }
+
+    return a;
+}
+
+CHAT_ACTION key_press_to_chat_action(int c) {
+    CHAT_ACTION a = CHAT_NONE;
+    switch (c) {
+        case ERR:
+            break;
+        case KEY_BACKSPACE:
+        case 127:
+            a = CHAT_ERASE;
+            break;
+        case KEY_ENTER:
+        case '\n':
+            a = CHAT_SEND;
+            break;
+        case '-':
+            a = CHAT_CLEAR;
+            break;
+        case '\\':
+            a = CHAT_QUIT;
             break;
         default:
             a = CHAT_WRITE;
@@ -67,30 +92,60 @@ int get_pressed_key() {
 
 bool control() {
     int c = get_pressed_key();
-    ACTION a = key_press_to_action(c);
-    switch (a) {
-        case UP:
-        case RIGHT:
-        case DOWN:
-        case LEFT:
-            perform_move(a, current_player);
-            break;
-        case PLACE_BOMB:
-            // TODO
-            break;
-        case NONE:
-            break;
-        case CHAT_WRITE:
-            add_to_line(c);
-            break;
-        case CHAT_ERASE:
-            decrement_line();
-            break;
-        case QUIT:
-            return true;
-        case SWITCH_PLAYER:
-            current_player = (current_player + 1) % PLAYER_NUM;
+
+    if (c == KEY_RESIZE) {
+        // If the terminal was resized, quit the application
+        endwin(); // Clean up ncurses
+        printf("Terminal resized. Quitting application.\n");
+        exit(EXIT_SUCCESS);
     }
+
+    if (is_chat_on_focus) {
+        CHAT_ACTION a = key_press_to_chat_action(c);
+        switch (a) {
+            case CHAT_WRITE:
+                add_to_line(c);
+                break;
+            case CHAT_ERASE:
+                decrement_line();
+                break;
+            case CHAT_SEND:
+                // TODO : ADD MESSAGE TO CHAT
+                break;
+            case CHAT_CLEAR:
+                clear_line();
+                break;
+            case CHAT_QUIT:
+                is_chat_on_focus = false;
+            case CHAT_NONE:
+                break;
+        }
+        return false;
+    } else {
+        GAME_ACTION a = key_press_to_game_action(c);
+        switch (a) {
+            case GAME_UP:
+            case GAME_RIGHT:
+            case GAME_DOWN:
+            case GAME_LEFT:
+                perform_move(a, current_player);
+                break;
+            case GAME_PLACE_BOMB:
+                // TODO
+                break;
+            case GAME_ACTIVATE_CHAT:
+                is_chat_on_focus = true;
+                break;
+            case GAME_QUIT:
+                return true;
+            case SWITCH_PLAYER:
+                current_player = (current_player + 1) % PLAYER_NUM;
+                break;
+            case GAME_NONE:
+                break;
+        }
+    }
+
     return false;
 }
 
@@ -99,7 +154,9 @@ int init_game() {
     init_controller();
 
     dimension dim;
-    get_width_height_terminal(&dim);
+    get_height_width_playable(&dim);
+    padding pad = {PADDING_PLAYABLE_TOP, PADDING_PLAYABLE_TOP, PADDING_PLAYABLE_LEFT, PADDING_PLAYABLE_LEFT};
+    add_padding(&dim, pad);
     if (init_model(dim, SOLO) < 0) {
         return EXIT_FAILURE;
     }

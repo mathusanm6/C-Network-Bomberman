@@ -1,26 +1,34 @@
 #ifndef SRC_MODEL_H_
 #define SRC_MODEL_H_
 
-#include <stdbool.h>
-
-#define TEXT_SIZE 255
+#define TEXT_SIZE 100
 #define PLAYER_NUM 4
 #define MIN_GAMEBOARD_WIDTH 11
 #define MIN_GAMEBOARD_HEIGHT 10
 #define DESTRUCTIBLE_WALL_CHANCE 20
 
-typedef enum ACTION {
-    UP = 0,
-    RIGHT = 1,
-    DOWN = 2,
-    LEFT = 3,
-    PLACE_BOMB = 4,
-    NONE = 5,
-    CHAT_WRITE = 6,
-    CHAT_ERASE = 7,
-    QUIT = 8,
-    SWITCH_PLAYER = 9
-} ACTION;
+#include <stdbool.h>
+
+typedef enum GAME_ACTION {
+    GAME_UP = 0,
+    GAME_RIGHT = 1,
+    GAME_DOWN = 2,
+    GAME_LEFT = 3,
+    GAME_PLACE_BOMB = 4,
+    GAME_ACTIVATE_CHAT = 5,
+    GAME_NONE = 6,
+    GAME_QUIT = 7,
+    SWITCH_PLAYER = 8
+} GAME_ACTION;
+
+typedef enum CHAT_ACTION {
+    CHAT_WRITE = 0,
+    CHAT_ERASE = 1,
+    CHAT_SEND = 2,
+    CHAT_CLEAR = 3,
+    CHAT_QUIT = 4,
+    CHAT_NONE = 5
+} CHAT_ACTION;
 
 typedef enum TILE {
     EMPTY = 0,
@@ -105,13 +113,17 @@ bool is_outside_board(int x, int y);
  */
 void decrement_line();
 
+/** Nullifies the line cursor
+ */
+void clear_line();
+
 /** Adds the character at the end of chat_line if it does not exceed TEXT_SIZE and increment the cursor
  */
 void add_to_line(char);
 
 /** Depending on the action, changes the player's position in the table if the argument is a move.
  */
-void perform_move(ACTION, int player_id);
+void perform_move(GAME_ACTION, int player_id);
 
 /** Returns a copy of the game board
  */
