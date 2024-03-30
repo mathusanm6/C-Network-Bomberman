@@ -3,9 +3,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-board *game_board = NULL;
 line *chat_line = NULL;
 
+static board *game_board = NULL;
 static coord *player_positions[PLAYER_NUM] = {NULL, NULL, NULL, NULL};
 
 int init_game_board(int width, int height) {

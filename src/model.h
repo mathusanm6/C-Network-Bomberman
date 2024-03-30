@@ -49,8 +49,7 @@ typedef struct coord {
     int y;
 } coord;
 
-extern board *game_board; // playing surface
-extern line *chat_line;   // line of text that can be filled in with chat
+extern line *chat_line; // line of text that can be filled in with chat
 
 /** Initializes - The game board with the width and the height
  *              - The chat line

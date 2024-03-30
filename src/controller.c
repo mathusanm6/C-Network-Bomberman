@@ -111,7 +111,9 @@ int game_loop() {
         if (control()) {
             break;
         }
+        board *game_board = get_game_board();
         refresh_game(game_board, chat_line);
+        free_board(game_board);
         usleep(30 * 1000);
     }
     free_model();
