@@ -62,7 +62,7 @@ int init_model(int width, int height) {
     return EXIT_SUCCESS;
 }
 
-void free_game_board() {
+void free_board(board *game_board) {
     if (game_board != NULL) {
         if (game_board->grid != NULL) {
             free(game_board->grid);
@@ -71,6 +71,10 @@ void free_game_board() {
         free(game_board);
         game_board = NULL;
     }
+}
+
+void free_game_board() {
+    free_board(game_board);
 }
 
 void free_chat_line() {
@@ -219,4 +223,27 @@ void perform_move(ACTION a, int player_id) {
     current_pos->x = (current_pos->x + game_board->width) % game_board->width;
     current_pos->y = (current_pos->y + game_board->height) % game_board->height;
     set_grid(current_pos->x, current_pos->y, get_player(player_id));
+}
+
+board *get_game_board() {
+    board *copy = malloc(sizeof(board));
+    if (copy == NULL) {
+        perror("malloc");
+        return NULL;
+    }
+
+    copy->width = game_board->width;
+    copy->height = game_board->height;
+    copy->grid = malloc(sizeof(char) * copy->width * copy->height);
+    if (copy->grid == NULL) {
+        perror("malloc");
+        free(copy);
+        return NULL;
+    }
+
+    for (int i = 0; i < copy->width * copy->height; i++) {
+        copy->grid[i] = game_board->grid[i];
+    }
+
+    return copy;
 }
