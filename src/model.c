@@ -8,15 +8,16 @@ line *chat_line = NULL;
 static board *game_board = NULL;
 static coord *player_positions[PLAYER_NUM] = {NULL, NULL, NULL, NULL};
 
-int init_game_board(int width, int height) {
+int init_game_board(int height, int width) {
     if (game_board == NULL) {
         game_board = malloc(sizeof(board));
         if (game_board == NULL) {
             perror("malloc");
             return EXIT_FAILURE;
         }
-        game_board->width = width - 2 - 1; // 2 rows reserved for border, 1 row for chat
-        game_board->height = height - 2;   // 2 columns reserved for border
+
+        game_board->height = height - 2 - 1; // 2 rows reserved for border, 1 row for chat
+        game_board->width = width - 2;       // 2 columns reserved for border
         game_board->grid = calloc((game_board->width) * (game_board->height), sizeof(char));
         if (game_board->grid == NULL) {
             perror("calloc");

@@ -16,9 +16,9 @@ void end_view() {
     endwin();    /* End curses mode */
 }
 
-void get_width_height_terminal(int *width, int *height) {
+void get_width_height_terminal(int *height, int *width) {
     if (width != NULL && height != NULL) {
-        getmaxyx(stdscr, *width, *height);
+        getmaxyx(stdscr, *height, *width);
     }
 }
 
