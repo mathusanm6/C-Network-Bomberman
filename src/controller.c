@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+int current_player = 0;
+
 void init_controller() {
     intrflush(stdscr, FALSE); /* No need to flush when intr key is pressed */
     keypad(stdscr, TRUE);     /* Required in order to get events from keyboard */
@@ -67,7 +69,7 @@ bool control() {
         case RIGHT:
         case DOWN:
         case LEFT:
-            perform_move(a);
+            perform_move(a, current_player);
             break;
         case PLACE_BOMB:
             // TODO
@@ -82,6 +84,8 @@ bool control() {
             break;
         case QUIT:
             return true;
+        default:
+            break;
     }
     return false;
 }
