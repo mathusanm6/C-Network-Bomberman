@@ -15,7 +15,8 @@ typedef enum ACTION {
     NONE = 5,
     CHAT_WRITE = 6,
     CHAT_ERASE = 7,
-    QUIT = 8
+    QUIT = 8,
+    SWITCH_PLAYER = 9
 } ACTION;
 
 typedef enum TILE {

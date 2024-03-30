@@ -1,5 +1,6 @@
 #include "./controller.h"
 #include "./view.h"
+#include "model.h"
 
 #include <ncurses.h>
 #include <stdlib.h>
@@ -38,6 +39,9 @@ ACTION key_press_to_action(int c) {
             break;
         case '~':
             a = QUIT;
+            break;
+        case '|':
+            a = SWITCH_PLAYER;
             break;
         default:
             a = CHAT_WRITE;
@@ -84,8 +88,8 @@ bool control() {
             break;
         case QUIT:
             return true;
-        default:
-            break;
+        case SWITCH_PLAYER:
+            current_player = (current_player + 1) % PLAYER_NUM;
     }
     return false;
 }
