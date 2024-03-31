@@ -217,12 +217,14 @@ void perform_move(ACTION a, int player_id) {
     }
 
     coord *current_pos = player_positions[player_id];
+    coord old_pos = *current_pos;
 
     current_pos->x += dx;
     current_pos->y += dy;
     current_pos->x = (current_pos->x + game_board->width) % game_board->width;
     current_pos->y = (current_pos->y + game_board->height) % game_board->height;
     set_grid(current_pos->x, current_pos->y, get_player(player_id));
+    set_grid(old_pos.x, old_pos.y, EMPTY);
 }
 
 board *get_game_board() {
