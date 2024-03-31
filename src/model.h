@@ -33,10 +33,14 @@ typedef enum TILE {
     HORIZONTAL_BORDER = 10
 } TILE;
 
-typedef struct board {
-    char *grid;
+typedef struct dimension {
     int width;
     int height;
+} dimension;
+
+typedef struct board {
+    char *grid;
+    dimension dim;
 } board;
 
 typedef struct line {
@@ -55,7 +59,7 @@ extern line *chat_line; // line of text that can be filled in with chat
  *              - The chat line
  *              - The current position of the player
  */
-int init_model(int, int);
+int init_model(dimension dim);
 
 /** Frees - The game board with the width and the height
  *              - The chat line

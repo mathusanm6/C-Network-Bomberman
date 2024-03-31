@@ -98,9 +98,9 @@ int init_game() {
     init_view();
     init_controller();
 
-    int height, width;
-    get_width_height_terminal(&height, &width);
-    if (init_model(height, width) < 0) {
+    dimension dim;
+    get_width_height_terminal(&dim);
+    if (init_model(dim) < 0) {
         return EXIT_FAILURE;
     }
     return EXIT_SUCCESS;

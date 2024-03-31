@@ -8,17 +8,16 @@ line *chat_line = NULL;
 static board *game_board = NULL;
 static coord *player_positions[PLAYER_NUM] = {NULL, NULL, NULL, NULL};
 
-int init_game_board(int height, int width) {
+int init_game_board(dimension dim) {
     if (game_board == NULL) {
         game_board = malloc(sizeof(board));
         if (game_board == NULL) {
             perror("malloc");
             return EXIT_FAILURE;
         }
-
-        game_board->height = height - 2 - 1; // 2 rows reserved for border, 1 row for chat
-        game_board->width = width - 2;       // 2 columns reserved for border
-        game_board->grid = calloc((game_board->width) * (game_board->height), sizeof(char));
+        game_board->dim.height = dim.height - 2 - 1; // 2 rows reserved for border, 1 row for chat
+        game_board->dim.width = dim.width - 2;       // 2 columns reserved for border
+        game_board->grid = calloc((game_board->dim.width) * (game_board->dim.height), sizeof(char));
         if (game_board->grid == NULL) {
             perror("calloc");
             return EXIT_FAILURE;
@@ -52,8 +51,8 @@ int init_player_positions() {
     return EXIT_SUCCESS;
 }
 
-int init_model(int width, int height) {
-    if (init_game_board(width, height) < 0) {
+int init_model(dimension dim) {
+    if (init_game_board(dim) < 0) {
         return EXIT_FAILURE;
     } else if (init_chat_line() < 0) {
         return EXIT_FAILURE;
@@ -142,13 +141,13 @@ char tile_to_char(TILE t) {
 
 coord int_to_coord(int n) {
     coord c;
-    c.y = n / game_board->width;
-    c.x = n % game_board->width;
+    c.y = n / game_board->dim.width;
+    c.x = n % game_board->dim.width;
     return c;
 }
 
 int coord_to_int(int x, int y) {
-    return y * game_board->width + x;
+    return y * game_board->dim.width + x;
 }
 
 TILE get_grid(int x, int y) {
@@ -222,8 +221,8 @@ void perform_move(ACTION a, int player_id) {
 
     current_pos->x += dx;
     current_pos->y += dy;
-    current_pos->x = (current_pos->x + game_board->width) % game_board->width;
-    current_pos->y = (current_pos->y + game_board->height) % game_board->height;
+    current_pos->x = (current_pos->x + game_board->dim.width) % game_board->dim.width;
+    current_pos->y = (current_pos->y + game_board->dim.height) % game_board->dim.height;
     set_grid(current_pos->x, current_pos->y, get_player(player_id));
     set_grid(old_pos.x, old_pos.y, EMPTY);
 }
@@ -235,16 +234,16 @@ board *get_game_board() {
         return NULL;
     }
 
-    copy->width = game_board->width;
-    copy->height = game_board->height;
-    copy->grid = malloc(sizeof(char) * copy->width * copy->height);
+    copy->dim.width = game_board->dim.width;
+    copy->dim.height = game_board->dim.height;
+    copy->grid = malloc(sizeof(char) * copy->dim.width * copy->dim.height);
     if (copy->grid == NULL) {
         perror("malloc");
         free(copy);
         return NULL;
     }
 
-    for (int i = 0; i < copy->width * copy->height; i++) {
+    for (int i = 0; i < copy->dim.width * copy->dim.height; i++) {
         copy->grid[i] = game_board->grid[i];
     }
 

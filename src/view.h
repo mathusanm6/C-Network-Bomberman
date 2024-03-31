@@ -15,7 +15,7 @@ void end_view();
  * width and height respectively
  * Do nothing if one of the pointer is Null
  */
-void get_width_height_terminal(int *, int *);
+void get_width_height_terminal(dimension *);
 
 /** Updates terminal display with board data
  */
