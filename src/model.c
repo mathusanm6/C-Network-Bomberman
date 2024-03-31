@@ -3,9 +3,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-board *game_board = NULL;
 line *chat_line = NULL;
-coord *current_pos = NULL;
+
+static board *game_board = NULL;
+static coord *player_positions[PLAYER_NUM] = {NULL, NULL, NULL, NULL};
 
 int init_game_board(int width, int height) {
     if (game_board == NULL) {
@@ -37,15 +38,15 @@ int init_chat_line() {
     return EXIT_SUCCESS;
 }
 
-int init_current_position() {
-    if (current_pos == NULL) {
-        current_pos = malloc(sizeof(coord));
-        if (current_pos == NULL) {
+int init_player_positions() {
+    for (int i = 0; i < 4; i++) {
+        player_positions[i] = malloc(sizeof(coord));
+        if (player_positions[i] == NULL) {
             perror("malloc");
             return EXIT_FAILURE;
         }
-        current_pos->x = 0;
-        current_pos->y = 0;
+        player_positions[i]->x = 0;
+        player_positions[i]->y = 0;
     }
     return EXIT_SUCCESS;
 }
@@ -55,13 +56,13 @@ int init_model(int width, int height) {
         return EXIT_FAILURE;
     } else if (init_chat_line() < 0) {
         return EXIT_FAILURE;
-    } else if (init_current_position() < 0) {
+    } else if (init_player_positions() < 0) {
         return EXIT_FAILURE;
     }
     return EXIT_SUCCESS;
 }
 
-void free_game_board() {
+void free_board(board *game_board) {
     if (game_board != NULL) {
         if (game_board->grid != NULL) {
             free(game_board->grid);
@@ -72,6 +73,10 @@ void free_game_board() {
     }
 }
 
+void free_game_board() {
+    free_board(game_board);
+}
+
 void free_chat_line() {
     if (chat_line != NULL) {
         free(chat_line);
@@ -79,17 +84,19 @@ void free_chat_line() {
     }
 }
 
-void free_current_position() {
-    if (current_pos != NULL) {
-        free(current_pos);
-        current_pos = NULL;
+void free_player_positions() {
+    for (int i = 0; i < 4; i++) {
+        if (player_positions[i] != NULL) {
+            free(player_positions[i]);
+            player_positions[i] = NULL;
+        }
     }
 }
 
 void free_model() {
     free_game_board();
     free_chat_line();
-    free_current_position();
+    free_player_positions();
 }
 
 char tile_to_char(TILE t) {
@@ -169,9 +176,25 @@ void add_to_line(char c) {
     }
 }
 
-void perform_move(ACTION a) {
+TILE get_player(int player_id) {
+    switch (player_id) {
+        case 0:
+            return PLAYER_1;
+        case 1:
+            return PLAYER_2;
+        case 2:
+            return PLAYER_3;
+        case 3:
+            return PLAYER_4;
+        default:
+            return EMPTY;
+    }
+}
+
+void perform_move(ACTION a, int player_id) {
     int dx = 0;
     int dy = 0;
+
     switch (a) {
         case LEFT:
             dx = -1;
@@ -192,9 +215,35 @@ void perform_move(ACTION a) {
         default:
             break;
     }
+
+    coord *current_pos = player_positions[player_id];
+
     current_pos->x += dx;
     current_pos->y += dy;
     current_pos->x = (current_pos->x + game_board->width) % game_board->width;
     current_pos->y = (current_pos->y + game_board->height) % game_board->height;
-    set_grid(current_pos->x, current_pos->y, PLAYER_1);
+    set_grid(current_pos->x, current_pos->y, get_player(player_id));
+}
+
+board *get_game_board() {
+    board *copy = malloc(sizeof(board));
+    if (copy == NULL) {
+        perror("malloc");
+        return NULL;
+    }
+
+    copy->width = game_board->width;
+    copy->height = game_board->height;
+    copy->grid = malloc(sizeof(char) * copy->width * copy->height);
+    if (copy->grid == NULL) {
+        perror("malloc");
+        free(copy);
+        return NULL;
+    }
+
+    for (int i = 0; i < copy->width * copy->height; i++) {
+        copy->grid[i] = game_board->grid[i];
+    }
+
+    return copy;
 }

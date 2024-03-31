@@ -1,9 +1,10 @@
 #ifndef SRC_MODEL_H_
 #define SRC_MODEL_H_
 
-#define TEXT_SIZE 255
-
 #include <stdbool.h>
+
+#define TEXT_SIZE 255
+#define PLAYER_NUM 4
 
 typedef enum ACTION {
     UP = 0,
@@ -14,7 +15,8 @@ typedef enum ACTION {
     NONE = 5,
     CHAT_WRITE = 6,
     CHAT_ERASE = 7,
-    QUIT = 8
+    QUIT = 8,
+    SWITCH_PLAYER = 9
 } ACTION;
 
 typedef enum TILE {
@@ -47,9 +49,7 @@ typedef struct coord {
     int y;
 } coord;
 
-extern board *game_board;  // playing surface
-extern line *chat_line;    // line of text that can be filled in with chat
-extern coord *current_pos; // current position of the player
+extern line *chat_line; // line of text that can be filled in with chat
 
 /** Initializes - The game board with the width and the height
  *              - The chat line
@@ -59,9 +59,13 @@ int init_model(int, int);
 
 /** Frees - The game board with the width and the height
  *              - The chat line
- *              - The current position of the player
+ *              - The current position of the players
  */
 void free_model();
+
+/** Frees the board
+ */
+void free_board(board *);
 
 /** Returns the corresponding char of a tile
  */
@@ -93,6 +97,10 @@ void add_to_line(char);
 
 /** Depending on the action, changes the player's position in the table if the argument is a move.
  */
-void perform_move(ACTION);
+void perform_move(ACTION, int player_id);
+
+/** Returns a copy of the game board
+ */
+board *get_game_board();
 
 #endif // SRC_MODEL_H_

@@ -1,9 +1,12 @@
 #include "./controller.h"
+#include "./model.h"
 #include "./view.h"
 
 #include <ncurses.h>
 #include <stdlib.h>
 #include <unistd.h>
+
+int current_player = 0;
 
 void init_controller() {
     intrflush(stdscr, FALSE); /* No need to flush when intr key is pressed */
@@ -37,6 +40,9 @@ ACTION key_press_to_action(int c) {
         case '~':
             a = QUIT;
             break;
+        case '|':
+            a = SWITCH_PLAYER;
+            break;
         default:
             a = CHAT_WRITE;
             break;
@@ -67,7 +73,7 @@ bool control() {
         case RIGHT:
         case DOWN:
         case LEFT:
-            perform_move(a);
+            perform_move(a, current_player);
             break;
         case PLACE_BOMB:
             // TODO
@@ -82,6 +88,8 @@ bool control() {
             break;
         case QUIT:
             return true;
+        case SWITCH_PLAYER:
+            current_player = (current_player + 1) % PLAYER_NUM;
     }
     return false;
 }
@@ -103,7 +111,9 @@ int game_loop() {
         if (control()) {
             break;
         }
+        board *game_board = get_game_board();
         refresh_game(game_board, chat_line);
+        free_board(game_board);
         usleep(30 * 1000);
     }
     free_model();
