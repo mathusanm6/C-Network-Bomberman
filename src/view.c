@@ -16,9 +16,9 @@ void end_view() {
     endwin();    /* End curses mode */
 }
 
-void get_width_height_terminal(int *width, int *height) {
-    if (width != NULL && height != NULL) {
-        getmaxyx(stdscr, *width, *height);
+void get_width_height_terminal(dimension *dim) {
+    if (dim != NULL) {
+        getmaxyx(stdscr, dim->height, dim->width);
     }
 }
 
@@ -28,29 +28,29 @@ void refresh_game(board *b, line *l) {
     char vb = tile_to_char(VERTICAL_BORDER);
     char hb = tile_to_char(HORIZONTAL_BORDER);
     char e = tile_to_char(EMPTY);
-    for (y = 0; y < b->height; y++) {
-        for (x = 0; x < b->width; x++) {
+    for (y = 0; y < b->dim.height; y++) {
+        for (x = 0; x < b->dim.width; x++) {
             char c;
             c = tile_to_char(get_grid(x, y));
             mvaddch(y + 1, x + 1, c);
         }
     }
-    for (x = 0; x < b->width + 2; x++) {
+    for (x = 0; x < b->dim.width + 2; x++) {
         mvaddch(0, x, hb);
-        mvaddch(b->height + 1, x, hb);
+        mvaddch(b->dim.height + 1, x, hb);
     }
-    for (y = 0; y < b->height + 2; y++) {
+    for (y = 0; y < b->dim.height + 2; y++) {
         mvaddch(y, 0, vb);
-        mvaddch(y, b->width + 1, vb);
+        mvaddch(y, b->dim.width + 1, vb);
     }
     // Update chat text
     attron(COLOR_PAIR(1)); // Enable custom color 1
     attron(A_BOLD);        // Enable bold
-    for (x = 0; x < b->width + 2; x++) {
+    for (x = 0; x < b->dim.width + 2; x++) {
         if (x >= TEXT_SIZE || x >= l->cursor) {
-            mvaddch(b->height + 2, x, e);
+            mvaddch(b->dim.height + 2, x, e);
         } else {
-            mvaddch(b->height + 2, x, l->data[x]);
+            mvaddch(b->dim.height + 2, x, l->data[x]);
         }
     }
     attroff(A_BOLD);        // Disable bold
