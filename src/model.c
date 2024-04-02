@@ -2,13 +2,68 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 line *chat_line = NULL;
 
 static board *game_board = NULL;
 static coord *player_positions[PLAYER_NUM] = {NULL, NULL, NULL, NULL};
 
+TILE get_player(int);
+
+TILE get_probably_destructible_wall() {
+    if (random() % DESTRUCTIBLE_WALL_CHANCE == 0) {
+        return EMPTY;
+    }
+    return DESTRUCTIBLE_WALL;
+}
+
+int init_game_board_content() {
+    if (game_board == NULL) {
+        return EXIT_FAILURE;
+    }
+    srandom(time(NULL));
+
+    // Indestructible wall part
+    for (int c = 1; c < game_board->dim.width - 1; c += 2) {
+        for (int l = 1; l < game_board->dim.height - 1; l += 2) {
+            game_board->grid[coord_to_int(c, l)] = INDESTRUCTIBLE_WALL;
+        }
+    }
+
+    // Destructible wall part
+    for (int c = 2; c < game_board->dim.width - 2; c++) {
+        game_board->grid[coord_to_int(c, 0)] = get_probably_destructible_wall();
+        game_board->grid[coord_to_int(c, game_board->dim.height - 1)] = get_probably_destructible_wall();
+    }
+    for (int c = 2; c < game_board->dim.width - 2; c += 2) {
+        game_board->grid[coord_to_int(c, 1)] = get_probably_destructible_wall();
+        game_board->grid[coord_to_int(c, game_board->dim.height - 2)] = get_probably_destructible_wall();
+    }
+    for (int l = 2; l < game_board->dim.height - 2; l++) {
+        if (l % 2 == 0) {
+            for (int c = 0; c < game_board->dim.width; c++) {
+                game_board->grid[coord_to_int(c, l)] = get_probably_destructible_wall();
+            }
+        } else {
+            for (int c = 0; c < game_board->dim.width; c += 2) {
+                game_board->grid[coord_to_int(c, l)] = get_probably_destructible_wall();
+            }
+        }
+    }
+    return EXIT_SUCCESS;
+}
+
 int init_game_board(dimension dim) {
+    if (dim.width % 2 == 0) { // The game_board width has to be an odd to fill it with content
+        dim.width--;
+    }
+    if (dim.height % 2 == 1) { // The game board height has to be an even to fill it with content
+        dim.height--;
+    }
+    if (dim.width < MIN_GAMEBOARD_WIDTH || dim.height < MIN_GAMEBOARD_HEIGHT) {
+        return EXIT_FAILURE;
+    }
     if (game_board == NULL) {
         game_board = malloc(sizeof(board));
         if (game_board == NULL) {
@@ -22,6 +77,9 @@ int init_game_board(dimension dim) {
             perror("calloc");
             return EXIT_FAILURE;
         }
+    }
+    if (init_game_board_content() == EXIT_FAILURE) {
+        free_board(game_board);
     }
     return EXIT_SUCCESS;
 }
@@ -45,8 +103,13 @@ int init_player_positions() {
             perror("malloc");
             return EXIT_FAILURE;
         }
-        player_positions[i]->x = 0;
-        player_positions[i]->y = 0;
+        if (i < 2) {
+            player_positions[i]->y = 0;
+        } else {
+            player_positions[i]->y = game_board->dim.height - 1;
+        }
+        player_positions[i]->x = (game_board->dim.width - (i % 2)) % game_board->dim.width;
+        set_grid(player_positions[i]->x, player_positions[i]->y, get_player(i));
     }
     return EXIT_SUCCESS;
 }

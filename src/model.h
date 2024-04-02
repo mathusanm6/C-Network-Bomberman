@@ -5,6 +5,9 @@
 
 #define TEXT_SIZE 255
 #define PLAYER_NUM 4
+#define MIN_GAMEBOARD_WIDTH 11
+#define MIN_GAMEBOARD_HEIGHT 10
+#define DESTRUCTIBLE_WALL_CHANCE 20
 
 typedef enum ACTION {
     UP = 0,
@@ -110,7 +113,7 @@ void add_to_line(char);
 
 /** Returns the next position after an action of the current position
  */
-coord get_next_position(ACTION, const coord* pos);
+coord get_next_position(ACTION, const coord *pos);
 
 /** Depending on the action, changes the player's position in the table if the argument is a move.
  */
