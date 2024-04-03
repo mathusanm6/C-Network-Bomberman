@@ -208,11 +208,11 @@ bool is_outside_board(int x, int y) {
 
 bool can_move_to_position(int x, int y) {
     if (is_outside_board(x, y)) {
-        return true;
+        return false;
     }
     TILE t = get_grid(x, y);
-    return t == INDESTRUCTIBLE_WALL || t == DESTRUCTIBLE_WALL || t == PLAYER_1 || t == PLAYER_2 || t == PLAYER_3 ||
-           t == PLAYER_4;
+    return t != INDESTRUCTIBLE_WALL && t != DESTRUCTIBLE_WALL && t != PLAYER_1 && t != PLAYER_2 && t != PLAYER_3 &&
+           t != PLAYER_4;
 }
 
 coord int_to_coord(int n) {
@@ -295,7 +295,7 @@ void perform_move(ACTION a, int player_id) {
     coord old_pos = *current_pos;
 
     coord c = get_next_position(a, current_pos);
-    if (can_move_to_position(c.x, c.y)) {
+    if (!can_move_to_position(c.x, c.y)) {
         return;
     }
     current_pos->x = c.x;
