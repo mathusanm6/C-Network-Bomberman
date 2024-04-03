@@ -55,10 +55,10 @@ int init_game_board_content() {
 }
 
 int init_game_board(dimension dim) {
-    if (dim.width % 2 == 0) { // The game_board width has to be an odd to fill it with content
+    if (dim.width % 2 == 0) { // The game_board width has to be odd to fill it with content
         dim.width--;
     }
-    if (dim.height % 2 == 1) { // The game board height has to be an even to fill it with content
+    if (dim.height % 2 == 1) { // The game board height has to be even to fill it with content
         dim.height--;
     }
     if (dim.width < MIN_GAMEBOARD_WIDTH || dim.height < MIN_GAMEBOARD_HEIGHT) {
