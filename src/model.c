@@ -2,13 +2,68 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 line *chat_line = NULL;
 
 static board *game_board = NULL;
 static coord *player_positions[PLAYER_NUM] = {NULL, NULL, NULL, NULL};
 
+TILE get_player(int);
+
+TILE get_probably_destructible_wall() {
+    if (random() % DESTRUCTIBLE_WALL_CHANCE == 0) {
+        return EMPTY;
+    }
+    return DESTRUCTIBLE_WALL;
+}
+
+int init_game_board_content() {
+    if (game_board == NULL) {
+        return EXIT_FAILURE;
+    }
+    srandom(time(NULL));
+
+    // Indestructible wall part
+    for (int c = 1; c < game_board->dim.width - 1; c += 2) {
+        for (int l = 1; l < game_board->dim.height - 1; l += 2) {
+            game_board->grid[coord_to_int(c, l)] = INDESTRUCTIBLE_WALL;
+        }
+    }
+
+    // Destructible wall part
+    for (int c = 2; c < game_board->dim.width - 2; c++) { // Fill the first and last line
+        game_board->grid[coord_to_int(c, 0)] = get_probably_destructible_wall();
+        game_board->grid[coord_to_int(c, game_board->dim.height - 1)] = get_probably_destructible_wall();
+    }
+    for (int c = 2; c < game_board->dim.width - 2; c += 2) { // Fill the second and the second last line
+        game_board->grid[coord_to_int(c, 1)] = get_probably_destructible_wall();
+        game_board->grid[coord_to_int(c, game_board->dim.height - 2)] = get_probably_destructible_wall();
+    }
+    for (int l = 2; l < game_board->dim.height - 2; l++) { // Fill the other lines
+        if (l % 2 == 0) { // There are no indestructible walls between destructible walls on this line
+            for (int c = 0; c < game_board->dim.width; c++) {
+                game_board->grid[coord_to_int(c, l)] = get_probably_destructible_wall();
+            }
+        } else { // There are indestructible walls between destructible walls on this line
+            for (int c = 0; c < game_board->dim.width; c += 2) {
+                game_board->grid[coord_to_int(c, l)] = get_probably_destructible_wall();
+            }
+        }
+    }
+    return EXIT_SUCCESS;
+}
+
 int init_game_board(dimension dim) {
+    if (dim.width % 2 == 0) { // The game_board width has to be odd to fill it with content
+        dim.width--;
+    }
+    if (dim.height % 2 == 1) { // The game board height has to be even to fill it with content
+        dim.height--;
+    }
+    if (dim.width < MIN_GAMEBOARD_WIDTH || dim.height < MIN_GAMEBOARD_HEIGHT) {
+        return EXIT_FAILURE;
+    }
     if (game_board == NULL) {
         game_board = malloc(sizeof(board));
         if (game_board == NULL) {
@@ -22,6 +77,9 @@ int init_game_board(dimension dim) {
             perror("calloc");
             return EXIT_FAILURE;
         }
+    }
+    if (init_game_board_content() == EXIT_FAILURE) {
+        free_board(game_board);
     }
     return EXIT_SUCCESS;
 }
@@ -45,8 +103,13 @@ int init_player_positions() {
             perror("malloc");
             return EXIT_FAILURE;
         }
-        player_positions[i]->x = 0;
-        player_positions[i]->y = 0;
+        if (i < 2) {
+            player_positions[i]->y = 0;
+        } else {
+            player_positions[i]->y = game_board->dim.height - 1;
+        }
+        player_positions[i]->x = (game_board->dim.width - (i % 2)) % game_board->dim.width;
+        set_grid(player_positions[i]->x, player_positions[i]->y, get_player(i));
     }
     return EXIT_SUCCESS;
 }
@@ -139,6 +202,19 @@ char tile_to_char(TILE t) {
     return c;
 }
 
+bool is_outside_board(int x, int y) {
+    return x < 0 || x >= game_board->dim.width || y < 0 || y >= game_board->dim.height;
+}
+
+bool can_move_to_position(int x, int y) {
+    if (is_outside_board(x, y)) {
+        return false;
+    }
+    TILE t = get_grid(x, y);
+    return t != INDESTRUCTIBLE_WALL && t != DESTRUCTIBLE_WALL && t != PLAYER_1 && t != PLAYER_2 && t != PLAYER_3 &&
+           t != PLAYER_4;
+}
+
 coord int_to_coord(int n) {
     coord c;
     c.y = n / game_board->dim.width;
@@ -191,38 +267,39 @@ TILE get_player(int player_id) {
     }
 }
 
-void perform_move(ACTION a, int player_id) {
-    int dx = 0;
-    int dy = 0;
-
+coord get_next_position(ACTION a, const coord *pos) {
+    coord c;
+    c.x = pos->x;
+    c.y = pos->y;
     switch (a) {
         case LEFT:
-            dx = -1;
-            dy = 0;
+            c.x--;
             break;
         case RIGHT:
-            dx = 1;
-            dy = 0;
+            c.x++;
             break;
         case UP:
-            dx = 0;
-            dy = -1;
+            c.y--;
             break;
         case DOWN:
-            dx = 0;
-            dy = 1;
+            c.y++;
             break;
         default:
             break;
     }
+    return c;
+}
 
+void perform_move(ACTION a, int player_id) {
     coord *current_pos = player_positions[player_id];
     coord old_pos = *current_pos;
 
-    current_pos->x += dx;
-    current_pos->y += dy;
-    current_pos->x = (current_pos->x + game_board->dim.width) % game_board->dim.width;
-    current_pos->y = (current_pos->y + game_board->dim.height) % game_board->dim.height;
+    coord c = get_next_position(a, current_pos);
+    if (!can_move_to_position(c.x, c.y)) {
+        return;
+    }
+    current_pos->x = c.x;
+    current_pos->y = c.y;
     set_grid(current_pos->x, current_pos->y, get_player(player_id));
     set_grid(old_pos.x, old_pos.y, EMPTY);
 }

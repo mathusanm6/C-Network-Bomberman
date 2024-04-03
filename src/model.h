@@ -5,6 +5,9 @@
 
 #define TEXT_SIZE 255
 #define PLAYER_NUM 4
+#define MIN_GAMEBOARD_WIDTH 11
+#define MIN_GAMEBOARD_HEIGHT 10
+#define DESTRUCTIBLE_WALL_CHANCE 20
 
 typedef enum ACTION {
     UP = 0,
@@ -90,6 +93,10 @@ TILE get_grid(int, int);
 /** Sets the tile at the position (x, y) of game_board to the last argument
  */
 void set_grid(int, int, TILE);
+
+/** Returns true if (x, y) is a coordinate outside the game_board
+ */
+bool is_outside_board(int x, int y);
 
 /** Decrements the line cursor
  */
