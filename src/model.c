@@ -211,7 +211,8 @@ bool can_move_to_position(int x, int y) {
         return true;
     }
     TILE t = get_grid(x, y);
-    return t == INDESTRUCTIBLE_WALL || t == DESTRUCTIBLE_WALL;
+    return t == INDESTRUCTIBLE_WALL || t == DESTRUCTIBLE_WALL || t == PLAYER_1 || t == PLAYER_2 || t == PLAYER_3 ||
+           t == PLAYER_4;
 }
 
 coord int_to_coord(int n) {
