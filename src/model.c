@@ -206,7 +206,7 @@ bool is_outside_board(int x, int y) {
     return x < 0 || x >= game_board->dim.width || y < 0 || y >= game_board->dim.height;
 }
 
-bool is_wall_of_grid(int x, int y) {
+bool can_move_to_position(int x, int y) {
     if (is_outside_board(x, y)) {
         return true;
     }
@@ -294,7 +294,7 @@ void perform_move(ACTION a, int player_id) {
     coord old_pos = *current_pos;
 
     coord c = get_next_position(a, current_pos);
-    if (is_wall_of_grid(c.x, c.y)) {
+    if (can_move_to_position(c.x, c.y)) {
         return;
     }
     current_pos->x = c.x;
