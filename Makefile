@@ -1,13 +1,15 @@
 CC=gcc
 CFLAGS=-Wall -Wextra -lncurses
-EXEC=main
+EXEC_CLIENT=client
+EXEC_SERVER=server
 
 TEST=test
 
 SRCDIR=src
 OBJDIR=obj
 
-SRCOBJDIR=$(OBJDIR)/$(SRCDIR)
+SRCOBJDIRCLIENT=$(OBJDIR)/src_client
+SRCOBJDIRSERVER=$(OBJDIR)/src_server
 
 TESTDIR=tests
 TESTOBJDIR=$(OBJDIR)/$(TESTDIR)
@@ -19,24 +21,30 @@ VALGRIND=valgrind
 VALGRIND_OPTS=--leak-check=full --show-leak-kinds=all --errors-for-leak-kinds=all --error-exitcode=1 -s
 
 
-SRCFILES := $(shell find $(SRCDIR) -type f -name "*.c")
+SRCFILESCLIENT := $(shell find $(SRCDIR) -type f -name "*.c" ! -name "server.c")
+SRCFILESSERVER := $(shell find $(SRCDIR) -type f -name "*.c" ! -name "client.c")
 TESTFILES := $(shell find $(TESTDIR) -type f -name "*.c")
 CINTAFILES := $(shell find $(CINTA) -type f -name "*.c")
 
-OBJFILES := $(patsubst $(SRCDIR)/%.c,$(SRCOBJDIR)/%.o,$(SRCFILES))
+OBJFILESCLIENT := $(patsubst $(SRCDIR)/%.c,$(SRCOBJDIRCLIENT)/%.o,$(SRCFILESCLIENT))
+OBJFILESSERVER := $(patsubst $(SRCDIR)/%.c,$(SRCOBJDIRSERVER)/%.o,$(SRCFILESSERVER))
 TESTOBJFILES := $(patsubst $(TESTDIR)/%.c,$(TESTOBJDIR)/%.o,$(TESTFILES))
 CINTAOBJFILES := $(patsubst $(CINTA)/%.c,$(CINTAOBJ)/%.o,$(CINTAFILES))
 
-ALLFILES := $(SRCFILES) $(TESTFILES) $(shell find $(SRCDIR) $(TESTDIR) -type f -name "*.h")
+ALLFILES := $(SRCFILESCLIENT) $(SRCFILESSERVER) $(TESTFILES) $(shell find $(SRCDIR) $(TESTDIR) -type f -name "*.h")
 
 
 # Create obj directory at the beginning
-$(shell mkdir -p $(SRCOBJDIR))
+$(shell mkdir -p $(SRCOBJDIRCLIENT))
+$(shell mkdir -p $(SRCOBJDIRSERVER))
 $(shell mkdir -p $(TESTOBJDIR))
 $(shell mkdir -p $(CINTAOBJ))
 
 
-$(SRCOBJDIR)/%.o: $(SRCDIR)/%.c
+$(SRCOBJDIRCLIENT)/%.o: $(SRCDIR)/%.c
+	$(CC) -c -o $@ $< $(CFLAGS)
+
+$(SRCOBJDIRSERVER)/%.o: $(SRCDIR)/%.c
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 $(TESTOBJDIR)/%.o: $(TESTDIR)/%.c
@@ -45,14 +53,20 @@ $(TESTOBJDIR)/%.o: $(TESTDIR)/%.c
 $(CINTAOBJ)/%.o: $(CINTA)/%.c
 	$(CC) -c -o $@ $< $(CFLAGS)
 
+.PHONY: all client1 server1
 
-.PHONY: all 
+all: $(EXEC_CLIENT) $(EXEC_SERVER)
 
-all: $(EXEC)
+cli: $(EXEC_CLIENT)
 
-$(EXEC): $(OBJFILES) 
+serv: $(EXEC_SERVER)
+
+$(EXEC_CLIENT): $(OBJFILESCLIENT) 
 	$(CC) -o $@ $^ $(CFLAGS)
 	
+$(EXEC_SERVER): $(OBJFILESSERVER) 
+	$(CC) -o $@ $^ $(CFLAGS)
+
 
 .PHONY: format fmt check-format
 
@@ -73,17 +87,17 @@ test-valgrind: compile-tests-valgrind
 
 .PHONY: compile-tests compile-tests-valgrind
 
-compile-tests-valgrind: $(filter-out $(SRCOBJDIR)/$(EXEC).o, $(OBJFILES)) $(TESTOBJFILES) $(CINTAOBJFILES)
+compile-tests-valgrind: $(filter-out $(SRCOBJDIRCLIENT)/$(EXEC_CLIENT).o, $(OBJFILES)) $(TESTOBJFILES) $(CINTAOBJFILES)
 	$(CC) -o $(TEST) $^ -g $(CFLAGS)
 
-compile-tests: $(filter-out $(SRCOBJDIR)/$(EXEC).o, $(OBJFILES)) $(TESTOBJFILES) $(CINTAOBJFILES)
+compile-tests: $(filter-out $(SRCOBJDIRCLIENT)/$(EXEC_CLIENT).o, $(OBJFILES)) $(TESTOBJFILES) $(CINTAOBJFILES)
 	$(CC) -o $(TEST) $^ $(CFLAGS)
 
 
 .PHONY: clean
 
 clean:
-	rm -rf $(OBJDIR) $(EXEC) test
+	rm -rf $(OBJDIR) $(EXEC_CLIENT) $(EXEC_SERVER) test
 
 
 
