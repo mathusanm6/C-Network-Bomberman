@@ -36,6 +36,8 @@ typedef enum TILE {
     HORIZONTAL_BORDER = 10
 } TILE;
 
+typedef enum GAME_MODE { TEAM = 5, SOLO = 6 } GAME_MODE;
+
 typedef struct dimension {
     int width;
     int height;
@@ -61,8 +63,9 @@ extern line *chat_line; // line of text that can be filled in with chat
 /** Initializes - The game board with the width and the height
  *              - The chat line
  *              - The current position of the player
+ *              - The game mode
  */
-int init_model(dimension dim);
+int init_model(dimension dim, GAME_MODE mode);
 
 /** Frees - The game board with the width and the height
  *              - The chat line
@@ -113,5 +116,9 @@ void perform_move(ACTION, int player_id);
 /** Returns a copy of the game board
  */
 board *get_game_board();
+
+/** Returns the game mode of the current game
+ */
+GAME_MODE get_game_mode();
 
 #endif // SRC_MODEL_H_

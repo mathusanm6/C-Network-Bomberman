@@ -8,6 +8,7 @@ line *chat_line = NULL;
 
 static board *game_board = NULL;
 static coord *player_positions[PLAYER_NUM] = {NULL, NULL, NULL, NULL};
+static GAME_MODE game_mode = SOLO;
 
 TILE get_player(int);
 
@@ -114,7 +115,7 @@ int init_player_positions() {
     return EXIT_SUCCESS;
 }
 
-int init_model(dimension dim) {
+int init_model(dimension dim, GAME_MODE game_mode_) {
     if (init_game_board(dim) < 0) {
         return EXIT_FAILURE;
     } else if (init_chat_line() < 0) {
@@ -122,6 +123,7 @@ int init_model(dimension dim) {
     } else if (init_player_positions() < 0) {
         return EXIT_FAILURE;
     }
+    game_mode = game_mode_;
     return EXIT_SUCCESS;
 }
 
@@ -325,4 +327,8 @@ board *get_game_board() {
     }
 
     return copy;
+}
+
+GAME_MODE get_game_mode() {
+    return game_mode;
 }
