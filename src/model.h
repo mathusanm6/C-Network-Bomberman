@@ -36,7 +36,7 @@ typedef enum TILE {
     HORIZONTAL_BORDER = 10
 } TILE;
 
-typedef enum GAME_MODE { TEAM = 5, SOLO = 6 } GAME_MODE;
+typedef enum GAME_MODE { TEAM, SOLO } GAME_MODE;
 
 typedef struct dimension {
     int width;
