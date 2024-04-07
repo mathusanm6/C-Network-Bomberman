@@ -100,7 +100,7 @@ int init_game() {
 
     dimension dim;
     get_width_height_terminal(&dim);
-    if (init_model(dim) < 0) {
+    if (init_model(dim, SOLO) < 0) {
         return EXIT_FAILURE;
     }
     return EXIT_SUCCESS;
