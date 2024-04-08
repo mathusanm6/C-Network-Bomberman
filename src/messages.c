@@ -1,4 +1,4 @@
-#include "messages_client.h"
+#include "messages.h"
 #include "model.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,7 +17,6 @@ connection_header *create_connection_header(int codereq, int id, int team_number
 }
 
 connection_header *serialize_initial_connection(const initial_connection_header *header) {
-
     int codereq = 1;
     switch (header->game_mode) {
         case SOLO:
@@ -54,7 +53,6 @@ initial_connection_header *deserialize_initial_connection(const connection_heade
 }
 
 connection_header *serialize_ready_connection(const ready_connection_header *header) {
-
     int codereq = 1;
     switch (header->game_mode) {
         case SOLO:

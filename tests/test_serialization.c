@@ -1,6 +1,6 @@
 #include <stdlib.h>
 
-#include "../src/messages_client.h"
+#include "../src/messages.h"
 #include "test.h"
 
 #define NUMBER_TESTS 9
