@@ -5,8 +5,8 @@
 
 #define BIT_OFFSET_13 ((1 << 12) - 1)
 
-connection_header *create_connection_header(int codereq, int id, int team_number) {
-    connection_header *connection_req = malloc(sizeof(connection_header));
+connection_header_raw *create_connection_header(int codereq, int id, int team_number) {
+    connection_header_raw *connection_req = malloc(sizeof(connection_header_raw));
     if (connection_req == NULL) {
         return NULL;
     }
@@ -16,7 +16,7 @@ connection_header *create_connection_header(int codereq, int id, int team_number
     return connection_req;
 }
 
-connection_header *serialize_initial_connection(const initial_connection_header *header) {
+connection_header_raw *serialize_initial_connection(const initial_connection_header *header) {
     int codereq = 1;
     switch (header->game_mode) {
         case SOLO:
@@ -31,7 +31,7 @@ connection_header *serialize_initial_connection(const initial_connection_header 
     return create_connection_header(codereq, 0, 0);
 }
 
-initial_connection_header *deserialize_initial_connection(const connection_header *header) {
+initial_connection_header *deserialize_initial_connection(const connection_header_raw *header) {
     initial_connection_header *initial_connection = malloc(sizeof(initial_connection_header));
     if (initial_connection == NULL) {
         return NULL;
@@ -52,7 +52,7 @@ initial_connection_header *deserialize_initial_connection(const connection_heade
     return initial_connection;
 }
 
-connection_header *serialize_ready_connection(const ready_connection_header *header) {
+connection_header_raw *serialize_ready_connection(const ready_connection_header *header) {
     int codereq = 1;
     switch (header->game_mode) {
         case SOLO:
@@ -75,7 +75,7 @@ connection_header *serialize_ready_connection(const ready_connection_header *hea
 
     return create_connection_header(codereq, header->id, header->eq);
 }
-ready_connection_header *deserialize_ready_connection(const connection_header *header) {
+ready_connection_header *deserialize_ready_connection(const connection_header_raw *header) {
     ready_connection_header *ready_connection = malloc(sizeof(ready_connection_header));
     if (ready_connection == NULL) {
         return NULL;

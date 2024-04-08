@@ -38,7 +38,7 @@ test_info *serialization() {
 void test_initial_connection_solo(test_info *info) {
     initial_connection_header *header = malloc(sizeof(initial_connection_header));
     header->game_mode = SOLO;
-    connection_header *connection = serialize_initial_connection(header);
+    connection_header_raw *connection = serialize_initial_connection(header);
     initial_connection_header *deserialized = deserialize_initial_connection(connection);
     CINTA_ASSERT(header->game_mode == deserialized->game_mode, info);
     free(header);
@@ -49,7 +49,7 @@ void test_initial_connection_solo(test_info *info) {
 void test_initial_connection_team(test_info *info) {
     initial_connection_header *header = malloc(sizeof(initial_connection_header));
     header->game_mode = TEAM;
-    connection_header *connection = serialize_initial_connection(header);
+    connection_header_raw *connection = serialize_initial_connection(header);
     initial_connection_header *deserialized = deserialize_initial_connection(connection);
     CINTA_ASSERT(header->game_mode == deserialized->game_mode, info);
     free(header);
@@ -58,7 +58,7 @@ void test_initial_connection_team(test_info *info) {
 }
 
 void test_initial_connection_invalid_deserialization(test_info *info) {
-    connection_header *connection = malloc(sizeof(connection_header));
+    connection_header_raw *connection = malloc(sizeof(connection_header_raw));
     connection->req = 3;
     initial_connection_header *deserialized = deserialize_initial_connection(connection);
     CINTA_ASSERT_NULL(deserialized, info);
@@ -69,7 +69,7 @@ void test_initial_connection_invalid_deserialization(test_info *info) {
 void test_initial_connection_invalid_serialization(test_info *info) {
     initial_connection_header *header = malloc(sizeof(initial_connection_header));
     header->game_mode = 3;
-    connection_header *connection = serialize_initial_connection(header);
+    connection_header_raw *connection = serialize_initial_connection(header);
     CINTA_ASSERT_NULL(connection, info);
     free(header);
     free(connection);
@@ -84,7 +84,7 @@ void test_ready(GAME_MODE game_mode, test_info *info) {
         for (int j = 0; j < 2; j++) {
             header->eq = j;
 
-            connection_header *connection = serialize_ready_connection(header);
+            connection_header_raw *connection = serialize_ready_connection(header);
             ready_connection_header *deserialized = deserialize_ready_connection(connection);
             CINTA_ASSERT(header->game_mode == deserialized->game_mode, info);
             CINTA_ASSERT(header->eq == deserialized->eq, info);
@@ -109,12 +109,12 @@ void test_ready_connection_invalid_game_mode(test_info *info) {
     header->game_mode = 3;
     header->id = 0;
     header->eq = 0;
-    connection_header *connection = serialize_ready_connection(header);
+    connection_header_raw *connection = serialize_ready_connection(header);
     CINTA_ASSERT_NULL(connection, info);
     free(header);
     free(connection);
 
-    connection_header *connection2 = malloc(sizeof(connection_header));
+    connection_header_raw *connection2 = malloc(sizeof(connection_header_raw));
     connection2->req = 5;
     ready_connection_header *deserialized = deserialize_ready_connection(connection2);
     CINTA_ASSERT_NULL(deserialized, info);
@@ -127,12 +127,12 @@ void test_ready_connection_invalid_team_number(test_info *info) {
     header->game_mode = TEAM;
     header->id = 0;
     header->eq = 3;
-    connection_header *connection = serialize_ready_connection(header);
+    connection_header_raw *connection = serialize_ready_connection(header);
     CINTA_ASSERT_NULL(connection, info);
     free(header);
     free(connection);
 
-    connection_header *connection2 = malloc(sizeof(connection_header));
+    connection_header_raw *connection2 = malloc(sizeof(connection_header_raw));
     connection2->req = 3 << 14;
     ready_connection_header *deserialized = deserialize_ready_connection(connection2);
     CINTA_ASSERT_NULL(deserialized, info);
@@ -145,12 +145,12 @@ void test_ready_connection_invalid_id(test_info *info) {
     header->game_mode = TEAM;
     header->id = 4;
     header->eq = 0;
-    connection_header *connection = serialize_ready_connection(header);
+    connection_header_raw *connection = serialize_ready_connection(header);
     CINTA_ASSERT_NULL(connection, info);
     free(header);
     free(connection);
 
-    connection_header *connection2 = malloc(sizeof(connection_header));
+    connection_header_raw *connection2 = malloc(sizeof(connection_header_raw));
     connection2->req = 4 << 12;
     ready_connection_header *deserialized = deserialize_ready_connection(connection2);
     CINTA_ASSERT_NULL(deserialized, info);
