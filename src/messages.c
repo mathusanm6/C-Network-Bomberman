@@ -1,15 +1,14 @@
 #include "messages.h"
 #include "model.h"
+#include <arpa/inet.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 #define BIT_OFFSET_13 ((1 << 12) - 1)
 
-// TODO: ENDIANNESS
-
 uint16_t create_connection_header_raw(int codereq, int id, int team_number) {
-    return (team_number << 14) + (id << 12) + codereq;
+    return htons((team_number << 14) + (id << 12) + codereq);
 }
 
 connection_header_raw *create_connection_header(int codereq, int id, int team_number) {
@@ -44,7 +43,9 @@ initial_connection_header *deserialize_initial_connection(const connection_heade
         return NULL;
     }
 
-    switch (header->req & BIT_OFFSET_13) {
+    uint16_t req = ntohs(header->req);
+
+    switch (req & BIT_OFFSET_13) {
         case 1:
             initial_connection->game_mode = SOLO;
             break;
@@ -88,7 +89,9 @@ ready_connection_header *deserialize_ready_connection(const connection_header_ra
         return NULL;
     }
 
-    switch (header->req & BIT_OFFSET_13) {
+    uint16_t req = ntohs(header->req);
+
+    switch (req & BIT_OFFSET_13) {
         case 3:
             ready_connection->game_mode = SOLO;
             break;
@@ -100,8 +103,8 @@ ready_connection_header *deserialize_ready_connection(const connection_header_ra
             return NULL;
     }
 
-    ready_connection->id = (header->req >> 12) & 0x3; // We only need 2 bits
-    ready_connection->eq = (header->req >> 14) & 0x1; // We only need 1 bit
+    ready_connection->id = (req >> 12) & 0x3; // We only need 2 bits
+    ready_connection->eq = (req >> 14) & 0x1; // We only need 1 bit
     return ready_connection;
 }
 
@@ -134,9 +137,9 @@ connection_information_raw *serialize_connection_information(const connection_in
 
     raw->header = create_connection_header_raw(codereq, info->id, info->eq);
 
-    raw->portudp = info->portudp;
-    raw->portmdiff = info->portmdiff;
-    raw->adrmdiff = info->adrmdiff;
+    raw->portudp = htons(info->portudp);
+    raw->portmdiff = htons(info->portmdiff);
+    raw->adrmdiff = htons(info->adrmdiff);
 
     return raw;
 }
@@ -148,7 +151,9 @@ connection_information *deserialize_connection_information(const connection_info
         return NULL;
     }
 
-    switch (info->header & BIT_OFFSET_13) {
+    uint16_t header = ntohs(info->header);
+
+    switch (header & BIT_OFFSET_13) {
         case 9:
             connection_info->game_mode = SOLO;
             break;
@@ -160,12 +165,12 @@ connection_information *deserialize_connection_information(const connection_info
             return NULL;
     }
 
-    connection_info->id = (info->header >> 12) & 0x3; // We only need 2 bits
-    connection_info->eq = (info->header >> 14) & 0x1; // We only need 1 bit
+    connection_info->id = (header >> 12) & 0x3; // We only need 2 bits
+    connection_info->eq = (header >> 14) & 0x1; // We only need 1 bit
 
-    connection_info->portudp = info->portudp;
-    connection_info->portmdiff = info->portmdiff;
-    connection_info->adrmdiff = info->adrmdiff;
+    connection_info->portudp = ntohs(info->portudp);
+    connection_info->portmdiff = ntohs(info->portmdiff);
+    connection_info->adrmdiff = ntohs(info->adrmdiff);
 
     return connection_info;
 }
