@@ -39,17 +39,17 @@ void init_colors() {
     // Initialize the colors for the players
     init_pair(4, COLOR_RED, COLOR_BLACK);
     init_pair(5, COLOR_GREEN, COLOR_BLACK);
-    init_pair(6, COLOR_BLUE, COLOR_BLACK);
-    init_pair(7, COLOR_MAGENTA, COLOR_BLACK);
+    init_pair(6, COLOR_YELLOW, COLOR_BLACK);
+    init_pair(7, COLOR_WHITE, COLOR_BLACK);
 
     // Initialize the colors for the borders
     init_pair(8, COLOR_WHITE, COLOR_BLACK);
 
     // Initialize the colors for indestructible walls
-    init_pair(9, COLOR_WHITE, COLOR_BLACK);
+    init_pair(9, COLOR_MAGENTA, COLOR_BLACK);
 
     // Initialize the colors for destructible walls
-    init_pair(10, COLOR_YELLOW, COLOR_BLACK);
+    init_pair(10, COLOR_BLUE, COLOR_BLACK);
 }
 
 void init_view() {
