@@ -153,10 +153,18 @@ int init_game() {
     init_view();
     init_controller();
 
+    dimension scr_dim;
+    get_height_width_terminal(&scr_dim);
+
     dimension dim;
-    get_height_width_playable(&dim);
-    padding pad = {PADDING_PLAYABLE_TOP, PADDING_PLAYABLE_TOP, PADDING_PLAYABLE_LEFT, PADDING_PLAYABLE_LEFT};
-    add_padding(&dim, pad);
+    get_height_width_playable(&dim, scr_dim);
+
+    padding pad_playable = {PADDING_PLAYABLE_TOP, PADDING_PLAYABLE_LEFT};
+    add_padding(&dim, pad_playable);
+
+    padding pad_screen = {PADDING_SCREEN_TOP, PADDING_SCREEN_LEFT};
+    add_padding(&dim, pad_screen);
+
     if (init_model(dim, SOLO) < 0) {
         return EXIT_FAILURE;
     }

@@ -74,20 +74,17 @@ void get_height_width_terminal(dimension *dim) {
     }
 }
 
-void get_height_width_playable(dimension *dim) {
+void get_height_width_playable(dimension *dim, dimension scr_dim) {
     if (dim != NULL) {
-        dimension term_dim;
-        get_height_width_terminal(&term_dim);
-
-        dim->height = min((term_dim.height / 3) * 2, term_dim.width); // 2/3 of the terminal height is customizable
+        dim->height = min((scr_dim.height / 3) * 2, scr_dim.width); // 2/3 of the terminal height is customizable
         dim->width = dim->height * 2; // 2:1 aspect ratio (ncurses characters are not square)
     }
 }
 
 void add_padding(dimension *dim, padding pad) {
     if (dim != NULL) {
-        dim->height -= pad.top + pad.bottom;
-        dim->width -= pad.left + pad.right;
+        dim->height -= 2 * pad.top;
+        dim->width -= 2 * pad.left;
     }
 }
 
@@ -145,15 +142,16 @@ void del_window(window *win) {
 void split_terminal_window(window *game_win, window *chat_win) {
     dimension scr_dim;
     get_height_width_terminal(&scr_dim);
-
+    padding pad = {PADDING_SCREEN_TOP, PADDING_SCREEN_LEFT};
+    add_padding(&scr_dim, pad);
     // Game window is a square occupying maximum right side of the terminal
     dimension game_dim;
-    get_height_width_playable(&game_dim);
-    game_win->height = game_dim.height;
-    game_win->width = game_dim.width;
-    game_win->start_y = (scr_dim.height - game_win->height) / 2; // Center the window vertically
-    game_win->start_x = 0;
-    game_win->win = newwin(game_win->height, game_win->width, game_win->start_y, game_win->start_x);
+    get_height_width_playable(&game_dim, scr_dim);
+    game_win->dim.height = game_dim.height;
+    game_win->dim.width = game_dim.width;
+    game_win->start_y = pad.top + (scr_dim.height - game_win->dim.height) / 2; // Center the window vertically
+    game_win->start_x = pad.left;
+    game_win->win = newwin(game_win->dim.height, game_win->dim.width, game_win->start_y, game_win->start_x);
 
     if (game_win->win == NULL) {
         end_view();
@@ -161,11 +159,11 @@ void split_terminal_window(window *game_win, window *chat_win) {
         exit(1);
     }
 
-    chat_win->height = scr_dim.height;
-    chat_win->width = scr_dim.width - game_win->width;
-    chat_win->start_y = 0;
-    chat_win->start_x = game_win->width;
-    chat_win->win = newwin(chat_win->height, chat_win->width, chat_win->start_y, chat_win->start_x);
+    chat_win->dim.height = scr_dim.height;
+    chat_win->dim.width = scr_dim.width - game_win->dim.width;
+    chat_win->start_y = pad.top;
+    chat_win->start_x = game_win->dim.width + pad.left;
+    chat_win->win = newwin(chat_win->dim.height, chat_win->dim.width, chat_win->start_y, chat_win->start_x);
 
     if (chat_win->win == NULL) {
         end_view();
@@ -184,23 +182,29 @@ void split_terminal_window(window *game_win, window *chat_win) {
 
 void split_chat_window(window *chat_win, window *chat_history_win, window *chat_input_win) {
 
-    chat_history_win->height = chat_win->height - 3;
-    chat_history_win->width = chat_win->width;
-    chat_history_win->start_y = 0;
+    chat_history_win->dim.height = chat_win->dim.height - 3;
+    chat_history_win->dim.width = chat_win->dim.width;
+    chat_history_win->start_y = chat_win->start_y;
     chat_history_win->start_x = chat_win->start_x;
-    chat_history_win->win = subwin(chat_win->win, chat_history_win->height, chat_history_win->width,
+    chat_history_win->win = subwin(chat_win->win, chat_history_win->dim.height, chat_history_win->dim.width,
                                    chat_history_win->start_y, chat_history_win->start_x);
 
-    chat_input_win->height = 3;
-    chat_input_win->width = chat_win->width;
-    chat_input_win->start_y = chat_win->height - 3;
-    chat_input_win->start_x = chat_win->start_x;
-    chat_input_win->win = subwin(chat_win->win, chat_input_win->height, chat_input_win->width, chat_input_win->start_y,
-                                 chat_input_win->start_x);
-
-    if (chat_history_win->win == NULL || chat_input_win->win == NULL) {
+    if (chat_history_win->win == NULL) {
         end_view();
-        printf("Error creating sub chat windows\n");
+        printf("Error creating sub chat history window\n");
+        exit(1);
+    }
+
+    chat_input_win->dim.height = 3;
+    chat_input_win->dim.width = chat_win->dim.width;
+    chat_input_win->start_y = chat_win->start_y + chat_win->dim.height - 3;
+    chat_input_win->start_x = chat_win->start_x;
+    chat_input_win->win = subwin(chat_win->win, chat_input_win->dim.height, chat_input_win->dim.width,
+                                 chat_input_win->start_y, chat_input_win->start_x);
+
+    if (chat_input_win->win == NULL) {
+        end_view();
+        printf("Error creating sub chat input window\n");
         exit(1);
     }
 
@@ -282,8 +286,14 @@ void deactivate_color_for_tile(window *win, TILE tile) {
 void print_game(board *b, window *game_win) {
     // Update grid
     int x, y;
-    int pad_y = PADDING_PLAYABLE_TOP;
-    int pad_x = PADDING_PLAYABLE_LEFT;
+    dimension dim = b->dim;
+    if (dim.width % 2 == 0) { // The game_board width has to be odd to fill it with content
+        dim.width--;
+    }
+    if (dim.height % 2 == 1) { // The game board height has to be even to fill it with content
+        dim.height--;
+    }
+    padding pad = {(game_win->dim.height - dim.height - 1) / 2, (game_win->dim.width - dim.width - 1) / 2};
     char vb = tile_to_char(VERTICAL_BORDER);
     char hb = tile_to_char(HORIZONTAL_BORDER);
     for (y = 0; y < b->dim.height; y++) {
@@ -291,22 +301,22 @@ void print_game(board *b, window *game_win) {
             TILE t = get_grid(x, y);
             char c = tile_to_char(t);
             activate_color_for_tile(game_win, t);
-            mvwaddch(game_win->win, y + 1 + pad_y, x + 1 + pad_x, c);
+            mvwaddch(game_win->win, y + 1 + pad.top, x + 1 + pad.left, c);
             deactivate_color_for_tile(game_win, t);
         }
     }
 
     activate_color_for_tile(game_win, hb);
     for (x = 0; x < b->dim.width + 2; x++) {
-        mvwaddch(game_win->win, pad_y, x + pad_x, hb);
-        mvwaddch(game_win->win, b->dim.height + 1 + pad_y, x + pad_x, hb);
+        mvwaddch(game_win->win, pad.top, x + pad.left, hb);
+        mvwaddch(game_win->win, b->dim.height + 1 + pad.top, x + pad.left, hb);
     }
     deactivate_color_for_tile(game_win, hb);
 
     activate_color_for_tile(game_win, vb);
     for (y = 0; y < b->dim.height + 2; y++) {
-        mvwaddch(game_win->win, y + pad_y, pad_x, vb);
-        mvwaddch(game_win->win, y + pad_y, b->dim.width + 1 + pad_x, vb);
+        mvwaddch(game_win->win, y + pad.top, pad.left, vb);
+        mvwaddch(game_win->win, y + pad.top, b->dim.width + 1 + pad.left, vb);
     }
     deactivate_color_for_tile(game_win, vb);
 }
@@ -317,7 +327,7 @@ void print_chat(line *l, window *chat_history_win, window *chat_input_win) {
     wattron(chat_input_win->win, A_BOLD);        // Enable bold
     int x;
     char e = tile_to_char(EMPTY);
-    for (x = 1; x < chat_input_win->width - 1; x++) {
+    for (x = 1; x < chat_input_win->dim.width - 1; x++) {
         if (x >= TEXT_SIZE || x >= l->cursor) {
             mvwaddch(chat_input_win->win, 1, x, e);
         } else {
