@@ -76,8 +76,8 @@ void get_height_width_terminal(dimension *dim) {
 
 void get_height_width_playable(dimension *dim, dimension scr_dim) {
     if (dim != NULL) {
-        dim->height = min((scr_dim.height / 3) * 2, scr_dim.width); // 2/3 of the terminal height is customizable
-        dim->width = dim->height * 2; // 2:1 aspect ratio (ncurses characters are not square)
+        dim->height = min(scr_dim.height, scr_dim.width); // 2/3 of the terminal height is customizable
+        dim->width = dim->height * 2;                     // 2:1 aspect ratio (ncurses characters are not square)
     }
 }
 
