@@ -192,6 +192,9 @@ void test_connection_information(GAME_MODE game_mode, test_info *info, int portu
         CINTA_ASSERT(header->portudp == deserialized->portudp, info);
         CINTA_ASSERT(header->portmdiff == deserialized->portmdiff, info);
         CINTA_ASSERT(header->adrmdiff == deserialized->adrmdiff, info);
+
+        free(connection);
+        free(deserialized);
     }
     free(header);
 }

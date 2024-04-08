@@ -145,7 +145,6 @@ connection_information_raw *serialize_connection_information(const connection_in
 }
 
 connection_information *deserialize_connection_information(const connection_information_raw *info) {
-
     connection_information *connection_info = malloc(sizeof(connection_information));
     if (connection_info == NULL) {
         return NULL;
