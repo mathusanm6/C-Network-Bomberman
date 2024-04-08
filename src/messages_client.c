@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define BIT_OFFSET_13 ((1 << 12) - 1)
+
 connection_header *create_connection_header(int codereq, int id, int team_number) {
     connection_header *connection_req = malloc(sizeof(connection_header));
     if (connection_req == NULL) {
@@ -36,7 +38,7 @@ initial_connection_header *deserialize_initial_connection(const connection_heade
         return NULL;
     }
 
-    switch (header->req & 0x3) { // We only need 2 bits (the maximum value is 2)
+    switch (header->req & BIT_OFFSET_13) {
         case 1:
             initial_connection->game_mode = SOLO;
             break;
@@ -81,7 +83,7 @@ ready_connection_header *deserialize_ready_connection(const connection_header *h
         return NULL;
     }
 
-    switch (header->req & 0x7) { // We only need 3 bits (the maximum value is 4)
+    switch (header->req & BIT_OFFSET_13) {
         case 3:
             ready_connection->game_mode = SOLO;
             break;
