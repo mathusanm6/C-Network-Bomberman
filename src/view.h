@@ -40,7 +40,7 @@ void get_height_width_terminal(dimension *);
 
 /** Replaces the values pointed by the arguments with the height and width
  * of the playable area respectively while taking into account the screen's size
- * Do nothing if one of the pointer is Null
+ * Does nothing if one of the pointer is NULL
  */
 void get_height_width_playable(dimension *, dimension);
 

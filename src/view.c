@@ -107,7 +107,7 @@ void validate_terminal_size() {
 
     if (dim.height < MIN_GAME_HEIGHT || dim.width < MIN_GAME_WIDTH) {
         end_view();
-        printf("Please resize your terminal to at least %d rows and %d columns and restart the game.\n",
+        printf("Please resize your terminal to have at least %d rows and %d columns and restart the game.\n",
                MIN_GAME_HEIGHT, MIN_GAME_WIDTH);
         exit(1);
     }
@@ -293,7 +293,7 @@ void print_game(board *b, window *game_win) {
     if (dim.height % 2 == 1) { // The game board height has to be even to fill it with content
         dim.height--;
     }
-    padding pad = {(game_win->dim.height - dim.height - 1) / 2, (game_win->dim.width - dim.width - 1) / 2};
+    padding pad = {(game_win->dim.height - dim.height - 2) / 2, (game_win->dim.width - dim.width - 2) / 2};
     char vb = tile_to_char(VERTICAL_BORDER);
     char hb = tile_to_char(HORIZONTAL_BORDER);
     for (y = 0; y < b->dim.height; y++) {
