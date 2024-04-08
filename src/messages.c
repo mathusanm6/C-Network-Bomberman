@@ -1,9 +1,16 @@
 #include "messages.h"
 #include "model.h"
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 #define BIT_OFFSET_13 ((1 << 12) - 1)
+
+// TODO: ENDIANNESS
+
+uint16_t create_connection_header_raw(int codereq, int id, int team_number) {
+    return (team_number << 14) + (id << 12) + codereq;
+}
 
 connection_header_raw *create_connection_header(int codereq, int id, int team_number) {
     connection_header_raw *connection_req = malloc(sizeof(connection_header_raw));
@@ -11,7 +18,7 @@ connection_header_raw *create_connection_header(int codereq, int id, int team_nu
         return NULL;
     }
 
-    connection_req->req = (team_number << 14) + (id << 12) + codereq;
+    connection_req->req = create_connection_header_raw(codereq, id, team_number);
 
     return connection_req;
 }
@@ -96,4 +103,69 @@ ready_connection_header *deserialize_ready_connection(const connection_header_ra
     ready_connection->id = (header->req >> 12) & 0x3; // We only need 2 bits
     ready_connection->eq = (header->req >> 14) & 0x1; // We only need 1 bit
     return ready_connection;
+}
+
+connection_information_raw *serialize_connection_information(const connection_information *info) {
+    int codereq = 1;
+    switch (info->game_mode) {
+        case SOLO:
+            codereq = 9;
+            break;
+        case TEAM:
+            codereq = 10;
+            break;
+        default:
+            return NULL;
+    }
+
+    if (info->id < 0 || info->id > 3) {
+        return NULL;
+    }
+
+    if (info->eq < 0 || info->eq > 1) {
+        return NULL;
+    }
+
+    connection_information_raw *raw = malloc(sizeof(connection_information_raw));
+
+    if (raw == NULL) {
+        return NULL;
+    }
+
+    raw->header = create_connection_header_raw(codereq, info->id, info->eq);
+
+    raw->portudp = info->portudp;
+    raw->portmdiff = info->portmdiff;
+    raw->adrmdiff = info->adrmdiff;
+
+    return raw;
+}
+
+connection_information *deserialize_connection_information(const connection_information_raw *info) {
+
+    connection_information *connection_info = malloc(sizeof(connection_information));
+    if (connection_info == NULL) {
+        return NULL;
+    }
+
+    switch (info->header & BIT_OFFSET_13) {
+        case 9:
+            connection_info->game_mode = SOLO;
+            break;
+        case 10:
+            connection_info->game_mode = TEAM;
+            break;
+        default:
+            free(connection_info);
+            return NULL;
+    }
+
+    connection_info->id = (info->header >> 12) & 0x3; // We only need 2 bits
+    connection_info->eq = (info->header >> 14) & 0x1; // We only need 1 bit
+
+    connection_info->portudp = info->portudp;
+    connection_info->portmdiff = info->portmdiff;
+    connection_info->adrmdiff = info->adrmdiff;
+
+    return connection_info;
 }
