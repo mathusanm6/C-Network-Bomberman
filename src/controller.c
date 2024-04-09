@@ -16,8 +16,8 @@
 #define KEY_VERTICAL_BAR '|'
 #define KEY_CONTROL_D 4
 
-int current_player = 0;
-bool is_chat_on_focus = false;
+static int current_player = 0;
+static bool is_chat_on_focus = false;
 
 void init_controller() {
     intrflush(stdscr, FALSE); /* No need to flush when intr key is pressed */

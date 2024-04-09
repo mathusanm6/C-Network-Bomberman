@@ -4,6 +4,13 @@
 
 #include "utils.h"
 
+#define MIN_GAME_WIDTH 80
+#define MIN_GAME_HEIGHT 24
+#define PADDING_SCREEN_TOP 1
+#define PADDING_SCREEN_LEFT 2
+#define PADDING_PLAYABLE_TOP 2
+#define PADDING_PLAYABLE_LEFT 4
+
 typedef struct window_context {
     dimension dim;
     int start_y;
