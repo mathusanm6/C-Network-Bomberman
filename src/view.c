@@ -374,7 +374,7 @@ void print_chat(line *l, window_context *chat_history_wc, window_context *chat_i
     wattron(chat_input_wc->win, A_BOLD);        // Enable bold
     int x;
     char e = tile_to_char(EMPTY);
-    for (x = 0; x < chat_input_wc->dim.width - 1; x++) {
+    for (x = 0; x < chat_input_wc->dim.width - 2; x++) {
         if (x >= TEXT_SIZE || x >= l->cursor) {
             mvwaddch(chat_input_wc->win, 1, x + 1, e);
         } else {
