@@ -9,6 +9,9 @@ window_context *chat_wc;
 window_context *chat_history_wc;
 window_context *chat_input_wc;
 
+const padding PLAYABLE_PADDING = {PADDING_PLAYABLE_TOP, PADDING_PLAYABLE_LEFT};
+const padding SCREEN_PADDING = {PADDING_SCREEN_TOP, PADDING_SCREEN_LEFT};
+
 void validate_terminal_size();
 
 // Helper functions for managing windows
@@ -85,6 +88,16 @@ void add_padding(dimension *dim, padding pad) {
     if (dim != NULL) {
         dim->height -= 2 * pad.top;
         dim->width -= 2 * pad.left;
+    }
+}
+
+void get_computed_board_dimension(dimension *dim) {
+    if (dim != NULL) {
+        dimension scr_dim;
+        get_height_width_terminal(&scr_dim);
+        get_height_width_playable(dim, scr_dim);
+        add_padding(dim, PLAYABLE_PADDING);
+        add_padding(dim, SCREEN_PADDING);
     }
 }
 

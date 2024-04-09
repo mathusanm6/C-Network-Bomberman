@@ -32,21 +32,11 @@ void init_view();
  */
 void end_view();
 
-/** Replaces the values pointed by the arguments with the terminal's
- * height and width respectively
- * Do nothing if one of the pointer is Null
+/**
+ * Replaces the values pointed by the arguments with the computed board dimension
+ * Does nothing if the pointer is NULL
  */
-void get_height_width_terminal(dimension *);
-
-/** Replaces the values pointed by the arguments with the height and width
- * of the playable area respectively while taking into account the screen's size
- * Does nothing if one of the pointer is NULL
- */
-void get_height_width_playable(dimension *, dimension);
-
-/** Adds padding to the dimension
- */
-void add_padding(dimension *, padding);
+void get_computed_board_dimension(dimension *);
 
 /** Updates terminal display with board data
  */
