@@ -78,6 +78,9 @@ CHAT_ACTION key_press_to_chat_action(int c) {
         case KEY_BACKSLASH:
             a = CHAT_QUIT;
             break;
+        case KEY_TILDA:
+            a = CHAT_GAME_QUIT;
+            break;
         default:
             a = CHAT_WRITE;
             break;
@@ -100,52 +103,70 @@ int get_pressed_key() {
     return prev_c;
 }
 
+bool perform_chat_action(int c) {
+    CHAT_ACTION a = key_press_to_chat_action(c);
+    switch (a) {
+        case CHAT_WRITE:
+            add_to_line(c);
+            break;
+        case CHAT_ERASE:
+            decrement_line();
+            break;
+        case CHAT_SEND:
+            // TODO : ADD MESSAGE TO CHAT
+            break;
+        case CHAT_CLEAR:
+            clear_line();
+            break;
+        case CHAT_QUIT:
+            is_chat_on_focus = false;
+            break;
+        case CHAT_GAME_QUIT:
+            return true;
+        case CHAT_NONE:
+            break;
+    }
+
+    return false;
+}
+
+bool perform_game_action(int c) {
+    GAME_ACTION a = key_press_to_game_action(c);
+    switch (a) {
+        case GAME_UP:
+        case GAME_RIGHT:
+        case GAME_DOWN:
+        case GAME_LEFT:
+            perform_move(a, current_player);
+            break;
+        case GAME_PLACE_BOMB:
+            // TODO
+            break;
+        case GAME_ACTIVATE_CHAT:
+            is_chat_on_focus = true;
+            break;
+        case GAME_QUIT:
+            return true;
+        case SWITCH_PLAYER:
+            current_player = (current_player + 1) % PLAYER_NUM;
+            break;
+        case GAME_NONE:
+            break;
+    }
+
+    return false;
+}
+
 bool control() {
     int c = get_pressed_key();
 
     if (is_chat_on_focus) {
-        CHAT_ACTION a = key_press_to_chat_action(c);
-        switch (a) {
-            case CHAT_WRITE:
-                add_to_line(c);
-                break;
-            case CHAT_ERASE:
-                decrement_line();
-                break;
-            case CHAT_SEND:
-                // TODO : ADD MESSAGE TO CHAT
-                break;
-            case CHAT_CLEAR:
-                clear_line();
-                break;
-            case CHAT_QUIT:
-                is_chat_on_focus = false;
-            case CHAT_NONE:
-                break;
+        if (perform_chat_action(c)) {
+            return true;
         }
-        return false;
     } else {
-        GAME_ACTION a = key_press_to_game_action(c);
-        switch (a) {
-            case GAME_UP:
-            case GAME_RIGHT:
-            case GAME_DOWN:
-            case GAME_LEFT:
-                perform_move(a, current_player);
-                break;
-            case GAME_PLACE_BOMB:
-                // TODO
-                break;
-            case GAME_ACTIVATE_CHAT:
-                is_chat_on_focus = true;
-                break;
-            case GAME_QUIT:
-                return true;
-            case SWITCH_PLAYER:
-                current_player = (current_player + 1) % PLAYER_NUM;
-                break;
-            case GAME_NONE:
-                break;
+        if (perform_game_action(c)) {
+            return true;
         }
     }
 
