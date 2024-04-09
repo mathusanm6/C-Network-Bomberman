@@ -7,17 +7,17 @@
 
 #define BIT_OFFSET_13 ((1 << 12) - 1)
 
-uint16_t create_connection_header_raw(int codereq, int id, int team_number) {
+static uint16_t connection_header_value(int codereq, int id, int team_number) {
     return htons((team_number << 14) + (id << 12) + codereq);
 }
 
-connection_header_raw *create_connection_header(int codereq, int id, int team_number) {
+connection_header_raw *create_connection_header_raw(int codereq, int id, int team_number) {
     connection_header_raw *connection_req = malloc(sizeof(connection_header_raw));
     if (connection_req == NULL) {
         return NULL;
     }
 
-    connection_req->req = create_connection_header_raw(codereq, id, team_number);
+    connection_req->req = connection_header_value(codereq, id, team_number);
 
     return connection_req;
 }
@@ -34,7 +34,7 @@ connection_header_raw *serialize_initial_connection(const initial_connection_hea
         default:
             return NULL;
     }
-    return create_connection_header(codereq, 0, 0);
+    return create_connection_header_raw(codereq, 0, 0);
 }
 
 initial_connection_header *deserialize_initial_connection(const connection_header_raw *header) {
@@ -81,7 +81,7 @@ connection_header_raw *serialize_ready_connection(const ready_connection_header 
         return NULL;
     }
 
-    return create_connection_header(codereq, header->id, header->eq);
+    return create_connection_header_raw(codereq, header->id, header->eq);
 }
 ready_connection_header *deserialize_ready_connection(const connection_header_raw *header) {
     ready_connection_header *ready_connection = malloc(sizeof(ready_connection_header));
@@ -135,7 +135,7 @@ connection_information_raw *serialize_connection_information(const connection_in
         return NULL;
     }
 
-    raw->header = create_connection_header_raw(codereq, info->id, info->eq);
+    raw->header = connection_header_value(codereq, info->id, info->eq);
 
     raw->portudp = htons(info->portudp);
     raw->portmdiff = htons(info->portmdiff);
