@@ -174,7 +174,7 @@ bool control() {
 }
 
 int init_game() {
-    if (init_view() < 0) {
+    if (init_view() == EXIT_FAILURE) {
         return EXIT_FAILURE;
     }
 
@@ -183,7 +183,7 @@ int init_game() {
     dimension dim;
     get_computed_board_dimension(&dim);
 
-    if (init_model(dim, SOLO) < 0) {
+    if (init_model(dim, SOLO) == EXIT_FAILURE) {
         return EXIT_FAILURE;
     }
     return EXIT_SUCCESS;

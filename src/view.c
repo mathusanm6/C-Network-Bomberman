@@ -83,7 +83,7 @@ int init_view() {
     noecho();    /* Don't echo() while we do getch (we will manually print characters when relevant) */
     curs_set(0); // Set the cursor to invisible
 
-    if (init_colors() < 0) { // Initialize the colors
+    if (init_colors() == EXIT_FAILURE) { // Initialize the colors
         return EXIT_FAILURE;
     }
 
@@ -91,10 +91,10 @@ int init_view() {
         end_view();
         printf("Please resize your terminal to have at least %d rows and %d columns and restart the game.\n",
                MIN_GAME_HEIGHT, MIN_GAME_WIDTH);
-        exit(1);
+        return EXIT_FAILURE;
     }
 
-    if (init_windows() < 0) { // Initialize the windows
+    if (init_windows() == EXIT_FAILURE) { // Initialize the windows
         return EXIT_FAILURE;
     }
 
@@ -167,11 +167,13 @@ int init_windows() {
     chat_history_wc = malloc(sizeof(window_context));
     chat_input_wc = malloc(sizeof(window_context));
 
-    if (split_terminal_window(game_wc, chat_wc) < 0)
+    if (split_terminal_window(game_wc, chat_wc) == EXIT_FAILURE) {
         return EXIT_FAILURE;
+    }
 
-    if (split_chat_window(chat_wc, chat_history_wc, chat_input_wc) < 0)
+    if (split_chat_window(chat_wc, chat_history_wc, chat_input_wc) == EXIT_FAILURE) {
         return EXIT_FAILURE;
+    }
 
     return EXIT_SUCCESS;
 }

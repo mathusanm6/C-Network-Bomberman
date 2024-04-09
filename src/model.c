@@ -118,11 +118,11 @@ int init_player_positions() {
 }
 
 int init_model(dimension dim, GAME_MODE game_mode_) {
-    if (init_game_board(dim) < 0) {
+    if (init_game_board(dim) == EXIT_FAILURE) {
         return EXIT_FAILURE;
-    } else if (init_chat_line() < 0) {
+    } else if (init_chat_line() == EXIT_FAILURE) {
         return EXIT_FAILURE;
-    } else if (init_player_positions() < 0) {
+    } else if (init_player_positions() == EXIT_FAILURE) {
         return EXIT_FAILURE;
     }
     game_mode = game_mode_;
