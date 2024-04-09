@@ -24,7 +24,7 @@ static window_context *chat_input_wc;
 static const padding PLAYABLE_PADDING = {PADDING_PLAYABLE_TOP, PADDING_PLAYABLE_LEFT};
 static const padding SCREEN_PADDING = {PADDING_SCREEN_TOP, PADDING_SCREEN_LEFT};
 
-static int validate_terminal_size();
+static bool is_valid_terminal_size();
 
 // Helper functions for managing windows
 static int init_windows();
@@ -80,8 +80,11 @@ int init_view() {
         return EXIT_FAILURE;
     }
 
-    if (validate_terminal_size() < 0) { // Check if the terminal is big enough
-        return EXIT_FAILURE;
+    if (!is_valid_terminal_size()) { // Check if the terminal is big enough
+        end_view();
+        printf("Please resize your terminal to have at least %d rows and %d columns and restart the game.\n",
+               MIN_GAME_HEIGHT, MIN_GAME_WIDTH);
+        exit(1);
     }
 
     if (init_windows() < 0) { // Initialize the windows
@@ -140,18 +143,15 @@ void refresh_game(board *b, line *l) {
     refresh(); // Apply the changes to the terminal
 }
 
-int validate_terminal_size() {
+bool is_valid_terminal_size() {
     dimension dim;
     get_height_width_terminal(&dim);
 
     if (dim.height < MIN_GAME_HEIGHT || dim.width < MIN_GAME_WIDTH) {
-        end_view();
-        printf("Please resize your terminal to have at least %d rows and %d columns and restart the game.\n",
-               MIN_GAME_HEIGHT, MIN_GAME_WIDTH);
-        return EXIT_FAILURE;
+        return false;
     }
 
-    return EXIT_SUCCESS;
+    return true;
 }
 
 int init_windows() {
