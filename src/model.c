@@ -65,6 +65,7 @@ int init_game_board(dimension dim) {
     if (dim.width < MIN_GAMEBOARD_WIDTH || dim.height < MIN_GAMEBOARD_HEIGHT) {
         return EXIT_FAILURE;
     }
+
     if (game_board == NULL) {
         game_board = malloc(sizeof(board));
         if (game_board == NULL) {
