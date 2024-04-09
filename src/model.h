@@ -15,8 +15,8 @@ typedef enum GAME_ACTION {
     GAME_DOWN = 2,
     GAME_LEFT = 3,
     GAME_PLACE_BOMB = 4,
-    GAME_ACTIVATE_CHAT = 5,
-    GAME_NONE = 6,
+    GAME_NONE = 5,
+    GAME_ACTIVATE_CHAT = 6,
     GAME_QUIT = 7,
     SWITCH_PLAYER = 8
 } GAME_ACTION;
