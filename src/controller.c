@@ -6,6 +6,16 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#define KEY_BACKSPACE_1 0407
+#define KEY_BACKSPACE_2 127
+#define KEY_ENTER_GENERAL 10
+#define KEY_ENTER_NUMERIC 0527
+#define KEY_BACKSLASH '\\'
+#define KEY_SPACE ' '
+#define KEY_TILDA '~'
+#define KEY_VERTICAL_BAR '|'
+#define KEY_HYPHEN '-'
+
 int current_player = 0;
 bool is_chat_on_focus = false;
 
@@ -32,16 +42,16 @@ GAME_ACTION key_press_to_game_action(int c) {
         case KEY_LEFT:
             a = GAME_LEFT;
             break;
-        case ' ':
+        case KEY_SPACE:
             a = GAME_PLACE_BOMB;
             break;
-        case '\\':
+        case KEY_BACKSLASH:
             a = GAME_ACTIVATE_CHAT;
             break;
-        case '~':
+        case KEY_TILDA:
             a = GAME_QUIT;
             break;
-        case '|':
+        case KEY_VERTICAL_BAR:
             a = SWITCH_PLAYER;
             break;
     }
@@ -54,18 +64,18 @@ CHAT_ACTION key_press_to_chat_action(int c) {
     switch (c) {
         case ERR:
             break;
-        case KEY_BACKSPACE:
-        case 127:
+        case KEY_BACKSPACE_1:
+        case KEY_BACKSPACE_2:
             a = CHAT_ERASE;
             break;
-        case KEY_ENTER:
-        case '\n':
+        case KEY_ENTER_GENERAL:
+        case KEY_ENTER_NUMERIC:
             a = CHAT_SEND;
             break;
-        case '-':
+        case KEY_HYPHEN:
             a = CHAT_CLEAR;
             break;
-        case '\\':
+        case KEY_BACKSLASH:
             a = CHAT_QUIT;
             break;
         default:
@@ -92,13 +102,6 @@ int get_pressed_key() {
 
 bool control() {
     int c = get_pressed_key();
-
-    if (c == KEY_RESIZE) {
-        // If the terminal was resized, quit the application
-        endwin(); // Clean up ncurses
-        printf("Terminal resized. Quitting application.\n");
-        exit(EXIT_SUCCESS);
-    }
 
     if (is_chat_on_focus) {
         CHAT_ACTION a = key_press_to_chat_action(c);
