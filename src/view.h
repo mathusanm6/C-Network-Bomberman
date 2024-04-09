@@ -12,18 +12,6 @@
 #define PADDING_PLAYABLE_TOP 2
 #define PADDING_PLAYABLE_LEFT 4
 
-typedef struct window_context {
-    dimension dim;
-    int start_y;
-    int start_x;
-    WINDOW *win;
-} window_context;
-
-typedef struct padding {
-    int top;
-    int left;
-} padding; // Padding right and bottom are not needed (because of inferring)
-
 /** Initializes graphical user interface
  */
 void init_view();

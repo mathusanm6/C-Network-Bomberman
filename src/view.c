@@ -4,6 +4,18 @@
 
 #include "utils.h"
 
+typedef struct window_context {
+    dimension dim;
+    int start_y;
+    int start_x;
+    WINDOW *win;
+} window_context;
+
+typedef struct padding {
+    int top;
+    int left;
+} padding; // Padding right and bottom are not needed (because of inferring)
+
 window_context *game_wc;
 window_context *chat_wc;
 window_context *chat_history_wc;
@@ -311,13 +323,10 @@ void print_game(board *b, window_context *game_wc) {
     // Update grid
     int x, y;
     dimension dim = b->dim;
-    if (dim.width % 2 == 0) { // The game_board width has to be odd to fill it with content
-        dim.width--;
-    }
-    if (dim.height % 2 == 1) { // The game board height has to be even to fill it with content
-        dim.height--;
-    }
-    padding pad = {(game_wc->dim.height - dim.height - 2) / 2, (game_wc->dim.width - dim.width - 2) / 2};
+    int pad_top =
+        (game_wc->dim.height - dim.height - 2) / 2; // We can substract 2 or 1 but the first enable a left align
+    int pad_left = (game_wc->dim.width - dim.width - 2) / 2; // whether 1 is for a right align
+    padding pad = {pad_top, pad_left};
     char vb = tile_to_char(VERTICAL_BORDER);
     char hb = tile_to_char(HORIZONTAL_BORDER);
     for (y = 0; y < b->dim.height; y++) {
