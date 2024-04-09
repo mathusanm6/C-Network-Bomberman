@@ -59,9 +59,10 @@ int init_game_board(dimension dim) {
     if (dim.width % 2 == 0) { // The game_board width has to be odd to fill it with content
         dim.width--;
     }
-    if (dim.height % 2 == 0) { // The game board height has to be even to fill it with content
+    if (dim.height % 2 == 0) { // The game board height has to be odd to fill it with content
         dim.height--;
     }
+
     if (dim.width < MIN_GAMEBOARD_WIDTH || dim.height < MIN_GAMEBOARD_HEIGHT) {
         return EXIT_FAILURE;
     }

@@ -105,6 +105,17 @@ void validate_terminal_size() {
     dimension dim;
     get_height_width_terminal(&dim);
 
+    if (dim.width % 2 == 0) { // The game_board width has to be odd to fill it with content
+        end_view();
+        printf("Please resize your terminal to have an odd number of columns and restart the game.\n");
+        exit(1);
+    }
+    if (dim.height % 2 == 0) { // The game board height has to be odd to fill it with content
+        end_view();
+        printf("Please resize your terminal to have an odd number of rows and restart the game.\n");
+        exit(1);
+    }
+
     if (dim.height < MIN_GAME_HEIGHT || dim.width < MIN_GAME_WIDTH) {
         end_view();
         printf("Please resize your terminal to have at least %d rows and %d columns and restart the game.\n",
