@@ -14,7 +14,7 @@
 
 /** Initializes graphical user interface
  */
-void init_view();
+int init_view();
 
 /** Shutdown the graphic user interface
  */

@@ -153,7 +153,10 @@ bool control() {
 }
 
 int init_game() {
-    init_view();
+    if (init_view() < 0) {
+        return EXIT_FAILURE;
+    }
+
     init_controller();
 
     dimension dim;

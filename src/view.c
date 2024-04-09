@@ -16,34 +16,35 @@ typedef struct padding {
     int left;
 } padding; // Padding right and bottom are not needed (because of inferring)
 
-window_context *game_wc;
-window_context *chat_wc;
-window_context *chat_history_wc;
-window_context *chat_input_wc;
+static window_context *game_wc;
+static window_context *chat_wc;
+static window_context *chat_history_wc;
+static window_context *chat_input_wc;
 
-const padding PLAYABLE_PADDING = {PADDING_PLAYABLE_TOP, PADDING_PLAYABLE_LEFT};
-const padding SCREEN_PADDING = {PADDING_SCREEN_TOP, PADDING_SCREEN_LEFT};
+static const padding PLAYABLE_PADDING = {PADDING_PLAYABLE_TOP, PADDING_PLAYABLE_LEFT};
+static const padding SCREEN_PADDING = {PADDING_SCREEN_TOP, PADDING_SCREEN_LEFT};
 
-void validate_terminal_size();
+static int validate_terminal_size();
 
 // Helper functions for managing windows
-void init_windows();
-void del_window(window_context *);
-void del_all_windows();
+static int init_windows();
+static void del_window(window_context *);
+static void del_all_windows();
 
 // Helper functions for splitting the terminal window
-void split_terminal_window(window_context *, window_context *);
-void split_chat_window(window_context *, window_context *, window_context *);
+static int split_terminal_window(window_context *, window_context *);
+static int split_chat_window(window_context *, window_context *, window_context *);
 
 // Helper functions for refreshing the game and chat windows
-void print_game(board *, window_context *);
-void print_chat(line *, window_context *, window_context *);
+static void print_game(board *, window_context *);
+static void print_chat(line *, window_context *, window_context *);
 
-void init_colors() {
+int init_colors() {
+    // TODO : Might be an issue for university computers
     if (has_colors() == FALSE) {
         endwin();
         printf("Your terminal does not support color\n");
-        exit(1);
+        return EXIT_FAILURE;
     }
 
     start_color();                           // Enable colors
@@ -65,16 +66,29 @@ void init_colors() {
 
     // Initialize the colors for destructible walls
     init_pair(10, COLOR_BLUE, COLOR_BLACK);
+
+    return EXIT_SUCCESS;
 }
 
-void init_view() {
-    initscr();                /* Start curses mode */
-    raw();                    /* Disable line buffering */
-    noecho();                 /* Don't echo() while we do getch (we will manually print characters when relevant) */
-    curs_set(0);              // Set the cursor to invisible
-    init_colors();            // Initialize the colors
-    validate_terminal_size(); // Check if the terminal is big enough
-    init_windows();           // Initialize the windows
+int init_view() {
+    initscr();   /* Start curses mode */
+    raw();       /* Disable line buffering */
+    noecho();    /* Don't echo() while we do getch (we will manually print characters when relevant) */
+    curs_set(0); // Set the cursor to invisible
+
+    if (init_colors() < 0) { // Initialize the colors
+        return EXIT_FAILURE;
+    }
+
+    if (validate_terminal_size() < 0) { // Check if the terminal is big enough
+        return EXIT_FAILURE;
+    }
+
+    if (init_windows() < 0) { // Initialize the windows
+        return EXIT_FAILURE;
+    }
+
+    return EXIT_SUCCESS;
 }
 
 void end_view() {
@@ -126,37 +140,44 @@ void refresh_game(board *b, line *l) {
     refresh(); // Apply the changes to the terminal
 }
 
-void validate_terminal_size() {
+int validate_terminal_size() {
     dimension dim;
     get_height_width_terminal(&dim);
 
     if (dim.width % 2 == 0) { // The game_board width has to be odd to fill it with content
         end_view();
         printf("Please resize your terminal to have an odd number of columns and restart the game.\n");
-        exit(1);
+        return EXIT_FAILURE;
     }
     if (dim.height % 2 == 0) { // The game board height has to be odd to fill it with content
         end_view();
         printf("Please resize your terminal to have an odd number of rows and restart the game.\n");
-        exit(1);
+        return EXIT_FAILURE;
     }
 
     if (dim.height < MIN_GAME_HEIGHT || dim.width < MIN_GAME_WIDTH) {
         end_view();
         printf("Please resize your terminal to have at least %d rows and %d columns and restart the game.\n",
                MIN_GAME_HEIGHT, MIN_GAME_WIDTH);
-        exit(1);
+        return EXIT_FAILURE;
     }
+
+    return EXIT_SUCCESS;
 }
 
-void init_windows() {
+int init_windows() {
     game_wc = malloc(sizeof(window_context));
     chat_wc = malloc(sizeof(window_context));
     chat_history_wc = malloc(sizeof(window_context));
     chat_input_wc = malloc(sizeof(window_context));
 
-    split_terminal_window(game_wc, chat_wc);
-    split_chat_window(chat_wc, chat_history_wc, chat_input_wc);
+    if (split_terminal_window(game_wc, chat_wc) < 0)
+        return EXIT_FAILURE;
+
+    if (split_chat_window(chat_wc, chat_history_wc, chat_input_wc) < 0)
+        return EXIT_FAILURE;
+
+    return EXIT_SUCCESS;
 }
 
 void del_all_windows() {
@@ -175,7 +196,7 @@ void del_window(window_context *wc) {
     free(wc);
 }
 
-void split_terminal_window(window_context *game_wc, window_context *chat_wc) {
+int split_terminal_window(window_context *game_wc, window_context *chat_wc) {
     dimension scr_dim;
     get_height_width_terminal(&scr_dim);
     padding pad = {PADDING_SCREEN_TOP, PADDING_SCREEN_LEFT};
@@ -192,7 +213,7 @@ void split_terminal_window(window_context *game_wc, window_context *chat_wc) {
     if (game_wc->win == NULL) {
         end_view();
         printf("Error creating game window\n");
-        exit(1);
+        return EXIT_FAILURE;
     }
 
     chat_wc->dim.height = scr_dim.height;
@@ -204,7 +225,7 @@ void split_terminal_window(window_context *game_wc, window_context *chat_wc) {
     if (chat_wc->win == NULL) {
         end_view();
         printf("Error creating chat window\n");
-        exit(1);
+        return EXIT_FAILURE;
     }
 
     // Border around the windows
@@ -214,9 +235,11 @@ void split_terminal_window(window_context *game_wc, window_context *chat_wc) {
     // Apply color to the borders
     wbkgd(game_wc->win, COLOR_PAIR(1));
     wbkgd(chat_wc->win, COLOR_PAIR(2));
+
+    return EXIT_SUCCESS;
 }
 
-void split_chat_window(window_context *chat_wc, window_context *chat_history_wc, window_context *chat_input_wc) {
+int split_chat_window(window_context *chat_wc, window_context *chat_history_wc, window_context *chat_input_wc) {
 
     chat_history_wc->dim.height = chat_wc->dim.height - 3;
     chat_history_wc->dim.width = chat_wc->dim.width;
@@ -228,7 +251,7 @@ void split_chat_window(window_context *chat_wc, window_context *chat_history_wc,
     if (chat_history_wc->win == NULL) {
         end_view();
         printf("Error creating sub chat history window\n");
-        exit(1);
+        return EXIT_FAILURE;
     }
 
     chat_input_wc->dim.height = 3;
@@ -241,7 +264,7 @@ void split_chat_window(window_context *chat_wc, window_context *chat_history_wc,
     if (chat_input_wc->win == NULL) {
         end_view();
         printf("Error creating sub chat input window\n");
-        exit(1);
+        return EXIT_FAILURE;
     }
 
     scrollok(chat_history_wc->win, TRUE); // Enable scrolling in the chat history window
@@ -251,6 +274,8 @@ void split_chat_window(window_context *chat_wc, window_context *chat_history_wc,
 
     wbkgd(chat_history_wc->win, COLOR_PAIR(3));
     wbkgd(chat_input_wc->win, COLOR_PAIR(3));
+
+    return EXIT_SUCCESS;
 }
 
 void activate_color_for_tile(window_context *wc, TILE tile) {
