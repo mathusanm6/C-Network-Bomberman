@@ -29,7 +29,7 @@ typedef struct connection_information_raw {
     uint16_t header;
     uint16_t portudp;
     uint16_t portmdiff;
-    uint16_t adrmdiff;
+    uint16_t adrmdiff[8];
 } connection_information_raw;
 
 typedef struct connection_information {
@@ -38,7 +38,7 @@ typedef struct connection_information {
     int eq;
     int portudp;
     int portmdiff;
-    int adrmdiff;
+    uint16_t adrmdiff[8];
 } connection_information;
 
 connection_information_raw *serialize_connection_information(const connection_information *info);

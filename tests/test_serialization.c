@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include <stdlib.h>
 
 #include "../src/messages.h"
@@ -170,7 +171,7 @@ void test_ready_connection_invalid_id(test_info *info) {
     free(deserialized);
 }
 
-void test_connection_information(GAME_MODE game_mode, test_info *info, int portudp, int portmdiff, int adrmdiff) {
+void test_connection_information(GAME_MODE game_mode, test_info *info, int portudp, int portmdiff, int *adrmdiff) {
     connection_information *header = malloc(sizeof(connection_information));
     header->game_mode = game_mode;
     for (int i = 0; i < 4; i++) {
@@ -182,7 +183,10 @@ void test_connection_information(GAME_MODE game_mode, test_info *info, int portu
 
         header->portudp = portudp;
         header->portmdiff = portmdiff;
-        header->adrmdiff = adrmdiff;
+
+        for (int i = 0; i < 8; i++) {
+            header->adrmdiff[i] = adrmdiff[i];
+        }
 
         connection_information_raw *connection = serialize_connection_information(header);
         connection_information *deserialized = deserialize_connection_information(connection);
@@ -191,7 +195,9 @@ void test_connection_information(GAME_MODE game_mode, test_info *info, int portu
         CINTA_ASSERT(header->id == deserialized->id, info);
         CINTA_ASSERT(header->portudp == deserialized->portudp, info);
         CINTA_ASSERT(header->portmdiff == deserialized->portmdiff, info);
-        CINTA_ASSERT(header->adrmdiff == deserialized->adrmdiff, info);
+        for (int i = 0; i < 8; i++) {
+            CINTA_ASSERT(header->adrmdiff[i] == deserialized->adrmdiff[i], info);
+        }
 
         free(connection);
         free(deserialized);
@@ -199,14 +205,17 @@ void test_connection_information(GAME_MODE game_mode, test_info *info, int portu
     free(header);
 }
 
+static int test_adr[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+static uint16_t test_adr_raw[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+
 void test_connection_information_solo(test_info *info) {
     /* TODO: Port numbers and addresses should be better tested */
-    test_connection_information(SOLO, info, 1234, 1235, 1236);
+    test_connection_information(SOLO, info, 1234, 1235, test_adr);
 }
 
 void test_connection_information_team(test_info *info) {
     /* TODO: Port numbers and addresses should be better tested */
-    test_connection_information(TEAM, info, 1234, 1235, 1236);
+    test_connection_information(TEAM, info, 1234, 1235, test_adr);
 }
 
 void test_connection_information_invalid_game_mode(test_info *info) {
@@ -216,7 +225,9 @@ void test_connection_information_invalid_game_mode(test_info *info) {
     header->eq = 0;
     header->portudp = 1234;
     header->portmdiff = 1235;
-    header->adrmdiff = 1236;
+    for (int i = 0; i < 8; i++) {
+        header->adrmdiff[i] = test_adr[i];
+    }
     connection_information_raw *connection = serialize_connection_information(header);
     CINTA_ASSERT_NULL(connection, info);
     free(header);
@@ -226,7 +237,9 @@ void test_connection_information_invalid_game_mode(test_info *info) {
     connection2->header = 3 << 12;
     connection2->portudp = 1234;
     connection2->portmdiff = 1235;
-    connection2->adrmdiff = 1236;
+    for (int i = 0; i < 8; i++) {
+        connection2->adrmdiff[i] = test_adr_raw[i];
+    }
     connection_information *deserialized = deserialize_connection_information(connection2);
     CINTA_ASSERT_NULL(deserialized, info);
     free(connection2);
@@ -240,7 +253,9 @@ void test_connection_information_invalid_team_number(test_info *info) {
     header->eq = 3;
     header->portudp = 1234;
     header->portmdiff = 1235;
-    header->adrmdiff = 1236;
+    for (int i = 0; i < 8; i++) {
+        header->adrmdiff[i] = test_adr[i];
+    }
     connection_information_raw *connection = serialize_connection_information(header);
     CINTA_ASSERT_NULL(connection, info);
     free(header);
@@ -250,7 +265,9 @@ void test_connection_information_invalid_team_number(test_info *info) {
     connection2->header = 4 << 12;
     connection2->portudp = 1234;
     connection2->portmdiff = 1235;
-    connection2->adrmdiff = 1236;
+    for (int i = 0; i < 8; i++) {
+        connection2->adrmdiff[i] = test_adr_raw[i];
+    }
     connection_information *deserialized = deserialize_connection_information(connection2);
     CINTA_ASSERT_NULL(deserialized, info);
     free(connection2);
@@ -264,7 +281,9 @@ void test_connection_information_invalid_id(test_info *info) {
     header->eq = 0;
     header->portudp = 1234;
     header->portmdiff = 1235;
-    header->adrmdiff = 1236;
+    for (int i = 0; i < 8; i++) {
+        header->adrmdiff[i] = test_adr[i];
+    }
     connection_information_raw *connection = serialize_connection_information(header);
     CINTA_ASSERT_NULL(connection, info);
     free(header);
@@ -274,7 +293,9 @@ void test_connection_information_invalid_id(test_info *info) {
     connection2->header = 10 << 12;
     connection2->portudp = 1234;
     connection2->portmdiff = 1235;
-    connection2->adrmdiff = 1236;
+    for (int i = 0; i < 8; i++) {
+        connection2->adrmdiff[i] = test_adr_raw[i];
+    }
     connection_information *deserialized = deserialize_connection_information(connection2);
     CINTA_ASSERT_NULL(deserialized, info);
     free(connection2);

@@ -139,8 +139,9 @@ connection_information_raw *serialize_connection_information(const connection_in
 
     raw->portudp = htons(info->portudp);
     raw->portmdiff = htons(info->portmdiff);
-    raw->adrmdiff = htons(info->adrmdiff);
-
+    for (int i = 0; i < 8; ++i) {
+        raw->adrmdiff[i] = htons(info->adrmdiff[i]);
+    }
     return raw;
 }
 
@@ -169,7 +170,9 @@ connection_information *deserialize_connection_information(const connection_info
 
     connection_info->portudp = ntohs(info->portudp);
     connection_info->portmdiff = ntohs(info->portmdiff);
-    connection_info->adrmdiff = ntohs(info->adrmdiff);
+    for (int i = 0; i < 8; ++i) {
+        connection_info->adrmdiff[i] = ntohs(info->adrmdiff[i]);
+    }
 
     return connection_info;
 }
