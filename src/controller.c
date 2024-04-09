@@ -14,7 +14,7 @@
 #define KEY_SPACE ' '
 #define KEY_TILDA '~'
 #define KEY_VERTICAL_BAR '|'
-#define KEY_HYPHEN '-'
+#define KEY_CONTROL_D 4
 
 int current_player = 0;
 bool is_chat_on_focus = false;
@@ -72,7 +72,7 @@ CHAT_ACTION key_press_to_chat_action(int c) {
         case KEY_ENTER_NUMERIC:
             a = CHAT_SEND;
             break;
-        case KEY_HYPHEN:
+        case KEY_CONTROL_D:
             a = CHAT_CLEAR;
             break;
         case KEY_BACKSLASH:
