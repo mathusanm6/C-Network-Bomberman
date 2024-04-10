@@ -417,24 +417,26 @@ bool is_player_dead(int id) {
 }
 
 void apply_explosion_effect(int x, int y) {
-    if (!is_outside_board(x, y)) {
-        TILE t = get_grid(x, y);
-        int id;
-        switch (t) {
-            case DESTRUCTIBLE_WALL:
-                set_grid(x, y, EMPTY);
-                break;
-            case PLAYER_1:
-            case PLAYER_2:
-            case PLAYER_3:
-            case PLAYER_4:
-                id = get_player_id(t);
-                players[id]->dead = true;
-                set_grid(x, y, EMPTY);
-                break;
-            default:
-                break;
-        }
+    if (is_outside_board(x, y)) {
+        return;
+    }
+
+    TILE t = get_grid(x, y);
+    int id;
+    switch (t) {
+        case DESTRUCTIBLE_WALL:
+            set_grid(x, y, EMPTY);
+            break;
+        case PLAYER_1:
+        case PLAYER_2:
+        case PLAYER_3:
+        case PLAYER_4:
+            id = get_player_id(t);
+            players[id]->dead = true;
+            set_grid(x, y, EMPTY);
+            break;
+        default:
+            break;
     }
 }
 
