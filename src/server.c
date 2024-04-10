@@ -1,5 +1,4 @@
 #include <arpa/inet.h>
-#include <bits/pthreadtypes.h>
 #include <errno.h>
 #include <netinet/in.h>
 #include <pthread.h>
@@ -64,6 +63,13 @@ int init_tcp_socket() {
     int no = 0;
     if (setsockopt(sock_tcp, IPPROTO_IPV6, IPV6_V6ONLY, &no, sizeof(no)) < 0) {
         perror("setsockopt polymorphism");
+        close_tcp_socket();
+        sock_tcp = 0;
+        return EXIT_FAILURE;
+    }
+    int ok = 1;
+    if (setsockopt(sock_tcp, SOL_SOCKET, SO_REUSEADDR, &ok, sizeof(ok)) < 0) {
+        perror("setsockopt reuseaddr");
         close_tcp_socket();
         sock_tcp = 0;
         return EXIT_FAILURE;
