@@ -140,7 +140,7 @@ bool perform_game_action(int c) {
             perform_move(a, current_player);
             break;
         case GAME_PLACE_BOMB:
-            // TODO
+            place_bomb(current_player);
             break;
         case GAME_ACTIVATE_CHAT:
             is_chat_on_focus = true;

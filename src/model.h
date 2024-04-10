@@ -6,8 +6,10 @@
 #define MIN_GAMEBOARD_WIDTH 11
 #define MIN_GAMEBOARD_HEIGHT 10
 #define DESTRUCTIBLE_WALL_CHANCE 20
+#define BOMB_LIFETIME 3 // in seconds
 
 #include <stdbool.h>
+#include <time.h>
 
 typedef enum GAME_ACTION {
     GAME_UP = 0,
@@ -66,6 +68,11 @@ typedef struct coord {
     int x;
     int y;
 } coord;
+
+typedef struct bomb {
+    coord pos;
+    time_t placement_time;
+} bomb;
 
 extern line *chat_line; // line of text that can be filled in with chat
 
@@ -126,6 +133,9 @@ void add_to_line(char);
  */
 void perform_move(GAME_ACTION, int player_id);
 
+// TODO : ADD COMMENTS
+void place_bomb(int player_id);
+
 /** Returns a copy of the game board
  */
 board *get_game_board();
@@ -133,5 +143,8 @@ board *get_game_board();
 /** Returns the game mode of the current game
  */
 GAME_MODE get_game_mode();
+
+// TODO : ADD COMMENTS
+void update_bombs();
 
 #endif // SRC_MODEL_H_

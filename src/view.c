@@ -139,6 +139,8 @@ void get_computed_board_dimension(dimension *dim) {
 
 void refresh_game(board *b, line *l) {
 
+    update_bombs();
+
     print_game(b, game_wc);
     wrefresh(game_wc->win); // Refresh the game window
 
