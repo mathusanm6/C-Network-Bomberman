@@ -26,9 +26,31 @@ cd bomberman-gyt
 make
 ```
 
+To compile just the server, run the following command:
+```bash
+make serv
+```
+
+To compile just the client, run the following command:
+```bash
+make cli
+```
+
 ## Usage
 
-Coming soon...
+To run the server, run the following command:
+```bash
+./server
+```
+
+To run the client, run the following command:
+```bash
+./client
+```
+
+The client program has some flag :
+- `-p PORT` to connect the client to the server with the port `PORT`.
+- `-m MODE` to choose the mode between `0` for `SOLO` and `1` for `TEAM`.
 
 ## Authors and acknowledgment
 

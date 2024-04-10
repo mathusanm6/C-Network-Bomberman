@@ -1,7 +1,10 @@
 #ifndef SRC_UTILS_H_
 #define SRC_UTILS_H_
 
+#include <stdbool.h>
 #include <stdlib.h>
+
+#define INT_STRING_SIZE 12
 
 #define RETURN_NULL_IF_NULL(ptr)                                                                                       \
     if (ptr == NULL) {                                                                                                 \
@@ -48,5 +51,7 @@
 
 int min(int, int);
 int max(int, int);
+
+int give_natural_number_of_string_between(const char *, unsigned, unsigned);
 
 #endif // SRC_UTILS_H_
