@@ -4,16 +4,16 @@
 #include <stdlib.h>
 #include <time.h>
 
-typedef struct bombs {
-    bomb *list;
-    int count;
-    int capacity;
-} bombs;
+typedef struct bomb_collection {
+    bomb *arr;
+    int total_count;
+    int max_capacity;
+} bomb_collection;
 
 line *chat_line = NULL;
 
 static board *game_board = NULL;
-static bombs all_bombs = {NULL, 0, 0};
+static bomb_collection all_bombs = {NULL, 0, 0};
 static coord *player_positions[PLAYER_NUM] = {NULL, NULL, NULL, NULL};
 static GAME_MODE game_mode = SOLO;
 
@@ -324,15 +324,15 @@ void perform_move(GAME_ACTION a, int player_id) {
 }
 
 void place_bomb(int player_id) {
-    if (all_bombs.count == all_bombs.capacity) {
-        int new_capacity = (all_bombs.capacity == 0) ? 4 : all_bombs.capacity * 2;
-        bomb *new_list = realloc(all_bombs.list, new_capacity * sizeof(bomb));
+    if (all_bombs.total_count == all_bombs.max_capacity) {
+        int new_capacity = (all_bombs.max_capacity == 0) ? 4 : all_bombs.max_capacity * 2;
+        bomb *new_list = realloc(all_bombs.arr, new_capacity * sizeof(bomb));
         if (new_list == NULL) {
             perror("error realloc");
             return;
         }
-        all_bombs.list = new_list;
-        all_bombs.capacity = new_capacity;
+        all_bombs.arr = new_list;
+        all_bombs.max_capacity = new_capacity;
     }
 
     coord *current_pos = player_positions[player_id];
@@ -342,8 +342,8 @@ void place_bomb(int player_id) {
     new_bomb.pos.y = current_pos->y;
     new_bomb.placement_time = time(NULL);
 
-    all_bombs.list[all_bombs.count] = new_bomb;
-    all_bombs.count++;
+    all_bombs.arr[all_bombs.total_count] = new_bomb;
+    all_bombs.total_count++;
 
     set_grid(current_pos->x, current_pos->y, BOMB);
 }
@@ -378,13 +378,13 @@ GAME_MODE get_game_mode() {
 void update_bombs() {
     time_t current_time = time(NULL);
 
-    for (int i = 0; i < all_bombs.count; ++i) {
-        bomb b = all_bombs.list[i];
+    for (int i = 0; i < all_bombs.total_count; ++i) {
+        bomb b = all_bombs.arr[i];
         if (difftime(current_time, b.placement_time) >= BOMB_LIFETIME) {
             set_grid(b.pos.x, b.pos.y, EMPTY);
 
             // TODO : UGLY
-            all_bombs.list[i] = all_bombs.list[--all_bombs.count];
+            all_bombs.arr[i] = all_bombs.arr[--all_bombs.total_count];
         }
     }
 }
