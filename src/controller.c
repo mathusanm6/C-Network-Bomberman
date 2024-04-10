@@ -197,6 +197,7 @@ int game_loop() {
         board *game_board = get_game_board();
         refresh_game(game_board, chat_line);
         free_board(game_board);
+        update_bombs();
         usleep(30 * 1000);
     }
     free_model();
