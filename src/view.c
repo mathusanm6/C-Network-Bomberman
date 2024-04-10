@@ -60,19 +60,22 @@ int init_colors() {
     init_pair(3, COLOR_YELLOW, COLOR_BLACK); // For the chat box
 
     // Initialize the colors for the players
-    init_pair(4, COLOR_RED, COLOR_BLACK);
+    init_pair(4, COLOR_CYAN, COLOR_BLACK);
     init_pair(5, COLOR_GREEN, COLOR_BLACK);
     init_pair(6, COLOR_YELLOW, COLOR_BLACK);
     init_pair(7, COLOR_WHITE, COLOR_BLACK);
 
-    // Initialize the colors for the borders
+    // Initialize the color for the borders
     init_pair(8, COLOR_WHITE, COLOR_BLACK);
 
-    // Initialize the colors for indestructible walls
+    // Initialize the color for indestructible walls
     init_pair(9, COLOR_MAGENTA, COLOR_BLACK);
 
-    // Initialize the colors for destructible walls
+    // Initialize the color for destructible walls
     init_pair(10, COLOR_BLUE, COLOR_BLACK);
+
+    // Initialize the color for the bomb
+    init_pair(11, COLOR_RED, COLOR_BLACK);
 
     return EXIT_SUCCESS;
 }
@@ -305,6 +308,7 @@ void activate_color_for_tile(window_context *wc, TILE tile) {
         case EMPTY:
             break;
         case BOMB:
+            wattron(wc->win, COLOR_PAIR(11));
             break;
         case EXPLOSION:
             break;
@@ -338,6 +342,7 @@ void deactivate_color_for_tile(window_context *wc, TILE tile) {
         case EMPTY:
             break;
         case BOMB:
+            wattroff(wc->win, COLOR_PAIR(11));
             break;
         case EXPLOSION:
             break;
