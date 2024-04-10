@@ -6,7 +6,18 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-int current_player = 0;
+#define KEY_BACKSPACE_1 0407
+#define KEY_BACKSPACE_2 127
+#define KEY_ENTER_GENERAL 10
+#define KEY_ENTER_NUMERIC 0527
+#define KEY_BACKSLASH '\\'
+#define KEY_SPACE ' '
+#define KEY_TILDA '~'
+#define KEY_VERTICAL_BAR '|'
+#define KEY_CONTROL_D 4
+
+static int current_player = 0;
+static bool is_chat_on_focus = false;
 
 void init_controller() {
     intrflush(stdscr, FALSE); /* No need to flush when intr key is pressed */
@@ -14,34 +25,61 @@ void init_controller() {
     nodelay(stdscr, TRUE);    /* Make getch non-blocking */
 }
 
-ACTION key_press_to_action(int c) {
-    ACTION a = NONE;
+GAME_ACTION key_press_to_game_action(int c) {
+    GAME_ACTION a = GAME_NONE;
     switch (c) {
         case ERR:
             break;
         case KEY_UP:
-            a = UP;
+            a = GAME_UP;
             break;
         case KEY_RIGHT:
-            a = RIGHT;
+            a = GAME_RIGHT;
             break;
         case KEY_DOWN:
-            a = DOWN;
+            a = GAME_DOWN;
             break;
         case KEY_LEFT:
-            a = LEFT;
+            a = GAME_LEFT;
             break;
-        case ' ':
-            a = PLACE_BOMB;
+        case KEY_SPACE:
+            a = GAME_PLACE_BOMB;
             break;
-        case KEY_BACKSPACE:
+        case KEY_BACKSLASH:
+            a = GAME_ACTIVATE_CHAT;
+            break;
+        case KEY_TILDA:
+            a = GAME_QUIT;
+            break;
+        case KEY_VERTICAL_BAR:
+            a = SWITCH_PLAYER;
+            break;
+    }
+
+    return a;
+}
+
+CHAT_ACTION key_press_to_chat_action(int c) {
+    CHAT_ACTION a = CHAT_NONE;
+    switch (c) {
+        case ERR:
+            break;
+        case KEY_BACKSPACE_1:
+        case KEY_BACKSPACE_2:
             a = CHAT_ERASE;
             break;
-        case '~':
-            a = QUIT;
+        case KEY_ENTER_GENERAL:
+        case KEY_ENTER_NUMERIC:
+            a = CHAT_SEND;
             break;
-        case '|':
-            a = SWITCH_PLAYER;
+        case KEY_CONTROL_D:
+            a = CHAT_CLEAR;
+            break;
+        case KEY_BACKSLASH:
+            a = CHAT_QUIT;
+            break;
+        case KEY_TILDA:
+            a = CHAT_GAME_QUIT;
             break;
         default:
             a = CHAT_WRITE;
@@ -65,42 +103,87 @@ int get_pressed_key() {
     return prev_c;
 }
 
-bool control() {
-    int c = get_pressed_key();
-    ACTION a = key_press_to_action(c);
+bool perform_chat_action(int c) {
+    CHAT_ACTION a = key_press_to_chat_action(c);
     switch (a) {
-        case UP:
-        case RIGHT:
-        case DOWN:
-        case LEFT:
-            perform_move(a, current_player);
-            break;
-        case PLACE_BOMB:
-            // TODO
-            break;
-        case NONE:
-            break;
         case CHAT_WRITE:
             add_to_line(c);
             break;
         case CHAT_ERASE:
             decrement_line();
             break;
-        case QUIT:
+        case CHAT_SEND:
+            // TODO : ADD MESSAGE TO CHAT
+            break;
+        case CHAT_CLEAR:
+            clear_line();
+            break;
+        case CHAT_QUIT:
+            is_chat_on_focus = false;
+            break;
+        case CHAT_GAME_QUIT:
+            return true;
+        case CHAT_NONE:
+            break;
+    }
+
+    return false;
+}
+
+bool perform_game_action(int c) {
+    GAME_ACTION a = key_press_to_game_action(c);
+    switch (a) {
+        case GAME_UP:
+        case GAME_RIGHT:
+        case GAME_DOWN:
+        case GAME_LEFT:
+            perform_move(a, current_player);
+            break;
+        case GAME_PLACE_BOMB:
+            // TODO
+            break;
+        case GAME_ACTIVATE_CHAT:
+            is_chat_on_focus = true;
+            break;
+        case GAME_QUIT:
             return true;
         case SWITCH_PLAYER:
             current_player = (current_player + 1) % PLAYER_NUM;
+            break;
+        case GAME_NONE:
+            break;
     }
+
+    return false;
+}
+
+bool control() {
+    int c = get_pressed_key();
+
+    if (is_chat_on_focus) {
+        if (perform_chat_action(c)) {
+            return true;
+        }
+    } else {
+        if (perform_game_action(c)) {
+            return true;
+        }
+    }
+
     return false;
 }
 
 int init_game() {
-    init_view();
+    if (init_view() == EXIT_FAILURE) {
+        return EXIT_FAILURE;
+    }
+
     init_controller();
 
     dimension dim;
-    get_width_height_terminal(&dim);
-    if (init_model(dim, SOLO) < 0) {
+    get_computed_board_dimension(&dim);
+
+    if (init_model(dim, SOLO) == EXIT_FAILURE) {
         return EXIT_FAILURE;
     }
     return EXIT_SUCCESS;

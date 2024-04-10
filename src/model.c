@@ -59,9 +59,10 @@ int init_game_board(dimension dim) {
     if (dim.width % 2 == 0) { // The game_board width has to be odd to fill it with content
         dim.width--;
     }
-    if (dim.height % 2 == 1) { // The game board height has to be even to fill it with content
+    if (dim.height % 2 == 0) { // The game board height has to be odd to fill it with content
         dim.height--;
     }
+
     if (dim.width < MIN_GAMEBOARD_WIDTH || dim.height < MIN_GAMEBOARD_HEIGHT) {
         return EXIT_FAILURE;
     }
@@ -72,8 +73,8 @@ int init_game_board(dimension dim) {
             perror("malloc");
             return EXIT_FAILURE;
         }
-        game_board->dim.height = dim.height - 2 - 1; // 2 rows reserved for border, 1 row for chat
-        game_board->dim.width = dim.width - 2;       // 2 columns reserved for border
+        game_board->dim.height = dim.height - 2; // 2 rows reserved for border
+        game_board->dim.width = dim.width - 2;   // 2 columns reserved for border
         game_board->grid = calloc((game_board->dim.width) * (game_board->dim.height), sizeof(char));
         if (game_board->grid == NULL) {
             perror("calloc");
@@ -117,11 +118,11 @@ int init_player_positions() {
 }
 
 int init_model(dimension dim, GAME_MODE game_mode_) {
-    if (init_game_board(dim) < 0) {
+    if (init_game_board(dim) == EXIT_FAILURE) {
         return EXIT_FAILURE;
-    } else if (init_chat_line() < 0) {
+    } else if (init_chat_line() == EXIT_FAILURE) {
         return EXIT_FAILURE;
-    } else if (init_player_positions() < 0) {
+    } else if (init_player_positions() == EXIT_FAILURE) {
         return EXIT_FAILURE;
     }
     game_mode = game_mode_;
@@ -248,6 +249,12 @@ void decrement_line() {
     }
 }
 
+void clear_line() {
+    if (chat_line != NULL) {
+        chat_line->cursor = 0;
+    }
+}
+
 void add_to_line(char c) {
     if (chat_line != NULL && chat_line->cursor < TEXT_SIZE && c >= ' ' && c <= '~') {
         chat_line->data[(chat_line->cursor)] = c;
@@ -270,21 +277,21 @@ TILE get_player(int player_id) {
     }
 }
 
-coord get_next_position(ACTION a, const coord *pos) {
+coord get_next_position(GAME_ACTION a, const coord *pos) {
     coord c;
     c.x = pos->x;
     c.y = pos->y;
     switch (a) {
-        case LEFT:
+        case GAME_LEFT:
             c.x--;
             break;
-        case RIGHT:
+        case GAME_RIGHT:
             c.x++;
             break;
-        case UP:
+        case GAME_UP:
             c.y--;
             break;
-        case DOWN:
+        case GAME_DOWN:
             c.y++;
             break;
         default:
@@ -293,7 +300,7 @@ coord get_next_position(ACTION a, const coord *pos) {
     return c;
 }
 
-void perform_move(ACTION a, int player_id) {
+void perform_move(GAME_ACTION a, int player_id) {
     coord *current_pos = player_positions[player_id];
     coord old_pos = *current_pos;
 

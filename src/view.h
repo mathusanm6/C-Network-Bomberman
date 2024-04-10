@@ -3,19 +3,21 @@
 
 #include "./model.h"
 
+#include <ncurses.h>
+
 /** Initializes graphical user interface
  */
-void init_view();
+int init_view();
 
 /** Shutdown the graphic user interface
  */
 void end_view();
 
-/** Replaces the values pointed by the arguments with the terminal's
- * width and height respectively
- * Do nothing if one of the pointer is Null
+/**
+ * Replaces the values pointed by the arguments with the computed board dimension
+ * Does nothing if the pointer is NULL
  */
-void get_width_height_terminal(dimension *);
+void get_computed_board_dimension(dimension *);
 
 /** Updates terminal display with board data
  */
