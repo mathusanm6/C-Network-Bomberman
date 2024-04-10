@@ -68,6 +68,16 @@ typedef struct coord {
     int y;
 } coord;
 
+typedef struct player {
+    coord *pos;
+    bool dead;
+} player;
+
+typedef struct bomb {
+    coord pos;
+    time_t placement_time;
+} bomb;
+
 extern line *chat_line; // line of text that can be filled in with chat
 
 /** Initializes - The game board with the width and the height
@@ -140,6 +150,9 @@ board *get_game_board();
 /** Returns the game mode of the current game
  */
 GAME_MODE get_game_mode();
+
+// TODO : TO ADD
+bool is_player_dead(int);
 
 /** Iterates over all bombs, removing any that have exceeded their lifetime.
  */

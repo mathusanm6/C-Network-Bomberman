@@ -19,7 +19,7 @@ line *chat_line = NULL;
 
 static board *game_board = NULL;
 static bomb_collection all_bombs = {NULL, 0, 0};
-static coord *player_positions[PLAYER_NUM] = {NULL, NULL, NULL, NULL};
+static player *players[PLAYER_NUM] = {NULL, NULL, NULL, NULL};
 static GAME_MODE game_mode = SOLO;
 
 TILE get_player(int);
@@ -113,18 +113,22 @@ int init_chat_line() {
 
 int init_player_positions() {
     for (int i = 0; i < 4; i++) {
-        player_positions[i] = malloc(sizeof(coord));
-        if (player_positions[i] == NULL) {
+        players[i] = malloc(sizeof(player));
+        if (players[i] == NULL) {
             perror("malloc");
             return EXIT_FAILURE;
         }
+        players[i]->pos = malloc(sizeof(coord));
         if (i < 2) {
-            player_positions[i]->y = 0;
+            players[i]->pos->y = 0;
         } else {
-            player_positions[i]->y = game_board->dim.height - 1;
+            players[i]->pos->y = game_board->dim.height - 1;
         }
-        player_positions[i]->x = (game_board->dim.width - (i % 2)) % game_board->dim.width;
-        set_grid(player_positions[i]->x, player_positions[i]->y, get_player(i));
+        players[i]->pos->x = (game_board->dim.width - (i % 2)) % game_board->dim.width;
+
+        players[i]->dead = false;
+
+        set_grid(players[i]->pos->x, players[i]->pos->y, get_player(i));
     }
     return EXIT_SUCCESS;
 }
@@ -165,9 +169,13 @@ void free_chat_line() {
 
 void free_player_positions() {
     for (int i = 0; i < 4; i++) {
-        if (player_positions[i] != NULL) {
-            free(player_positions[i]);
-            player_positions[i] = NULL;
+        if (players[i] != NULL) {
+            if (players[i]->pos != NULL) {
+                free(players[i]->pos);
+                players[i]->pos = NULL;
+            }
+            free(players[i]);
+            players[i] = NULL;
         }
     }
 }
@@ -289,6 +297,21 @@ TILE get_player(int player_id) {
     }
 }
 
+int get_player_id(TILE t) {
+    switch (t) {
+        case PLAYER_1:
+            return 0;
+        case PLAYER_2:
+            return 1;
+        case PLAYER_3:
+            return 2;
+        case PLAYER_4:
+            return 3;
+        default:
+            return -1;
+    }
+}
+
 coord get_next_position(GAME_ACTION a, const coord *pos) {
     coord c;
     c.x = pos->x;
@@ -313,7 +336,11 @@ coord get_next_position(GAME_ACTION a, const coord *pos) {
 }
 
 void perform_move(GAME_ACTION a, int player_id) {
-    coord *current_pos = player_positions[player_id];
+    if (players[player_id]->dead) {
+        return;
+    }
+
+    coord *current_pos = players[player_id]->pos;
     coord old_pos = *current_pos;
 
     coord c = get_next_position(a, current_pos);
@@ -333,14 +360,14 @@ void place_bomb(int player_id) {
         int new_capacity = (all_bombs.max_capacity == 0) ? 4 : all_bombs.max_capacity * 2;
         bomb *new_list = realloc(all_bombs.arr, new_capacity * sizeof(bomb));
         if (new_list == NULL) {
-            perror("error realloc");
+            perror("realloc");
             return;
         }
         all_bombs.arr = new_list;
         all_bombs.max_capacity = new_capacity;
     }
 
-    coord *current_pos = player_positions[player_id];
+    coord current_pos = *players[player_id]->pos;
 
     TILE t = get_grid(current_pos->x, current_pos->y);
     if (t == BOMB) { // Shouldn't be able to place a bomp on top of an another
@@ -348,14 +375,14 @@ void place_bomb(int player_id) {
     }
 
     bomb new_bomb;
-    new_bomb.pos.x = current_pos->x;
-    new_bomb.pos.y = current_pos->y;
+    new_bomb.pos.x = current_pos.x;
+    new_bomb.pos.y = current_pos.y;
     new_bomb.placement_time = time(NULL);
 
     all_bombs.arr[all_bombs.total_count] = new_bomb;
     all_bombs.total_count++;
 
-    set_grid(current_pos->x, current_pos->y, BOMB);
+    set_grid(current_pos.x, current_pos.y, BOMB);
 }
 
 board *get_game_board() {
@@ -385,12 +412,62 @@ GAME_MODE get_game_mode() {
     return game_mode;
 }
 
+bool is_player_dead(int id) {
+    return players[id]->dead;
+}
+
+void apply_explosion_effect(int x, int y) {
+    if (!is_outside_board(x, y)) {
+        TILE t = get_grid(x, y);
+        int id;
+        switch (t) {
+            case DESTRUCTIBLE_WALL:
+                set_grid(x, y, EMPTY);
+                break;
+            case PLAYER_1:
+            case PLAYER_2:
+            case PLAYER_3:
+            case PLAYER_4:
+                id = get_player_id(t);
+                players[id]->dead = true;
+                set_grid(x, y, EMPTY);
+                break;
+            default:
+                break;
+        }
+    }
+}
+
+void update_explosion(bomb b) {
+    int x, y;
+
+    // Vertical center
+    x = b.pos.x;
+    for (int k = -2; k <= 2; ++k) {
+        y = b.pos.y + k;
+        apply_explosion_effect(x, y);
+    }
+
+    // Horizontal center
+    y = b.pos.y;
+    for (int k = -2; k <= 2; ++k) {
+        x = b.pos.x + k;
+        apply_explosion_effect(x, y);
+    }
+
+    apply_explosion_effect(x + 1, y + 1);
+    apply_explosion_effect(x + 1, y - 1);
+    apply_explosion_effect(x - 1, y + 1);
+    apply_explosion_effect(x - 1, y - 1);
+}
+
 void update_bombs() {
     time_t current_time = time(NULL);
 
     for (int i = 0; i < all_bombs.total_count; ++i) {
         bomb b = all_bombs.arr[i];
         if (difftime(current_time, b.placement_time) >= BOMB_LIFETIME) {
+            update_explosion(b);
             set_grid(b.pos.x, b.pos.y, EMPTY);
 
             // Get rid of the exploded bomb
