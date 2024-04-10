@@ -443,6 +443,14 @@ void apply_explosion_effect(int x, int y) {
 void update_explosion(bomb b) {
     int x, y;
 
+    x = b.pos.x;
+    y = b.pos.y;
+    for (int i = 0; i < PLAYER_NUM; ++i) {
+        if (players[i]->pos->x == x && players[i]->pos->y == y) {
+            players[i]->dead = true;
+        }
+    }
+
     // Vertical center
     x = b.pos.x;
     for (int k = -2; k <= 2; ++k) {
