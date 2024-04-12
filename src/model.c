@@ -382,8 +382,10 @@ void update_bombs() {
         bomb b = all_bombs.arr[i];
         if (difftime(current_time, b.placement_time) >= BOMB_LIFETIME) {
             set_grid(b.pos.x, b.pos.y, EMPTY);
+
+            // Get rid of the exploded bomb
             all_bombs.total_count -= 1;
-            all_bombs.arr[i] = all_bombs.arr[all_bombs.total_count];
+            all_bombs.arr[i] = all_bombs.arr[all_bombs.total_count]; // no need to free memory
         }
     }
 }
