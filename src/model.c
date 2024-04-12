@@ -416,16 +416,19 @@ bool is_player_dead(int id) {
     return players[id]->dead;
 }
 
-void apply_explosion_effect(int x, int y) {
+bool apply_explosion_effect(int x, int y) {
     if (is_outside_board(x, y)) {
-        return;
+        return false;
     }
+
+    bool impact_happened = false;
 
     TILE t = get_grid(x, y);
     int id;
     switch (t) {
         case DESTRUCTIBLE_WALL:
             set_grid(x, y, EMPTY);
+            impact_happened = true;
             break;
         case PLAYER_1:
         case PLAYER_2:
@@ -434,10 +437,15 @@ void apply_explosion_effect(int x, int y) {
             id = get_player_id(t);
             players[id]->dead = true;
             set_grid(x, y, EMPTY);
+            impact_happened = true;
             break;
+        case INDESTRUCTIBLE_WALL:
+            impact_happened = true;
         default:
             break;
     }
+
+    return impact_happened;
 }
 
 void update_explosion(bomb b) {
@@ -453,16 +461,36 @@ void update_explosion(bomb b) {
 
     // Vertical center
     x = b.pos.x;
-    for (int k = -2; k <= 2; ++k) {
+    for (int k = 0; k <= 2; ++k) {
         y = b.pos.y + k;
-        apply_explosion_effect(x, y);
+        if (apply_explosion_effect(x, y)) {
+            break;
+        }
+    }
+
+    x = b.pos.x;
+    for (int k = 0; k >= -2; --k) {
+        y = b.pos.y + k;
+        if (apply_explosion_effect(x, y)) {
+            break;
+        }
     }
 
     // Horizontal center
     y = b.pos.y;
-    for (int k = -2; k <= 2; ++k) {
+    for (int k = 0; k <= 2; ++k) {
         x = b.pos.x + k;
-        apply_explosion_effect(x, y);
+        if (apply_explosion_effect(x, y)) {
+            break;
+        }
+    }
+
+    x = b.pos.x;
+    for (int k = 0; k >= -2; --k) {
+        x = b.pos.x + k;
+        if (apply_explosion_effect(x, y)) {
+            break;
+        }
     }
 
     // Diagonals
