@@ -4,6 +4,11 @@
 #include <stdlib.h>
 #include <time.h>
 
+typedef struct player {
+    coord *pos;
+    bool dead;
+} player;
+
 typedef struct bomb {
     coord pos;
     time_t placement_time;
