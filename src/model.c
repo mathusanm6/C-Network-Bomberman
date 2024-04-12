@@ -465,6 +465,9 @@ void update_explosion(bomb b) {
         apply_explosion_effect(x, y);
     }
 
+    // Diagonals
+    x = b.pos.x;
+    y = b.pos.y;
     apply_explosion_effect(x + 1, y + 1);
     apply_explosion_effect(x + 1, y - 1);
     apply_explosion_effect(x - 1, y + 1);

@@ -73,11 +73,6 @@ typedef struct player {
     bool dead;
 } player;
 
-typedef struct bomb {
-    coord pos;
-    time_t placement_time;
-} bomb;
-
 extern line *chat_line; // line of text that can be filled in with chat
 
 /** Initializes - The game board with the width and the height
