@@ -4,6 +4,11 @@
 #include <stdlib.h>
 #include <time.h>
 
+typedef struct bomb {
+    coord pos;
+    time_t placement_time;
+} bomb;
+
 typedef struct bomb_collection {
     bomb *arr;
     int total_count;
