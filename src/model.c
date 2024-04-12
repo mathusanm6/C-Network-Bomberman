@@ -450,6 +450,18 @@ bool apply_explosion_effect(int x, int y) {
             break;
     }
 
+    // Check if player standing on a bomb is impacted by an another explosion
+    if (!impact_happened) {
+        coord *player_pos;
+        for (int i = 0; i < PLAYER_NUM; ++i) {
+            player_pos = players[i]->pos;
+            if (player_pos->x == x && player_pos->y == y) {
+                players[i]->dead = true;
+                impact_happened = true;
+            }
+        }
+    }
+
     return impact_happened;
 }
 
