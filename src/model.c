@@ -446,6 +446,7 @@ bool apply_explosion_effect(int x, int y) {
             break;
         case INDESTRUCTIBLE_WALL:
             impact_happened = true;
+            break;
         default:
             break;
     }
