@@ -9,7 +9,6 @@
 #define BOMB_LIFETIME 3 // in seconds
 
 #include <stdbool.h>
-#include <time.h>
 
 typedef enum GAME_ACTION {
     GAME_UP = 0,
