@@ -1,15 +1,10 @@
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/socket.h>
 #include <unistd.h>
 
-#include "communication.h"
-#include "messages.h"
 #include "model.h"
+#include "network_client.h"
 #include "utils.h"
 
 #define EXIT_ASKED 2
@@ -17,65 +12,17 @@
 #define NO 0
 #define YES 1
 
-#define MIN_PORT 1024
-#define MAX_PORT 49151
-
 typedef struct flags {
     char *mode;
     char *port;
 } flags;
 
 static GAME_MODE choosen_game_mode;
-static int id;
-static int eq;
 
 static flags *client_flags;
-static const char *IP_SERVER = "::1";
-
-static int sock_tcp = -1;
-
-static uint16_t port_tcp = 0;
-static uint16_t port_udp = 0;
-static uint16_t port_mult = 0;
-
-static uint16_t adrmdiff[8];
-
-void close_socket(int sock) {
-    if (sock != 0) {
-        close(sock);
-    }
-}
 
 void free_client_flags() {
     free(client_flags);
-}
-
-int init_socket(int *sock, bool is_tcp) {
-    if (is_tcp) {
-        *sock = socket(PF_INET6, SOCK_STREAM, 0);
-    } else {
-        *sock = socket(PF_INET6, SOCK_DGRAM, 0);
-    }
-    if (*sock < 0) {
-        perror("socket creation");
-        *sock = -1;
-        return EXIT_FAILURE;
-    }
-    int no = 0;
-    if (setsockopt(*sock, IPPROTO_IPV6, IPV6_V6ONLY, &no, sizeof(no)) < 0) {
-        perror("setsockopt polymorphism");
-        close_socket(*sock);
-        *sock = -1;
-        return EXIT_FAILURE;
-    }
-    int ok = 1;
-    if (setsockopt(*sock, SOL_SOCKET, SO_REUSEADDR, &ok, sizeof(ok)) < 0) {
-        perror("setsockopt reuseaddr");
-        close(*sock);
-        *sock = -1;
-        return EXIT_FAILURE;
-    }
-    return EXIT_SUCCESS;
 }
 
 int init_client_flags() {
@@ -97,23 +44,6 @@ void parse_client_flags(int argc, char *argv[]) {
             client_flags->mode = argv[i];
         }
     }
-}
-
-struct sockaddr_in6 *prepare_address() {
-    struct sockaddr_in6 *addrsock = malloc(sizeof(struct sockaddr_in6));
-    if (addrsock == NULL) {
-        perror("malloc addrsock");
-        return NULL;
-    }
-    memset(addrsock, 0, sizeof(struct sockaddr_in6));
-    addrsock->sin6_family = AF_INET6;
-    addrsock->sin6_port = port_tcp;
-    inet_pton(AF_INET6, IP_SERVER, &addrsock->sin6_addr);
-    return addrsock;
-}
-
-int try_to_connect(struct sockaddr_in6 *addr) {
-    return connect(sock_tcp, (struct sockaddr *)addr, sizeof(struct sockaddr_in6));
 }
 
 int ask_natural_number(const char *ask, unsigned minimum, unsigned maximum) {
@@ -171,7 +101,7 @@ int try_to_init_mode_client() {
 }
 
 int try_to_init_port_and_connect_client() {
-    if (init_socket(&sock_tcp, true) < 0) {
+    if (init_tcp_socket() < 0) {
         return EXIT_FAILURE;
     }
 
@@ -190,12 +120,9 @@ int try_to_init_port_and_connect_client() {
                 return EXIT_FAILURE;
             }
         }
-        port_tcp = htons(r);
+        set_tcp_port(r);
 
-        struct sockaddr_in6 *addrsock = prepare_address();
-
-        if (try_to_connect(addrsock) < 0) {
-            port_tcp = 0;
+        if (try_to_connect_tcp() < 0) {
             int rep = ask_natural_number(
                 "You couldn't connect to the server, would you like to try another port ? 1 for yes 0 for no", NO, YES);
             if (rep <= 0) {
@@ -217,32 +144,13 @@ int try_to_init_client() {
     return try_to_init_port_and_connect_client();
 }
 
-int start_initialisation_game() {
-    if (send_initial_connexion_information(sock_tcp, choosen_game_mode) < 0) {
-        return EXIT_FAILURE;
-    }
-    printf("You have to wait other players.\n");
-    connection_information *head = recv_connexion_information(sock_tcp);
-    printf("test\n");
-    if (head == NULL) {
-        return EXIT_FAILURE;
-    }
-    port_udp = head->portudp;
-    port_mult = head->portmdiff;
-    id = head->id;
-    eq = head->eq;
-    for (unsigned i = 0; i < 8; i++) {
-        adrmdiff[i] = head->adrmdiff[i];
-    }
-    printf("The server is ready.\n");
+int be_ready() {
     int res = ask_natural_number("Type 0 if you are ready", 0, 0);
     if (res != 0) {
         return EXIT_ASKED;
     }
-    send_ready_connexion_information(sock_tcp, choosen_game_mode, id, eq);
-    printf("It's ok !");
-    pause();
-    return EXIT_SUCCESS;
+    printf("You are ready, wait other players.\n");
+    return send_ready_to_play(choosen_game_mode);
 }
 
 int main(int argc, char *argv[]) {
@@ -256,8 +164,18 @@ int main(int argc, char *argv[]) {
     if (r != EXIT_SUCCESS) {
         return r;
     }
-    printf("%d\n", ntohs(port));
-    close_tcp_socket();
+    if (start_initialisation_game(choosen_game_mode) < 0) {
+        return EXIT_FAILURE;
+    }
+
+    r = be_ready();
+    if (r != EXIT_SUCCESS) {
+        return r;
+    }
+    pause(); // TODO to remove
+
+    close_socket_tcp();
+    // TODO to add
     /*RETURN_FAILURE_IF_ERROR(init_game());
 
     return game_loop();*/
