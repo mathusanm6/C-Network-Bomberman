@@ -103,7 +103,7 @@ int try_to_init_socket_of_client(int id) {
     socklen_t client_addr_len;
     int res = accept(sock_tcp, (struct sockaddr *)&client_addr, &client_addr_len);
     if (res < 0) {
-        perror("client acceptation");
+        perror("client acceptance");
         return EXIT_FAILURE;
     }
     sock_clients[id] = res;
@@ -168,9 +168,9 @@ int init_random_port_on_socket_mult() {
 int init_random_adrmdiff() {
     adrmdiff[0] = 0xff12;
 
-    unsigned size_2_byte = 65536;
+    unsigned size_2_bytes = 65536;
     for (unsigned i = 1; i < 8; i++) {
-        adrmdiff[i] = random() % size_2_byte;
+        adrmdiff[i] = random() % size_2_bytes;
     }
 
     return EXIT_SUCCESS;

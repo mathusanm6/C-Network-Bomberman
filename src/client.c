@@ -87,7 +87,7 @@ int try_to_init_mode_client() {
     } else {
         mode = give_natural_number_of_string_between(client_flags->mode, NO, YES);
         if (mode < 0) {
-            printf("Your mode argument is no valid, it has to be between %d and %d.\n", NO, YES);
+            printf("Your mode argument is not valid, it has to be between %d and %d.\n", NO, YES);
             return EXIT_FAILURE;
         }
     }
@@ -116,7 +116,7 @@ int try_to_init_port_and_connect_client() {
         } else {
             r = give_natural_number_of_string_between(client_flags->port, MIN_PORT, MAX_PORT);
             if (r < 0) {
-                printf("Your port argument is no valid, it has to be between %d and %d.\n", MIN_PORT, MAX_PORT);
+                printf("Your port argument is not valid, it has to be between %d and %d.\n", MIN_PORT, MAX_PORT);
                 return EXIT_FAILURE;
             }
         }
@@ -149,7 +149,7 @@ int be_ready() {
     if (res != 0) {
         return EXIT_ASKED;
     }
-    printf("You are ready, wait other players.\n");
+    printf("You are ready, wait for other players.\n");
     return send_ready_to_play(choosen_game_mode);
 }
 

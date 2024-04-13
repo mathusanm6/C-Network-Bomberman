@@ -114,7 +114,7 @@ void *serve_client(void *arg_tcp_thread_data) {
 
     wait_all_clients_not_ready();
 
-    printf("Player %d leave the game.\n", ready_informations->id);
+    printf("Player %d left the game.\n", ready_informations->id);
     free(ready_informations);
     close_socket_client(tcp_data->id);
     // TODO keep free(tcp_data) if we don't use join

@@ -105,7 +105,7 @@ int start_initialisation_game(GAME_MODE mode) {
     if (send_initial_connexion_information(sock_tcp, mode) < 0) {
         return EXIT_FAILURE;
     }
-    printf("You have to wait other players.\n");
+    printf("You have to wait for other players.\n");
     connection_information *head = recv_connexion_information(sock_tcp);
     if (head == NULL) {
         return EXIT_FAILURE;
