@@ -53,13 +53,13 @@ $(TESTOBJDIR)/%.o: $(TESTDIR)/%.c
 $(CINTAOBJ)/%.o: $(CINTA)/%.c
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-.PHONY: all client1 server1
+.PHONY: all all_client all_server
 
 all: $(EXEC_CLIENT) $(EXEC_SERVER)
 
-cli: $(EXEC_CLIENT)
+all_client: $(EXEC_CLIENT)
 
-serv: $(EXEC_SERVER)
+all_server: $(EXEC_SERVER)
 
 $(EXEC_CLIENT): $(OBJFILESCLIENT) 
 	$(CC) -o $@ $^ $(CFLAGS)

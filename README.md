@@ -28,12 +28,12 @@ make
 
 To compile just the server, run the following command:
 ```bash
-make serv
+make all_server
 ```
 
 To compile just the client, run the following command:
 ```bash
-make cli
+make all_client
 ```
 
 ## Usage
