@@ -68,7 +68,7 @@ int ask_natural_number(const char *ask, unsigned minimum, unsigned maximum) {
             return -1;
         }
 
-        int n = give_natural_number_of_string_between(buf, minimum, maximum);
+        int n = bounded_nat_of_string(buf, minimum, maximum);
         if (n < 0) {
             printf("It's not a correct number or it exceeds limits (min: %u, max: %u).\n", minimum, maximum);
             continue;
@@ -85,7 +85,7 @@ int try_to_init_mode_client() {
             return EXIT_ASKED;
         }
     } else {
-        mode = give_natural_number_of_string_between(client_flags->mode, NO, YES);
+        mode = bounded_nat_of_string(client_flags->mode, NO, YES);
         if (mode < 0) {
             printf("Your mode argument is not valid, it has to be between %d and %d.\n", NO, YES);
             return EXIT_FAILURE;
@@ -114,7 +114,7 @@ int try_to_init_port_and_connect_client() {
                 return EXIT_ASKED;
             }
         } else {
-            r = give_natural_number_of_string_between(client_flags->port, MIN_PORT, MAX_PORT);
+            r = bounded_nat_of_string(client_flags->port, MIN_PORT, MAX_PORT);
             if (r < 0) {
                 printf("Your port argument is not valid, it has to be between %d and %d.\n", MIN_PORT, MAX_PORT);
                 return EXIT_FAILURE;

@@ -52,6 +52,6 @@
 int min(int, int);
 int max(int, int);
 
-int give_natural_number_of_string_between(const char *, unsigned, unsigned);
+int bounded_nat_of_string(const char *, unsigned, unsigned);
 
 #endif // SRC_UTILS_H_
