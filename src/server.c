@@ -136,7 +136,6 @@ int connect_one_player_to_game(int id) {
         perror("thread creation");
         return EXIT_FAILURE;
     }
-    printf("Player %d is connected\n", connected_player_number + 1);
     connected_player_number++;
     return EXIT_SUCCESS;
 }

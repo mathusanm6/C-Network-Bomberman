@@ -1,5 +1,6 @@
 #include "network_server.h"
 
+#include <arpa/inet.h>
 #include <errno.h>
 #include <netinet/in.h>
 #include <stdbool.h>
@@ -88,16 +89,27 @@ int init_socket_mult() {
     return init_socket(&sock_mult, false);
 }
 
+void print_ip_of_client(struct sockaddr_in6 client_addr) {
+    char client_ip[INET6_ADDRSTRLEN];
+    inet_ntop(AF_INET6, &(client_addr.sin6_addr), client_ip, INET6_ADDRSTRLEN);
+    printf("%s\n", client_ip);
+}
+
 int try_to_init_socket_of_client(int id) {
     if (id < 0 || id >= PLAYER_NUM) {
         return EXIT_FAILURE;
     }
-    int res = accept(sock_tcp, NULL, NULL);
+    struct sockaddr_in6 client_addr;
+    socklen_t client_addr_len;
+    int res = accept(sock_tcp, (struct sockaddr *)&client_addr, &client_addr_len);
     if (res < 0) {
         perror("client acceptation");
         return EXIT_FAILURE;
     }
     sock_clients[id] = res;
+
+    printf("Player %d is connected with the IP : ", id + 1);
+    print_ip_of_client(client_addr);
     return EXIT_SUCCESS;
 }
 
