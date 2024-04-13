@@ -87,10 +87,10 @@ test-valgrind: compile-tests-valgrind
 
 .PHONY: compile-tests compile-tests-valgrind
 
-compile-tests-valgrind: $(filter-out $(SRCOBJDIRCLIENT)/$(EXEC_CLIENT).o, $(OBJFILES)) $(TESTOBJFILES) $(CINTAOBJFILES)
+compile-tests-valgrind: $(filter-out $(SRCOBJDIRCLIENT)/$(EXEC_CLIENT).o $(SRCOBJDIRSERVER), $(OBJFILESCLIENT)) $(TESTOBJFILES) $(CINTAOBJFILES)
 	$(CC) -o $(TEST) $^ -g $(CFLAGS)
 
-compile-tests: $(filter-out $(SRCOBJDIRCLIENT)/$(EXEC_CLIENT).o, $(OBJFILES)) $(TESTOBJFILES) $(CINTAOBJFILES)
+compile-tests: $(filter-out $(SRCOBJDIRCLIENT)/$(EXEC_CLIENT).o, $(OBJFILESCLIENT)) $(TESTOBJFILES) $(CINTAOBJFILES)
 	$(CC) -o $(TEST) $^ $(CFLAGS)
 
 
