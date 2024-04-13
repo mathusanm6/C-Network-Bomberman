@@ -39,18 +39,24 @@ int init_server_network() {
         return EXIT_FAILURE;
     }
     if (try_to_bind_random_port_on_socket_tcp() != EXIT_SUCCESS) {
-        return EXIT_FAILURE;
+        goto exit_closing_sockets;
     }
     if (try_to_bind_random_port_on_socket_udp() != EXIT_SUCCESS) {
-        return EXIT_FAILURE;
+        goto exit_closing_sockets;
     }
     if (init_random_port_on_socket_mult() != EXIT_SUCCESS) {
-        return EXIT_FAILURE;
+        goto exit_closing_sockets;
     }
     if (init_random_adrmdiff() == EXIT_FAILURE) {
-        return EXIT_FAILURE;
+        goto exit_closing_sockets;
     }
     return EXIT_SUCCESS;
+
+exit_closing_sockets:
+    close_socket_tcp();
+    close_socket_udp();
+    close_socket_mult();
+    return EXIT_FAILURE;
 }
 
 int init_tcp_threads_data() {
@@ -162,20 +168,23 @@ void join_tcp_threads() {
 
 int main() {
     srandom(time(NULL));
+    int return_value = EXIT_SUCCESS;
     if (init_server_network() != EXIT_SUCCESS) {
-        return EXIT_FAILURE;
+        return_value = EXIT_FAILURE;
+        return return_value;
     }
     if (connect_player_to_game() != EXIT_SUCCESS) {
-        close_socket_tcp();
-        close_socket_udp();
-        close_socket_mult();
-        return EXIT_FAILURE;
+        return_value = EXIT_FAILURE;
+        goto exit_closing_sockets;
     }
     sleep(1); // Wait all clients for the join mutex
     unlock_all_players_join();
     join_tcp_threads();
+    goto exit_closing_sockets;
+
+exit_closing_sockets:
     close_socket_tcp();
     close_socket_udp();
     close_socket_mult();
-    return EXIT_SUCCESS;
+    return return_value;
 }
