@@ -1,13 +1,15 @@
 #include "communication.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 
 int send_connexion_header_raw(int sock, connection_header_raw *serialized_head) {
+    char *data = (char *)serialized_head;
     unsigned sent = 0;
     while (sent < sizeof(connection_header_raw)) {
-        int res = send(sock, serialized_head + sent, sizeof(connection_header_raw) - sent, 0);
+        int res = send(sock, data + sent, sizeof(connection_header_raw) - sent, 0);
 
         if (res < 0) {
             perror("send connection_header_information");
@@ -61,9 +63,10 @@ int send_ready_connexion_information(int sock, GAME_MODE mode, int id, int team_
 }
 
 int send_connexion_information_raw(int sock, connection_information_raw *serialized_head) {
+    char *data = (char *)serialized_head;
     unsigned sent = 0;
     while (sent < sizeof(connection_information_raw)) {
-        int res = send(sock, serialized_head + sent, sizeof(connection_information_raw) - sent, 0);
+        int res = send(sock, data + sent, sizeof(connection_information_raw) - sent, 0);
 
         if (res < 0) {
             perror("send connection_information");
