@@ -1,5 +1,5 @@
 #include "network_client.h"
-#include "communication.h"
+#include "communication_client.h"
 #include "messages.h"
 
 #include <arpa/inet.h>

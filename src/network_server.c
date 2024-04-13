@@ -1,5 +1,4 @@
 #include "network_server.h"
-#include "communication.h"
 
 #include <errno.h>
 #include <netinet/in.h>

@@ -1,7 +1,7 @@
 #ifndef SRC_NETWORK_SERVER_H_
 #define SRC_NETWORK_SERVER_H_
 
-#include "communication.h"
+#include "communication_server.h"
 
 #include <stdint.h>
 
