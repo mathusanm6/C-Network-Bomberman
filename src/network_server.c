@@ -8,6 +8,7 @@
 #include <unistd.h>
 
 #define MAX_PORT_TRY 250
+#define START_ADRMDIFF 0xff12
 
 static int sock_tcp = -1;
 static int sock_udp = -1;
@@ -161,7 +162,7 @@ int init_random_port_on_socket_mult() {
 }
 
 int init_random_adrmdiff() {
-    adrmdiff[0] = 0xff12;
+    adrmdiff[0] = START_ADRMDIFF;
 
     unsigned size_2_bytes = 65536;
     for (unsigned i = 1; i < 8; i++) {
