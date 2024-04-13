@@ -89,7 +89,9 @@ void wait_all_clients_not_ready() {
 
 void init_connexion_with_client(tcp_thread_data *tcp_data) {
     // TODO separate solo and eq client
-    recv_initial_connection_header_of_client(tcp_data->id);
+    initial_connection_header *head = recv_initial_connection_header_of_client(tcp_data->id);
+    free(head);
+
     wait_all_clients_join();
     // TODO verify well send
     send_connexion_information_of_client(tcp_data->id, 0);
@@ -113,6 +115,7 @@ void *serve_client(void *arg_tcp_thread_data) {
     wait_all_clients_not_ready();
 
     printf("Player %d leave the game.\n", ready_informations->id);
+    free(ready_informations);
     close_socket_client(tcp_data->id);
     // TODO keep free(tcp_data) if we don't use join
     // TO CONTINUE

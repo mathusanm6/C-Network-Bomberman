@@ -111,6 +111,7 @@ int start_initialisation_game(GAME_MODE mode) {
         return EXIT_FAILURE;
     }
     set_server_informations(head);
+    free(head);
     printf("The server is ready.\n");
     return EXIT_SUCCESS;
 }
