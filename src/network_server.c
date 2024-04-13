@@ -56,15 +56,15 @@ int init_socket(int *sock, bool is_tcp) {
         *sock = -1;
         return EXIT_FAILURE;
     }
-    int no = 0;
-    if (setsockopt(*sock, IPPROTO_IPV6, IPV6_V6ONLY, &no, sizeof(no)) < 0) {
+    int option = 0; // Option value for setsockopt
+    if (setsockopt(*sock, IPPROTO_IPV6, IPV6_V6ONLY, &option, sizeof(option)) < 0) {
         perror("setsockopt polymorphism");
         close_socket(*sock);
         *sock = -1;
         return EXIT_FAILURE;
     }
-    int ok = 1;
-    if (setsockopt(*sock, SOL_SOCKET, SO_REUSEADDR, &ok, sizeof(ok)) < 0) {
+    option = 1;
+    if (setsockopt(*sock, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option)) < 0) {
         perror("setsockopt reuseaddr");
         close(*sock);
         *sock = -1;
