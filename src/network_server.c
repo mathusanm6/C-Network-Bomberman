@@ -2,17 +2,12 @@
 
 #include <arpa/inet.h>
 #include <errno.h>
-#include <netinet/in.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/socket.h>
 #include <unistd.h>
 
 #define MAX_PORT_TRY 250
-#define MIN_PORT 1024
-#define MAX_PORT 49151
 
 static int sock_tcp = -1;
 static int sock_udp = -1;

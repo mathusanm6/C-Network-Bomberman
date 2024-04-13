@@ -3,8 +3,6 @@
 
 #include "communication_server.h"
 
-#include <stdint.h>
-
 #define MIN_PORT 1024
 #define MAX_PORT 49151
 

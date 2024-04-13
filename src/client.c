@@ -3,7 +3,6 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "model.h"
 #include "network_client.h"
 #include "utils.h"
 

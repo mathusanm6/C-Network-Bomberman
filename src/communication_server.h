@@ -4,8 +4,6 @@
 #include "./messages.h"
 #include "./model.h"
 
-#include <stdint.h>
-
 int send_connexion_information(int sock, GAME_MODE mode, int id, int eq_id, int port_udp, int portmdiff,
                                uint16_t adrmdiff[8]);
 

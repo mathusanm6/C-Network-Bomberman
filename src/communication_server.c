@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/socket.h>
-#include <sys/types.h>
 
 int send_connexion_information_raw(int sock, connection_information_raw *serialized_head) {
     char *data = (char *)serialized_head;
