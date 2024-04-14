@@ -535,3 +535,23 @@ void update_bombs() {
         }
     }
 }
+
+bool is_game_over() {
+    if (game_mode == SOLO) {
+        int alive_count = 0;
+        for (int i = 0; i < PLAYER_NUM; ++i) {
+            if (!players[i]->dead) {
+                alive_count++;
+            }
+        }
+        return alive_count <= 1;
+    }
+
+    // In team mode, the game is over when all players of a team are dead
+    // The teams are always 0-1 and 2-3
+
+    bool team1_dead = players[0]->dead && players[1]->dead;
+    bool team2_dead = players[2]->dead && players[3]->dead;
+
+    return team1_dead || team2_dead;
+}
