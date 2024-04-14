@@ -141,6 +141,8 @@ board *get_game_board();
  */
 GAME_MODE get_game_mode();
 
+bool is_player_dead(int);
+
 /** Iterates over all bombs, removing any that have exceeded their lifetime.
  */
 void update_bombs();

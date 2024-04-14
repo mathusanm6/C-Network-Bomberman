@@ -148,7 +148,10 @@ bool perform_game_action(int c) {
         case GAME_QUIT:
             return true;
         case SWITCH_PLAYER:
-            current_player = (current_player + 1) % PLAYER_NUM;
+            do {
+                current_player = (current_player + 1) % PLAYER_NUM;
+            } while (is_player_dead(current_player));
+
             break;
         case GAME_NONE:
             break;
