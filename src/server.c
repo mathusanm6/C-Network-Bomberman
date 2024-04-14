@@ -170,8 +170,7 @@ int main() {
     srandom(time(NULL));
     int return_value = EXIT_SUCCESS;
     if (init_server_network() != EXIT_SUCCESS) {
-        return_value = EXIT_FAILURE;
-        return return_value;
+        return EXIT_FAILURE;
     }
     if (connect_player_to_game() != EXIT_SUCCESS) {
         return_value = EXIT_FAILURE;

@@ -114,8 +114,5 @@ int start_initialisation_game(GAME_MODE mode) {
 }
 
 int send_ready_to_play(GAME_MODE mode) {
-    if (send_ready_connexion_information(sock_tcp, mode, id, eq) != EXIT_SUCCESS) {
-        return EXIT_FAILURE;
-    }
-    return EXIT_SUCCESS;
+    return send_ready_connexion_information(sock_tcp, mode, id, eq);
 }
