@@ -10,16 +10,18 @@
 #define MAX_PORT_TRY 250
 #define START_ADRMDIFF 0xff12
 
+/** Parameter for a server managing a single game, will change in the future to manage multiple game
+ */
 static int sock_tcp = -1;
 static int sock_udp = -1;
 static int sock_mult = -1;
-static int sock_clients[PLAYER_NUM];
+static int sock_clients[PLAYER_NUM]; // socket TCP to send game informations
 
 static uint16_t port_tcp = 0;
 static uint16_t port_udp = 0;
 static uint16_t port_mult = 0;
 
-static uint16_t adrmdiff[8];
+static uint16_t adrmdiff[8]; // Multicast address
 
 void close_socket(int sock) {
     if (sock != -1) {
