@@ -23,7 +23,7 @@ void test_connection_information_invalid_game_mode(test_info *info);
 void test_connection_information_invalid_team_number(test_info *info);
 void test_connection_information_invalid_id(test_info *info);
 
-test_info *serialization() {
+test_info *serialization_connection() {
     test_case cases[NUMBER_TESTS] = {
         QUICK_CASE("De/Serializing initial connection in SOLO mode", test_initial_connection_solo),
         QUICK_CASE("De/Serializing initial connection in TEAM mode", test_initial_connection_team),

@@ -3,6 +3,6 @@
 
 #include "../cinta/cinta.h"
 
-test_info *serialization();
+test_info *serialization_connection();
 
 #endif // TEST_H

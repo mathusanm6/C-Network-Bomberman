@@ -2,7 +2,7 @@
 
 #define TEST_NUM 1
 
-test tests[TEST_NUM] = {serialization};
+test tests[TEST_NUM] = {serialization_connection};
 
 int main(int argc, char *argv[]) {
     return cinta_main(argc, argv, tests, TEST_NUM);
