@@ -35,7 +35,7 @@ static game *games[1] = {NULL};
 
 TILE get_player(int);
 
-game *init_game() {
+static game *init_game() {
     game *g = malloc(sizeof(game));
     if (g == NULL) {
         perror("malloc");
@@ -562,7 +562,6 @@ void update_explosion(bomb b, unsigned int game_id) {
         return;
     }
 
-    bomb_collection all_bombs = games[game_id]->all_bombs;
     player **players = games[game_id]->players;
 
     int x, y;
