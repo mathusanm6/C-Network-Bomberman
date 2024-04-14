@@ -4,9 +4,21 @@
 #include <stdlib.h>
 #include <time.h>
 
+typedef struct bomb {
+    coord pos;
+    time_t placement_time;
+} bomb;
+
+typedef struct bomb_collection {
+    bomb *arr;
+    int total_count;
+    int max_capacity;
+} bomb_collection;
+
 line *chat_line = NULL;
 
 static board *game_board = NULL;
+static bomb_collection all_bombs = {NULL, 0, 0};
 static coord *player_positions[PLAYER_NUM] = {NULL, NULL, NULL, NULL};
 static GAME_MODE game_mode = SOLO;
 
@@ -215,8 +227,8 @@ bool can_move_to_position(int x, int y) {
         return false;
     }
     TILE t = get_grid(x, y);
-    return t != INDESTRUCTIBLE_WALL && t != DESTRUCTIBLE_WALL && t != PLAYER_1 && t != PLAYER_2 && t != PLAYER_3 &&
-           t != PLAYER_4;
+    return t != BOMB && t != INDESTRUCTIBLE_WALL && t != DESTRUCTIBLE_WALL && t != PLAYER_1 && t != PLAYER_2 &&
+           t != PLAYER_3 && t != PLAYER_4;
 }
 
 coord int_to_coord(int n) {
@@ -311,7 +323,39 @@ void perform_move(GAME_ACTION a, int player_id) {
     current_pos->x = c.x;
     current_pos->y = c.y;
     set_grid(current_pos->x, current_pos->y, get_player(player_id));
-    set_grid(old_pos.x, old_pos.y, EMPTY);
+    if (get_grid(old_pos.x, old_pos.y) != BOMB) {
+        set_grid(old_pos.x, old_pos.y, EMPTY);
+    }
+}
+
+void place_bomb(int player_id) {
+    if (all_bombs.total_count == all_bombs.max_capacity) {
+        int new_capacity = (all_bombs.max_capacity == 0) ? 4 : all_bombs.max_capacity * 2;
+        bomb *new_list = realloc(all_bombs.arr, new_capacity * sizeof(bomb));
+        if (new_list == NULL) {
+            perror("error realloc");
+            return;
+        }
+        all_bombs.arr = new_list;
+        all_bombs.max_capacity = new_capacity;
+    }
+
+    coord *current_pos = player_positions[player_id];
+
+    TILE t = get_grid(current_pos->x, current_pos->y);
+    if (t == BOMB) { // Shouldn't be able to place a bomp on top of an another
+        return;
+    }
+
+    bomb new_bomb;
+    new_bomb.pos.x = current_pos->x;
+    new_bomb.pos.y = current_pos->y;
+    new_bomb.placement_time = time(NULL);
+
+    all_bombs.arr[all_bombs.total_count] = new_bomb;
+    all_bombs.total_count++;
+
+    set_grid(current_pos->x, current_pos->y, BOMB);
 }
 
 board *get_game_board() {
@@ -339,4 +383,19 @@ board *get_game_board() {
 
 GAME_MODE get_game_mode() {
     return game_mode;
+}
+
+void update_bombs() {
+    time_t current_time = time(NULL);
+
+    for (int i = 0; i < all_bombs.total_count; ++i) {
+        bomb b = all_bombs.arr[i];
+        if (difftime(current_time, b.placement_time) >= BOMB_LIFETIME) {
+            set_grid(b.pos.x, b.pos.y, EMPTY);
+
+            // Get rid of the exploded bomb
+            all_bombs.total_count -= 1;
+            all_bombs.arr[i] = all_bombs.arr[all_bombs.total_count]; // no need to free memory
+        }
+    }
 }

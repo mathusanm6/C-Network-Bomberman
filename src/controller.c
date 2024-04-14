@@ -140,7 +140,7 @@ bool perform_game_action(int c) {
             perform_move(a, current_player);
             break;
         case GAME_PLACE_BOMB:
-            // TODO
+            place_bomb(current_player);
             break;
         case GAME_ACTIVATE_CHAT:
             is_chat_on_focus = true;
@@ -197,6 +197,7 @@ int game_loop() {
         board *game_board = get_game_board();
         refresh_game(game_board, chat_line);
         free_board(game_board);
+        update_bombs();
         usleep(30 * 1000);
     }
     free_model();

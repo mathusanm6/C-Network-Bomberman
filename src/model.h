@@ -6,6 +6,7 @@
 #define MIN_GAMEBOARD_WIDTH 11
 #define MIN_GAMEBOARD_HEIGHT 10
 #define DESTRUCTIBLE_WALL_CHANCE 20
+#define BOMB_LIFETIME 3 // in seconds
 
 #include <stdbool.h>
 
@@ -126,6 +127,12 @@ void add_to_line(char);
  */
 void perform_move(GAME_ACTION, int player_id);
 
+/**
+ * Places a bomb at the current player's position, resizing the bomb array if full.
+ * Updates the game grid and increments bomb count.
+ */
+void place_bomb(int player_id);
+
 /** Returns a copy of the game board
  */
 board *get_game_board();
@@ -133,5 +140,9 @@ board *get_game_board();
 /** Returns the game mode of the current game
  */
 GAME_MODE get_game_mode();
+
+/** Iterates over all bombs, removing any that have exceeded their lifetime.
+ */
+void update_bombs();
 
 #endif // SRC_MODEL_H_
