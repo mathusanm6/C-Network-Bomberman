@@ -13,7 +13,6 @@ typedef struct initial_connection_header {
 } initial_connection_header;
 
 connection_header_raw *serialize_initial_connection(const initial_connection_header *header);
-
 initial_connection_header *deserialize_initial_connection(const connection_header_raw *header);
 
 typedef struct ready_connection_header {
@@ -44,5 +43,18 @@ typedef struct connection_information {
 connection_information_raw *serialize_connection_information(const connection_information *info);
 
 connection_information *deserialize_connection_information(const connection_information_raw *info);
+
+
+typedef struct game_action {
+    GAME_MODE game_mode;
+    int id;
+    int eq;
+    int message_number;
+    GAME_ACTION action;
+} game_action;
+
+char *serialize_game_action(const game_action *action);
+
+game_action *deserialize_game_action(const char*action);
 
 #endif // MESSAGES_CLIENT_H

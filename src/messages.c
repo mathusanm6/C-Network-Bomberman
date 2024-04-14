@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define BIT_OFFSET_13 ((1 << 12) - 1)
 
@@ -165,4 +166,94 @@ connection_information *deserialize_connection_information(const connection_info
     }
 
     return connection_info;
+}
+
+uint16_t game_action_value(int messages_num, GAME_ACTION action) {
+    return htons(messages_num + (action << 12));
+}
+
+char *serialize_game_action(const game_action *action) {
+    char *raw = malloc(sizeof(char) * 16 * 2);
+    if (raw == NULL) {
+        return NULL;
+    }
+
+    int codereq = 1;
+
+    switch (action->game_mode) {
+        case SOLO:
+            codereq = 5;
+            break;
+        case TEAM:
+            codereq = 6;
+            break;
+        default:
+            free(raw);
+            return NULL;
+    }
+
+    if (action->id < 0 || action->id > 3) {
+        free(raw);
+        return NULL;
+    }
+
+    if (action->eq < 0 || action->eq > 1) {
+        free(raw);
+        return NULL;
+    }
+
+    uint16_t header = connection_header_value(codereq, action->id, action->eq);
+
+    if (action->message_number < 0 || action->message_number > (1 << 13)) {
+        free(raw);
+        return NULL;
+    }
+
+    if (action->action < 0 || action->action > 5) {
+        free(raw);
+        return NULL;
+    }
+
+    uint16_t action_ = game_action_value(action->message_number, action->action);
+
+    memcpy(raw, &header, sizeof(uint16_t));
+    memcpy(raw + sizeof(uint16_t), &action_, sizeof(uint16_t));
+
+    return raw;
+}
+
+game_action *deserialize_game_action(const char *action) {
+    game_action *game_action_ = malloc(sizeof(game_action));
+    if (game_action_ == NULL) {
+        return NULL;
+    }
+
+    uint16_t header;
+    uint16_t action_;
+
+    memcpy(&header, action, sizeof(uint16_t));
+    memcpy(&action_, action + sizeof(uint16_t), sizeof(uint16_t));
+
+    header = ntohs(header);
+    action_ = ntohs(action_);
+
+    switch (header & BIT_OFFSET_13) {
+        case 5:
+            game_action_->game_mode = SOLO;
+            break;
+        case 6:
+            game_action_->game_mode = TEAM;
+            break;
+        default:
+            free(game_action_);
+            return NULL;
+    }
+
+    game_action_->id = (header >> 12) & 0x3; // We only need 2 bits
+    game_action_->eq = (header >> 14) & 0x1; // We only need 1 bit
+
+    game_action_->message_number = action_ & BIT_OFFSET_13;
+    game_action_->action = (action_ >> 12) & 0x7; // We only need 3 bits
+
+    return game_action_;
 }

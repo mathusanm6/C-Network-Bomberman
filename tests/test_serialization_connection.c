@@ -45,7 +45,7 @@ test_info *serialization_connection() {
         QUICK_CASE("De/Serializing invalid connection information with invalid id",
                    test_connection_information_invalid_id)};
 
-    return cinta_run_cases("Serialization tests", cases, NUMBER_TESTS);
+    return cinta_run_cases("Serialization tests | Connection", cases, NUMBER_TESTS);
 }
 
 void test_initial_connection_solo(test_info *info) {
