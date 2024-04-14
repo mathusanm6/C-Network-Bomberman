@@ -260,8 +260,8 @@ game_action *deserialize_game_action(const char *action) {
 }
 
 char *serialize_game_board(const game_board_information *info) {
-    // 16 * 3 corresponds to the header, the message number and the height and width of the board
-    char *serialized = malloc(sizeof(char) * ((info->height * info->width) + 6));
+    // 6 corresponds to the header, the message number and the height and width of the board
+    char *serialized = malloc((info->height * info->width) + 6);
     if (serialized == NULL) {
         return NULL;
     }
@@ -329,4 +329,80 @@ game_board_information *deserialize_game_board(const char *info) {
     }
 
     return game_board_info;
+}
+
+char *serialize_game_board_update(const game_board_update *info) {
+
+    // 16 * 3 corresponds to the header, the message number and the height and width of the board
+    char *serialized = malloc((info->nb * 3) + 5);
+    if (serialized == NULL) {
+        return NULL;
+    }
+
+    uint16_t header = connection_header_value(12, 0, 0);
+    uint16_t num = htons(info->num);
+
+    // Split into 2 bytes
+    serialized[0] = header & 0xFF;
+    serialized[1] = header >> 8;
+
+    // Split into 2 bytes
+    serialized[2] = num & 0xFF;
+    serialized[3] = num >> 8;
+
+    serialized[4] = info->nb;
+
+    for (int i = 0; i < info->nb; ++i) {
+        if (info->diff[i].tile > 8) {
+            free(serialized);
+            return NULL;
+        }
+        serialized[5 + i * 3] = info->diff[i].x;
+        serialized[6 + i * 3] = info->diff[i].y;
+        serialized[7 + i * 3] = info->diff[i].tile;
+    }
+
+    return serialized;
+}
+
+game_board_update *deserialize_game_board_update(const char *update) {
+    game_board_update *game_board_update_ = malloc(sizeof(game_board_update));
+    if (game_board_update_ == NULL) {
+        return NULL;
+    }
+
+    uint16_t header = ntohs(*(uint16_t *)update);
+
+    if ((header & BIT_OFFSET_13) != 12) {
+        free(game_board_update_);
+        return NULL;
+    }
+
+    if ((header >> 12) != 0) {
+        free(game_board_update_);
+        return NULL;
+    }
+
+    if ((header >> 14) != 0) {
+        free(game_board_update_);
+        return NULL;
+    }
+
+    game_board_update_->num = ntohs(*(uint16_t *)(update + 2));
+    game_board_update_->nb = update[4];
+
+    game_board_update_->diff = malloc(sizeof(tile_diff) * game_board_update_->nb);
+
+    if (game_board_update_->diff == NULL) {
+        free(game_board_update_);
+        return NULL;
+    }
+
+    for (int i = 0; i < game_board_update_->nb; ++i) {
+        game_board_update_->diff[i].x = update[5 + i * 3];
+        game_board_update_->diff[i].y = update[6 + i * 3];
+        game_board_update_->diff[i].tile = update[7 + i * 3];
+    }
+
+    return game_board_update_;
 }

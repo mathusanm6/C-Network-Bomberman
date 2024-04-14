@@ -13,10 +13,17 @@ void test_invalid_game_action_action(test_info *info);
 
 void test_small_board(test_info *info);
 void test_medium_board(test_info *info);
+void test_big_board(test_info *info);
 void test_invalid_header(test_info *info);
 void test_invalid_board(test_info *info);
 
-#define NUMBER_TESTS 11
+void test_game_board_update_small(test_info *info);
+void test_game_board_update_medium(test_info *info);
+void test_game_board_update_large(test_info *info);
+void test_game_board_update_invalid_header(test_info *info);
+void test_game_board_update_invalid_diff(test_info *info);
+
+#define NUMBER_TESTS 17
 
 test_info *serialization_game() {
     test_case cases[NUMBER_TESTS] = {
@@ -29,8 +36,14 @@ test_info *serialization_game() {
         QUICK_CASE("Test invalid game action action", test_invalid_game_action_action),
         QUICK_CASE("Test small board", test_small_board),
         QUICK_CASE("Test medium board", test_medium_board),
+        QUICK_CASE("Test big board", test_big_board),
         QUICK_CASE("Test invalid header", test_invalid_header),
         QUICK_CASE("Test invalid board", test_invalid_board),
+        QUICK_CASE("Test game board update small", test_game_board_update_small),
+        QUICK_CASE("Test game board update medium", test_game_board_update_medium),
+        QUICK_CASE("Test game board update large", test_game_board_update_large),
+        QUICK_CASE("Test game board update invalid header", test_game_board_update_invalid_header),
+        QUICK_CASE("Test game board update invalid diff", test_game_board_update_invalid_diff),
     };
 
     return cinta_run_cases("Serialization tests | Game", cases, NUMBER_TESTS);
@@ -169,10 +182,11 @@ void test_board(int height, int width, test_info *info, int seed, int message_nu
         CINTA_ASSERT(game_info->board[i] == deserialized->board[i], info);
     }
 
-    free(serialized);
-    free(game_info);
-    free(deserialized);
     free(board);
+    free(game_info);
+    free(serialized);
+    free(deserialized->board);
+    free(deserialized);
 }
 
 void test_small_board(test_info *info) {
@@ -181,6 +195,9 @@ void test_small_board(test_info *info) {
 
 void test_medium_board(test_info *info) {
     test_board(10, 10, info, 0, 0);
+}
+void test_big_board(test_info *info) {
+    test_board(21, 22, info, 0, 0);
 }
 
 void test_invalid_header(test_info *info) {
@@ -209,4 +226,79 @@ void test_invalid_board(test_info *info) {
 
     free(game_info->board);
     free(game_info);
+}
+
+void test_update(int nb, test_info *info, int seed, int message_number) {
+    game_board_update *update = malloc(sizeof(game_board_update));
+    update->num = message_number;
+    update->nb = nb;
+    update->diff = malloc(sizeof(tile_diff) * nb);
+
+    srandom(seed);
+
+    for (int i = 0; i < nb; i++) {
+        update->diff[i].x = rand() % 10;
+        update->diff[i].y = rand() % 10;
+        update->diff[i].tile = rand() % 9;
+    }
+
+    char *serialized = serialize_game_board_update(update);
+    game_board_update *deserialized = deserialize_game_board_update(serialized);
+
+    CINTA_ASSERT(update->num == deserialized->num, info);
+    CINTA_ASSERT(update->nb == deserialized->nb, info);
+
+    for (int i = 0; i < nb; i++) {
+        CINTA_ASSERT(update->diff[i].x == deserialized->diff[i].x, info);
+        CINTA_ASSERT(update->diff[i].y == deserialized->diff[i].y, info);
+        CINTA_ASSERT(update->diff[i].tile == deserialized->diff[i].tile, info);
+    }
+
+    free(serialized);
+    free(update->diff);
+    free(update);
+    free(deserialized->diff);
+    free(deserialized);
+}
+
+void test_game_board_update_small(test_info *info) {
+    test_update(1, info, 0, 0);
+}
+
+void test_game_board_update_medium(test_info *info) {
+    test_update(10, info, 0, 0);
+}
+
+void test_game_board_update_large(test_info *info) {
+    test_update(100, info, 0, 0);
+}
+
+void test_game_board_update_invalid_header(test_info *info) {
+    char *serialized = malloc(sizeof(char) * 16);
+
+    for (int i = 0; i < 16; i++) {
+        serialized[i] = 0;
+    }
+
+    game_board_update *deserialized = deserialize_game_board_update(serialized);
+    CINTA_ASSERT(deserialized == NULL, info);
+
+    free(serialized);
+}
+
+void test_game_board_update_invalid_diff(test_info *info) {
+    game_board_update *update = malloc(sizeof(game_board_update));
+    update->num = 0;
+    update->nb = 1;
+    update->diff = malloc(sizeof(tile_diff) * 1);
+
+    update->diff[0].x = 0;
+    update->diff[0].y = 0;
+    update->diff[0].tile = 9;
+
+    char *serialized = serialize_game_board_update(update);
+    CINTA_ASSERT(serialized == NULL, info);
+
+    free(update->diff);
+    free(update);
 }
