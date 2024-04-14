@@ -318,13 +318,15 @@ game_board_information *deserialize_game_board(const char *info) {
     game_board_info->height = info[4];
     game_board_info->width = info[5];
 
-    game_board_info->board = malloc(sizeof(char) * game_board_info->height * game_board_info->width);
+    unsigned size = game_board_info->height * game_board_info->width;
+
+    game_board_info->board = malloc(size * sizeof(TILE));
     if (game_board_info->board == NULL) {
         free(game_board_info);
         return NULL;
     }
 
-    for (int i = 0; i < game_board_info->height * game_board_info->width; ++i) {
+    for (unsigned i = 0; i < size; ++i) {
         game_board_info->board[i] = info[6 + i];
     }
 
@@ -332,7 +334,6 @@ game_board_information *deserialize_game_board(const char *info) {
 }
 
 char *serialize_game_board_update(const game_board_update *info) {
-
     // 16 * 3 corresponds to the header, the message number and the height and width of the board
     char *serialized = malloc((info->nb * 3) + 5);
     if (serialized == NULL) {
