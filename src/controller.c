@@ -17,6 +17,9 @@
 #define KEY_VERTICAL_BAR '|'
 #define KEY_CONTROL_D 4
 
+/* TODO: fixme once multiple games are supported */
+#define TMP_GAME_ID 0
+
 static int current_player = 0;
 static bool is_chat_on_focus = false;
 
@@ -138,10 +141,10 @@ bool perform_game_action(int c) {
         case GAME_RIGHT:
         case GAME_DOWN:
         case GAME_LEFT:
-            perform_move(a, current_player);
+            perform_move(a, current_player, TMP_GAME_ID);
             break;
         case GAME_PLACE_BOMB:
-            place_bomb(current_player);
+            place_bomb(current_player, TMP_GAME_ID);
             break;
         case GAME_ACTIVATE_CHAT:
             is_chat_on_focus = true;
@@ -151,7 +154,7 @@ bool perform_game_action(int c) {
         case SWITCH_PLAYER:
             do {
                 current_player = (current_player + 1) % PLAYER_NUM;
-            } while (is_player_dead(current_player));
+            } while (is_player_dead(current_player, TMP_GAME_ID));
 
             break;
         case GAME_NONE:
@@ -185,21 +188,21 @@ int init_game() {
     dimension dim;
     get_computed_board_dimension(&dim);
 
-    return init_model(dim, SOLO);
+    return init_model(dim, SOLO, TMP_GAME_ID);
 }
 
 int game_loop() {
     while (true) {
-        if (is_game_over() || control()) {
+        if (is_game_over(TMP_GAME_ID) || control()) {
             break;
         }
-        board *game_board = get_game_board();
+        board *game_board = get_game_board(TMP_GAME_ID);
         refresh_game(game_board, chat_line);
         free_board(game_board);
-        update_bombs();
+        update_bombs(TMP_GAME_ID);
         usleep(30 * 1000);
     }
-    free_model();
+    free_model(TMP_GAME_ID);
     end_view();
 
     return EXIT_SUCCESS;

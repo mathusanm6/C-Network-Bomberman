@@ -23,12 +23,38 @@ typedef struct bomb_collection {
 
 line *chat_line = NULL;
 
-static board *game_board = NULL;
-static bomb_collection all_bombs = {NULL, 0, 0};
-static player *players[PLAYER_NUM] = {NULL, NULL, NULL, NULL};
-static GAME_MODE game_mode = SOLO;
+typedef struct game {
+    board *game_board;
+    bomb_collection all_bombs;
+    player *players[PLAYER_NUM];
+    GAME_MODE game_mode;
+} game;
+
+/* TODO: Make this a real list at some point */
+static game *games[1] = {NULL};
 
 TILE get_player(int);
+
+game *init_game() {
+    game *g = malloc(sizeof(game));
+    if (g == NULL) {
+        perror("malloc");
+        return NULL;
+    }
+
+    g->game_board = NULL;
+    g->all_bombs.arr = NULL;
+    g->all_bombs.total_count = 0;
+    g->all_bombs.max_capacity = 0;
+
+    for (int i = 0; i < PLAYER_NUM; i++) {
+        g->players[i] = NULL;
+    }
+
+    g->game_mode = SOLO;
+
+    return g;
+}
 
 TILE get_probably_destructible_wall() {
     if (random() % DESTRUCTIBLE_WALL_CHANCE == 0) {
@@ -37,46 +63,57 @@ TILE get_probably_destructible_wall() {
     return DESTRUCTIBLE_WALL;
 }
 
-int init_game_board_content() {
-    RETURN_FAILURE_IF_NULL(game_board);
+int init_game_board_content(unsigned int game_id) {
+    RETURN_FAILURE_IF_NULL(games[game_id]);
+    if (games[game_id] == NULL) {
+        return EXIT_FAILURE;
+    }
 
+    board *game_board = games[game_id]->game_board;
+    RETURN_FAILURE_IF_NULL(game_board);
     srandom(time(NULL));
 
     // Indestructible wall part
     for (int c = 1; c < game_board->dim.width - 1; c += 2) {
         for (int l = 1; l < game_board->dim.height - 1; l += 2) {
-            game_board->grid[coord_to_int(c, l)] = INDESTRUCTIBLE_WALL;
+            game_board->grid[coord_to_int(c, l, game_id)] = INDESTRUCTIBLE_WALL;
         }
     }
 
     // Destructible wall part
     for (int c = 3; c < game_board->dim.width - 3; c++) { // Fill the first and last line
-        game_board->grid[coord_to_int(c, 0)] = get_probably_destructible_wall();
-        game_board->grid[coord_to_int(c, game_board->dim.height - 1)] = get_probably_destructible_wall();
+        game_board->grid[coord_to_int(c, 0, game_id)] = get_probably_destructible_wall();
+        game_board->grid[coord_to_int(c, game_board->dim.height - 1, game_id)] = get_probably_destructible_wall();
     }
+
     for (int c = 2; c < game_board->dim.width - 2; c += 2) { // Fill the second and the second last line
-        game_board->grid[coord_to_int(c, 1)] = get_probably_destructible_wall();
-        game_board->grid[coord_to_int(c, game_board->dim.height - 2)] = get_probably_destructible_wall();
+        game_board->grid[coord_to_int(c, 1, game_id)] = get_probably_destructible_wall();
+        game_board->grid[coord_to_int(c, game_board->dim.height - 2, game_id)] = get_probably_destructible_wall();
     }
+
     for (int c = 1; c < game_board->dim.width - 1; c++) { // Fill the third and the third last line
-        game_board->grid[coord_to_int(c, 2)] = get_probably_destructible_wall();
-        game_board->grid[coord_to_int(c, game_board->dim.height - 3)] = get_probably_destructible_wall();
+        game_board->grid[coord_to_int(c, 2, game_id)] = get_probably_destructible_wall();
+        game_board->grid[coord_to_int(c, game_board->dim.height - 3, game_id)] = get_probably_destructible_wall();
     }
+
     for (int l = 3; l < game_board->dim.height - 3; l++) { // Fill the other lines
         if (l % 2 == 0) { // There are no indestructible walls between destructible walls on this line
             for (int c = 0; c < game_board->dim.width; c++) {
-                game_board->grid[coord_to_int(c, l)] = get_probably_destructible_wall();
+                game_board->grid[coord_to_int(c, l, game_id)] = get_probably_destructible_wall();
             }
         } else { // There are indestructible walls between destructible walls on this line
             for (int c = 0; c < game_board->dim.width; c += 2) {
-                game_board->grid[coord_to_int(c, l)] = get_probably_destructible_wall();
+                game_board->grid[coord_to_int(c, l, game_id)] = get_probably_destructible_wall();
             }
         }
     }
     return EXIT_SUCCESS;
 }
 
-int init_game_board(dimension dim) {
+int init_game_board(dimension dim, unsigned int game_id) {
+    if (games[game_id] == NULL) {
+    }
+
     if (dim.width % 2 == 0) { // The game_board width has to be odd to fill it with content
         dim.width--;
     }
@@ -88,6 +125,8 @@ int init_game_board(dimension dim) {
         return EXIT_FAILURE;
     }
 
+    board *game_board = games[game_id]->game_board;
+
     if (game_board == NULL) {
         game_board = malloc(sizeof(board));
         RETURN_FAILURE_IF_NULL_PERROR(game_board, "malloc");
@@ -98,7 +137,7 @@ int init_game_board(dimension dim) {
 
         RETURN_FAILURE_IF_NULL_PERROR(game_board->grid, "calloc");
     }
-    if (init_game_board_content() == EXIT_FAILURE) {
+    if (init_game_board_content(game_id) == EXIT_FAILURE) {
         free_board(game_board);
     }
     return EXIT_SUCCESS;
@@ -113,7 +152,14 @@ int init_chat_line() {
     return EXIT_SUCCESS;
 }
 
-int init_player_positions() {
+int init_player_positions(unsigned int game_id) {
+    if (games[game_id] == NULL) {
+        return EXIT_FAILURE;
+    }
+
+    player **players = games[game_id]->players;
+    board *game_board = games[game_id]->game_board;
+
     for (int i = 0; i < 4; i++) {
         players[i] = malloc(sizeof(player));
         RETURN_FAILURE_IF_NULL_PERROR(players[i], "malloc");
@@ -130,17 +176,22 @@ int init_player_positions() {
 
         players[i]->dead = false;
 
-        set_grid(players[i]->pos->x, players[i]->pos->y, get_player(i));
+        set_grid(players[i]->pos->x, players[i]->pos->y, get_player(i), game_id);
     }
     return EXIT_SUCCESS;
 }
 
-int init_model(dimension dim, GAME_MODE game_mode_) {
-    RETURN_FAILURE_IF_ERROR(init_game_board(dim));
-    RETURN_FAILURE_IF_ERROR(init_chat_line());
-    RETURN_FAILURE_IF_ERROR(init_player_positions());
+int init_model(dimension dim, GAME_MODE game_mode_, unsigned int game_id) {
+    game *g = init_game();
+    RETURN_FAILURE_IF_NULL(g);
 
-    game_mode = game_mode_;
+    g->game_mode = game_mode_;
+
+    games[game_id] = g;
+
+    RETURN_FAILURE_IF_ERROR(init_game_board(dim, game_id));
+    RETURN_FAILURE_IF_ERROR(init_chat_line());
+    RETURN_FAILURE_IF_ERROR(init_player_positions(game_id));
 
     return EXIT_SUCCESS;
 }
@@ -156,7 +207,11 @@ void free_board(board *game_board) {
     }
 }
 
-void free_game_board() {
+void free_game_board(unsigned int game_id) {
+    if (games[game_id] == NULL) {
+        return;
+    }
+    board *game_board = games[game_id]->game_board;
     free_board(game_board);
 }
 
@@ -167,7 +222,11 @@ void free_chat_line() {
     }
 }
 
-void free_player_positions() {
+void free_player_positions(unsigned int game_id) {
+    if (games[game_id] == NULL) {
+        return;
+    }
+    player **players = games[game_id]->players;
     for (int i = 0; i < 4; i++) {
         if (players[i] != NULL) {
             if (players[i]->pos != NULL) {
@@ -180,10 +239,10 @@ void free_player_positions() {
     }
 }
 
-void free_model() {
-    free_game_board();
+void free_model(unsigned int game_id) {
+    free_game_board(game_id);
     free_chat_line();
-    free_player_positions();
+    free_player_positions(game_id);
 }
 
 char tile_to_char(TILE t) {
@@ -226,40 +285,54 @@ char tile_to_char(TILE t) {
     return c;
 }
 
-bool is_outside_board(int x, int y) {
+bool is_outside_board(int x, int y, unsigned int game_id) {
+    if (games[game_id] == NULL) {
+        return true;
+    }
+    board *game_board = games[game_id]->game_board;
     return x < 0 || x >= game_board->dim.width || y < 0 || y >= game_board->dim.height;
 }
 
-bool can_move_to_position(int x, int y) {
-    if (is_outside_board(x, y)) {
+bool can_move_to_position(int x, int y, unsigned int game_id) {
+    if (is_outside_board(x, y, game_id)) {
         return false;
     }
-    TILE t = get_grid(x, y);
+    TILE t = get_grid(x, y, game_id);
     return t != BOMB && t != INDESTRUCTIBLE_WALL && t != DESTRUCTIBLE_WALL && t != PLAYER_1 && t != PLAYER_2 &&
            t != PLAYER_3 && t != PLAYER_4;
 }
 
-coord int_to_coord(int n) {
+coord int_to_coord(int n, unsigned int game_id) {
+    board *game_board = games[game_id]->game_board;
     coord c;
     c.y = n / game_board->dim.width;
     c.x = n % game_board->dim.width;
     return c;
 }
 
-int coord_to_int(int x, int y) {
+int coord_to_int(int x, int y, unsigned int game_id) {
+    board *game_board = games[game_id]->game_board;
     return y * game_board->dim.width + x;
 }
 
-TILE get_grid(int x, int y) {
+TILE get_grid(int x, int y, unsigned int game_id) {
+    if (games[game_id] == NULL) {
+        return EXIT_FAILURE;
+    }
+    board *game_board = games[game_id]->game_board;
     if (game_board != NULL) {
-        return game_board->grid[coord_to_int(x, y)];
+        return game_board->grid[coord_to_int(x, y, game_id)];
     }
     return EXIT_FAILURE;
 }
 
-void set_grid(int x, int y, TILE v) {
+void set_grid(int x, int y, TILE v, unsigned int game_id) {
+    if (games[game_id] == NULL) {
+        return;
+    }
+    board *game_board = games[game_id]->game_board;
     if (game_board != NULL) {
-        game_board->grid[coord_to_int(x, y)] = v;
+        game_board->grid[coord_to_int(x, y, game_id)] = v;
     }
 }
 
@@ -335,7 +408,13 @@ coord get_next_position(GAME_ACTION a, const coord *pos) {
     return c;
 }
 
-void perform_move(GAME_ACTION a, int player_id) {
+void perform_move(GAME_ACTION a, int player_id, unsigned int game_id) {
+    if (games[game_id] == NULL) {
+        return;
+    }
+
+    player **players = games[game_id]->players;
+
     if (players[player_id]->dead) {
         return;
     }
@@ -344,18 +423,24 @@ void perform_move(GAME_ACTION a, int player_id) {
     coord old_pos = *current_pos;
 
     coord c = get_next_position(a, current_pos);
-    if (!can_move_to_position(c.x, c.y)) {
+    if (!can_move_to_position(c.x, c.y, game_id)) {
         return;
     }
     current_pos->x = c.x;
     current_pos->y = c.y;
-    set_grid(current_pos->x, current_pos->y, get_player(player_id));
-    if (get_grid(old_pos.x, old_pos.y) != BOMB) {
-        set_grid(old_pos.x, old_pos.y, EMPTY);
+    set_grid(current_pos->x, current_pos->y, get_player(player_id), game_id);
+    if (get_grid(old_pos.x, old_pos.y, game_id) != BOMB) {
+        set_grid(old_pos.x, old_pos.y, EMPTY, game_id);
     }
 }
+void place_bomb(int player_id, unsigned int game_id) {
 
-void place_bomb(int player_id) {
+    if (games[game_id] == NULL) {
+        return;
+    }
+
+    bomb_collection all_bombs = games[game_id]->all_bombs;
+
     if (all_bombs.total_count == all_bombs.max_capacity) {
         int new_capacity = (all_bombs.max_capacity == 0) ? 4 : all_bombs.max_capacity * 2;
         bomb *new_list = realloc(all_bombs.arr, new_capacity * sizeof(bomb));
@@ -367,9 +452,11 @@ void place_bomb(int player_id) {
         all_bombs.max_capacity = new_capacity;
     }
 
+    player **players = games[game_id]->players;
+
     coord current_pos = *players[player_id]->pos;
 
-    TILE t = get_grid(current_pos.x, current_pos.y);
+    TILE t = get_grid(current_pos.x, current_pos.y, game_id);
     if (t == BOMB) { // Shouldn't be able to place a bomp on top of an another
         return;
     }
@@ -382,12 +469,18 @@ void place_bomb(int player_id) {
     all_bombs.arr[all_bombs.total_count] = new_bomb;
     all_bombs.total_count++;
 
-    set_grid(current_pos.x, current_pos.y, BOMB);
+    set_grid(current_pos.x, current_pos.y, BOMB, game_id);
 }
 
-board *get_game_board() {
+board *get_game_board(unsigned int game_id) {
+    if (games[game_id] == NULL) {
+        return NULL;
+    }
+
     board *copy = malloc(sizeof(board));
     RETURN_NULL_IF_NULL_PERROR(copy, "malloc");
+
+    board *game_board = games[game_id]->game_board;
 
     copy->dim.width = game_board->dim.width;
     copy->dim.height = game_board->dim.height;
@@ -405,26 +498,32 @@ board *get_game_board() {
     return copy;
 }
 
-GAME_MODE get_game_mode() {
-    return game_mode;
+GAME_MODE get_game_mode(unsigned int game_id) {
+    return games[game_id]->game_mode;
 }
 
-bool is_player_dead(int id) {
-    return players[id]->dead;
+bool is_player_dead(int id, unsigned int game_id) {
+    if (games[game_id] == NULL) {
+        return true;
+    }
+
+    return games[game_id]->players[id]->dead;
 }
 
-bool apply_explosion_effect(int x, int y) {
-    if (is_outside_board(x, y)) {
+bool apply_explosion_effect(int x, int y, unsigned int game_id) {
+    if (is_outside_board(x, y, game_id)) {
         return false;
     }
 
     bool impact_happened = false;
 
-    TILE t = get_grid(x, y);
+    player **players = games[game_id]->players;
+
+    TILE t = get_grid(x, y, game_id);
     int id;
     switch (t) {
         case DESTRUCTIBLE_WALL:
-            set_grid(x, y, EMPTY);
+            set_grid(x, y, EMPTY, game_id);
             impact_happened = true;
             break;
         case PLAYER_1:
@@ -433,7 +532,7 @@ bool apply_explosion_effect(int x, int y) {
         case PLAYER_4:
             id = get_player_id(t);
             players[id]->dead = true;
-            set_grid(x, y, EMPTY);
+            set_grid(x, y, EMPTY, game_id);
             impact_happened = true;
             break;
         case INDESTRUCTIBLE_WALL:
@@ -458,7 +557,14 @@ bool apply_explosion_effect(int x, int y) {
     return impact_happened;
 }
 
-void update_explosion(bomb b) {
+void update_explosion(bomb b, unsigned int game_id) {
+    if (games[game_id] == NULL) {
+        return;
+    }
+
+    bomb_collection all_bombs = games[game_id]->all_bombs;
+    player **players = games[game_id]->players;
+
     int x, y;
 
     x = b.pos.x;
@@ -473,7 +579,7 @@ void update_explosion(bomb b) {
     x = b.pos.x;
     for (int k = 0; k <= 2; ++k) {
         y = b.pos.y + k;
-        if (apply_explosion_effect(x, y)) {
+        if (apply_explosion_effect(x, y, game_id)) {
             break;
         }
     }
@@ -481,7 +587,7 @@ void update_explosion(bomb b) {
     x = b.pos.x;
     for (int k = 0; k >= -2; --k) {
         y = b.pos.y + k;
-        if (apply_explosion_effect(x, y)) {
+        if (apply_explosion_effect(x, y, game_id)) {
             break;
         }
     }
@@ -490,7 +596,7 @@ void update_explosion(bomb b) {
     y = b.pos.y;
     for (int k = 0; k <= 2; ++k) {
         x = b.pos.x + k;
-        if (apply_explosion_effect(x, y)) {
+        if (apply_explosion_effect(x, y, game_id)) {
             break;
         }
     }
@@ -498,7 +604,7 @@ void update_explosion(bomb b) {
     x = b.pos.x;
     for (int k = 0; k >= -2; --k) {
         x = b.pos.x + k;
-        if (apply_explosion_effect(x, y)) {
+        if (apply_explosion_effect(x, y, game_id)) {
             break;
         }
     }
@@ -506,20 +612,26 @@ void update_explosion(bomb b) {
     // Diagonals
     x = b.pos.x;
     y = b.pos.y;
-    apply_explosion_effect(x + 1, y + 1);
-    apply_explosion_effect(x + 1, y - 1);
-    apply_explosion_effect(x - 1, y + 1);
-    apply_explosion_effect(x - 1, y - 1);
+    apply_explosion_effect(x + 1, y + 1, game_id);
+    apply_explosion_effect(x + 1, y - 1, game_id);
+    apply_explosion_effect(x - 1, y + 1, game_id);
+    apply_explosion_effect(x - 1, y - 1, game_id);
 }
 
-void update_bombs() {
+void update_bombs(unsigned int game_id) {
+    if (games[game_id] == NULL) {
+        return;
+    }
+
+    bomb_collection all_bombs = games[game_id]->all_bombs;
+
     time_t current_time = time(NULL);
 
     for (int i = 0; i < all_bombs.total_count; ++i) {
         bomb b = all_bombs.arr[i];
         if (difftime(current_time, b.placement_time) >= BOMB_LIFETIME) {
-            update_explosion(b);
-            set_grid(b.pos.x, b.pos.y, EMPTY);
+            update_explosion(b, game_id);
+            set_grid(b.pos.x, b.pos.y, EMPTY, game_id);
 
             // Get rid of the exploded bomb
             all_bombs.total_count -= 1;
@@ -528,7 +640,14 @@ void update_bombs() {
     }
 }
 
-bool is_game_over() {
+bool is_game_over(unsigned int game_id) {
+    if (games[game_id] == NULL) {
+        return true;
+    }
+
+    player **players = games[game_id]->players;
+    GAME_MODE game_mode = get_game_mode(game_id);
+
     if (game_mode == SOLO) {
         int alive_count = 0;
         for (int i = 0; i < PLAYER_NUM; ++i) {

@@ -75,13 +75,13 @@ extern line *chat_line; // line of text that can be filled in with chat
  *              - The current position of the player
  *              - The game mode
  */
-int init_model(dimension dim, GAME_MODE mode);
+int init_model(dimension dim, GAME_MODE mode, unsigned int game_id);
 
 /** Frees - The game board with the width and the height
  *              - The chat line
  *              - The current position of the players
  */
-void free_model();
+void free_model(unsigned int game_id);
 
 /** Frees the board
  */
@@ -93,23 +93,23 @@ char tile_to_char(TILE);
 
 /** Returns the corresponding coordinate of an int in flatten list
  */
-coord int_to_coord(int);
+coord int_to_coord(int, unsigned int game_id);
 
 /** Returns the corresponding int of coordinate in flatten list
  */
-int coord_to_int(int, int);
+int coord_to_int(int, int, unsigned int game_id);
 
 /** Returns the tile at the position (x, y) of game_board
  */
-TILE get_grid(int, int);
+TILE get_grid(int, int, unsigned int game_id);
 
 /** Sets the tile at the position (x, y) of game_board to the last argument
  */
-void set_grid(int, int, TILE);
+void set_grid(int, int, TILE, unsigned int game_id);
 
 /** Returns true if (x, y) is a coordinate outside the game_board
  */
-bool is_outside_board(int x, int y);
+bool is_outside_board(int x, int y, unsigned int game_id);
 
 /** Decrements the line cursor
  */
@@ -125,30 +125,30 @@ void add_to_line(char);
 
 /** Depending on the action, changes the player's position in the table if the argument is a move.
  */
-void perform_move(GAME_ACTION, int player_id);
+void perform_move(GAME_ACTION, int player_id, unsigned int game_id);
 
 /**
  * Places a bomb at the current player's position, resizing the bomb array if full.
  * Updates the game grid and increments bomb count.
  */
-void place_bomb(int player_id);
+void place_bomb(int player_id, unsigned int game_id);
 
 /** Returns a copy of the game board
  */
-board *get_game_board();
+board *get_game_board(unsigned int game_id);
 
 /** Returns the game mode of the current game
  */
-GAME_MODE get_game_mode();
+GAME_MODE get_game_mode(unsigned int game_id);
 
-bool is_player_dead(int);
+bool is_player_dead(int, unsigned int game_id);
 
 /** Iterates over all bombs, removing any that have exceeded their lifetime.
  */
-void update_bombs();
+void update_bombs(unsigned int game_id);
 
 /** Returns true if the game is over
  */
-bool is_game_over();
+bool is_game_over(unsigned int game_id);
 
 #endif // SRC_MODEL_H_
