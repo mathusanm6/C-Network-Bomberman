@@ -374,7 +374,7 @@ void place_bomb(int player_id) {
 
     coord current_pos = *players[player_id]->pos;
 
-    TILE t = get_grid(current_pos->x, current_pos->y);
+    TILE t = get_grid(current_pos.x, current_pos.y);
     if (t == BOMB) { // Shouldn't be able to place a bomp on top of an another
         return;
     }
