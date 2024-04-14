@@ -44,7 +44,6 @@ connection_information_raw *serialize_connection_information(const connection_in
 
 connection_information *deserialize_connection_information(const connection_information_raw *info);
 
-
 typedef struct game_action {
     GAME_MODE game_mode;
     int id;
@@ -55,6 +54,17 @@ typedef struct game_action {
 
 char *serialize_game_action(const game_action *action);
 
-game_action *deserialize_game_action(const char*action);
+game_action *deserialize_game_action(const char *action);
+
+typedef struct game_board_information {
+    uint16_t num;
+    uint8_t height;
+    uint8_t width;
+    TILE *board;
+} game_board_information;
+
+char *serialize_game_board(const game_board_information *info);
+
+game_board_information *deserialize_game_board(const char *info);
 
 #endif // MESSAGES_CLIENT_H

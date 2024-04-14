@@ -8,6 +8,7 @@
 #include <string.h>
 
 #define BIT_OFFSET_13 ((1 << 12) - 1)
+#define BYTE_SIZE 8
 
 static uint16_t connection_header_value(int codereq, int id, int team_number) {
     return htons((team_number << 14) + (id << 12) + codereq);
@@ -173,7 +174,7 @@ uint16_t game_action_value(int messages_num, GAME_ACTION action) {
 }
 
 char *serialize_game_action(const game_action *action) {
-    char *raw = malloc(sizeof(char) * 16 * 2);
+    char *raw = malloc(sizeof(uint16_t) * 2);
     if (raw == NULL) {
         return NULL;
     }
@@ -256,4 +257,76 @@ game_action *deserialize_game_action(const char *action) {
     game_action_->action = (action_ >> 12) & 0x7; // We only need 3 bits
 
     return game_action_;
+}
+
+char *serialize_game_board(const game_board_information *info) {
+    // 16 * 3 corresponds to the header, the message number and the height and width of the board
+    char *serialized = malloc(sizeof(char) * ((info->height * info->width) + 6));
+    if (serialized == NULL) {
+        return NULL;
+    }
+
+    uint16_t header = connection_header_value(11, 0, 0);
+    uint16_t num = htons(info->num);
+
+    // Split into 2 bytes
+    serialized[0] = header & 0xFF;
+    serialized[1] = header >> 8;
+
+    // Split into 2 bytes
+    serialized[2] = num & 0xFF;
+    serialized[3] = num >> 8;
+
+    serialized[4] = info->height;
+    serialized[5] = info->width;
+
+    for (int i = 0; i < info->height * info->width; ++i) {
+        if (info->board[i] > 8) {
+            free(serialized);
+            return NULL;
+        }
+        serialized[6 + i] = info->board[i];
+    }
+
+    return serialized;
+}
+
+game_board_information *deserialize_game_board(const char *info) {
+    game_board_information *game_board_info = malloc(sizeof(game_board_information));
+    if (game_board_info == NULL) {
+        return NULL;
+    }
+
+    uint16_t header = ntohs(*(uint16_t *)info);
+
+    if ((header & BIT_OFFSET_13) != 11) {
+        free(game_board_info);
+        return NULL;
+    }
+
+    if ((header >> 12) != 0) {
+        free(game_board_info);
+        return NULL;
+    }
+
+    if ((header >> 14) != 0) {
+        free(game_board_info);
+        return NULL;
+    }
+
+    game_board_info->num = ntohs(*(uint16_t *)(info + 2));
+    game_board_info->height = info[4];
+    game_board_info->width = info[5];
+
+    game_board_info->board = malloc(sizeof(char) * game_board_info->height * game_board_info->width);
+    if (game_board_info->board == NULL) {
+        free(game_board_info);
+        return NULL;
+    }
+
+    for (int i = 0; i < game_board_info->height * game_board_info->width; ++i) {
+        game_board_info->board[i] = info[6 + i];
+    }
+
+    return game_board_info;
 }

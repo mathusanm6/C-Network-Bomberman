@@ -11,7 +11,12 @@ void test_invalid_game_action_id(test_info *info);
 void test_invalid_game_action_message_number(test_info *info);
 void test_invalid_game_action_action(test_info *info);
 
-#define NUMBER_TESTS 7
+void test_small_board(test_info *info);
+void test_medium_board(test_info *info);
+void test_invalid_header(test_info *info);
+void test_invalid_board(test_info *info);
+
+#define NUMBER_TESTS 11
 
 test_info *serialization_game() {
     test_case cases[NUMBER_TESTS] = {
@@ -22,6 +27,10 @@ test_info *serialization_game() {
         QUICK_CASE("Test invalid game action id", test_invalid_game_action_id),
         QUICK_CASE("Test invalid game action message number", test_invalid_game_action_message_number),
         QUICK_CASE("Test invalid game action action", test_invalid_game_action_action),
+        QUICK_CASE("Test small board", test_small_board),
+        QUICK_CASE("Test medium board", test_medium_board),
+        QUICK_CASE("Test invalid header", test_invalid_header),
+        QUICK_CASE("Test invalid board", test_invalid_board),
     };
 
     return cinta_run_cases("Serialization tests | Game", cases, NUMBER_TESTS);
@@ -134,4 +143,70 @@ void test_invalid_game_action_action(test_info *info) {
     CINTA_ASSERT(serialized == NULL, info);
 
     free(action);
+}
+
+void test_board(int height, int width, test_info *info, int seed, int message_number) {
+    TILE *board = malloc(sizeof(TILE) * height * width);
+    srandom(seed);
+    for (int i = 0; i < height * width; i++) {
+        board[i] = rand() % 9;
+    }
+
+    game_board_information *game_info = malloc(sizeof(game_board_information));
+    game_info->num = message_number;
+    game_info->height = height;
+    game_info->width = width;
+    game_info->board = board;
+
+    char *serialized = serialize_game_board(game_info);
+    game_board_information *deserialized = deserialize_game_board(serialized);
+
+    CINTA_ASSERT(game_info->num == deserialized->num, info);
+    CINTA_ASSERT(game_info->height == deserialized->height, info);
+    CINTA_ASSERT(game_info->width == deserialized->width, info);
+
+    for (int i = 0; i < height * width; i++) {
+        CINTA_ASSERT(game_info->board[i] == deserialized->board[i], info);
+    }
+
+    free(serialized);
+    free(game_info);
+    free(deserialized);
+    free(board);
+}
+
+void test_small_board(test_info *info) {
+    test_board(1, 1, info, 0, 0);
+}
+
+void test_medium_board(test_info *info) {
+    test_board(10, 10, info, 0, 0);
+}
+
+void test_invalid_header(test_info *info) {
+    char *serialized = malloc(sizeof(char) * 16);
+
+    for (int i = 0; i < 16; i++) {
+        serialized[i] = 0;
+    }
+
+    game_board_information *deserialized = deserialize_game_board(serialized);
+    CINTA_ASSERT(deserialized == NULL, info);
+
+    free(serialized);
+}
+
+void test_invalid_board(test_info *info) {
+    game_board_information *game_info = malloc(sizeof(game_board_information));
+    game_info->num = 0;
+    game_info->height = 1;
+    game_info->width = 1;
+    game_info->board = malloc(sizeof(TILE) * 1);
+    game_info->board[0] = 9;
+
+    char *serialized = serialize_game_board(game_info);
+    CINTA_ASSERT(serialized == NULL, info);
+
+    free(game_info->board);
+    free(game_info);
 }
