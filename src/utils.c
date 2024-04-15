@@ -21,8 +21,6 @@ bool is_integer(const char *str) {
     return true;
 }
 
-/** Returns -1 in case of error, since the minimum is necessarily greater than or equal to 0
- */
 int bounded_nat_of_string(const char *str, unsigned minimum, unsigned maximum) {
     if (!is_integer(str)) {
         return -1;
