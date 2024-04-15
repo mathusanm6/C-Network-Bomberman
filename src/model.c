@@ -1,4 +1,5 @@
 #include "./model.h"
+#include "utils.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -37,9 +38,8 @@ TILE get_probably_destructible_wall() {
 }
 
 int init_game_board_content() {
-    if (game_board == NULL) {
-        return EXIT_FAILURE;
-    }
+    RETURN_FAILURE_IF_NULL(game_board);
+
     srandom(time(NULL));
 
     // Indestructible wall part
@@ -86,17 +86,13 @@ int init_game_board(dimension dim) {
 
     if (game_board == NULL) {
         game_board = malloc(sizeof(board));
-        if (game_board == NULL) {
-            perror("malloc");
-            return EXIT_FAILURE;
-        }
+        RETURN_FAILURE_IF_NULL_PERROR(game_board, "malloc");
+
         game_board->dim.height = dim.height - 2; // 2 rows reserved for border
         game_board->dim.width = dim.width - 2;   // 2 columns reserved for border
         game_board->grid = calloc((game_board->dim.width) * (game_board->dim.height), sizeof(char));
-        if (game_board->grid == NULL) {
-            perror("calloc");
-            return EXIT_FAILURE;
-        }
+
+        RETURN_FAILURE_IF_NULL_PERROR(game_board->grid, "calloc");
     }
     if (init_game_board_content() == EXIT_FAILURE) {
         free_board(game_board);
@@ -107,10 +103,7 @@ int init_game_board(dimension dim) {
 int init_chat_line() {
     if (chat_line == NULL) {
         chat_line = malloc(sizeof(line));
-        if (chat_line == NULL) {
-            perror("malloc");
-            return EXIT_FAILURE;
-        }
+        RETURN_FAILURE_IF_NULL_PERROR(chat_line, "malloc");
         chat_line->cursor = 0;
     }
     return EXIT_SUCCESS;
@@ -119,11 +112,11 @@ int init_chat_line() {
 int init_player_positions() {
     for (int i = 0; i < 4; i++) {
         players[i] = malloc(sizeof(player));
-        if (players[i] == NULL) {
-            perror("malloc");
-            return EXIT_FAILURE;
-        }
+        RETURN_FAILURE_IF_NULL_PERROR(players[i], "malloc");
+
         players[i]->pos = malloc(sizeof(coord));
+        RETURN_FAILURE_IF_NULL_PERROR(players[i]->pos, "malloc");
+
         if (i < 2) {
             players[i]->pos->y = 0;
         } else {
@@ -139,14 +132,12 @@ int init_player_positions() {
 }
 
 int init_model(dimension dim, GAME_MODE game_mode_) {
-    if (init_game_board(dim) == EXIT_FAILURE) {
-        return EXIT_FAILURE;
-    } else if (init_chat_line() == EXIT_FAILURE) {
-        return EXIT_FAILURE;
-    } else if (init_player_positions() == EXIT_FAILURE) {
-        return EXIT_FAILURE;
-    }
+    RETURN_FAILURE_IF_ERROR(init_game_board(dim));
+    RETURN_FAILURE_IF_ERROR(init_chat_line());
+    RETURN_FAILURE_IF_ERROR(init_player_positions());
+
     game_mode = game_mode_;
+
     return EXIT_SUCCESS;
 }
 
@@ -392,10 +383,7 @@ void place_bomb(int player_id) {
 
 board *get_game_board() {
     board *copy = malloc(sizeof(board));
-    if (copy == NULL) {
-        perror("malloc");
-        return NULL;
-    }
+    RETURN_NULL_IF_NULL_PERROR(copy, "malloc");
 
     copy->dim.width = game_board->dim.width;
     copy->dim.height = game_board->dim.height;

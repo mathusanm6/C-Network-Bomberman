@@ -1,10 +1,8 @@
-#include <stdlib.h>
-
 #include "controller.h"
+#include "utils.h"
 
 int main() {
-    if (init_game() == EXIT_FAILURE) {
-        return EXIT_FAILURE;
-    }
+    RETURN_FAILURE_IF_ERROR(init_game());
+
     return game_loop();
 }

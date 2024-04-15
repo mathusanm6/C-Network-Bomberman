@@ -1,5 +1,6 @@
 #include "messages.h"
 #include "model.h"
+#include "utils.h"
 #include <arpa/inet.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -13,9 +14,7 @@ static uint16_t connection_header_value(int codereq, int id, int team_number) {
 
 connection_header_raw *create_connection_header_raw(int codereq, int id, int team_number) {
     connection_header_raw *connection_req = malloc(sizeof(connection_header_raw));
-    if (connection_req == NULL) {
-        return NULL;
-    }
+    RETURN_NULL_IF_NULL_PERROR(connection_req, "malloc");
 
     connection_req->req = connection_header_value(codereq, id, team_number);
 
@@ -39,9 +38,7 @@ connection_header_raw *serialize_initial_connection(const initial_connection_hea
 
 initial_connection_header *deserialize_initial_connection(const connection_header_raw *header) {
     initial_connection_header *initial_connection = malloc(sizeof(initial_connection_header));
-    if (initial_connection == NULL) {
-        return NULL;
-    }
+    RETURN_NULL_IF_NULL_PERROR(initial_connection, "malloc");
 
     uint16_t req = ntohs(header->req);
 
@@ -85,9 +82,7 @@ connection_header_raw *serialize_ready_connection(const ready_connection_header 
 }
 ready_connection_header *deserialize_ready_connection(const connection_header_raw *header) {
     ready_connection_header *ready_connection = malloc(sizeof(ready_connection_header));
-    if (ready_connection == NULL) {
-        return NULL;
-    }
+    RETURN_NULL_IF_NULL_PERROR(ready_connection, "malloc");
 
     uint16_t req = ntohs(header->req);
 
@@ -130,10 +125,7 @@ connection_information_raw *serialize_connection_information(const connection_in
     }
 
     connection_information_raw *raw = malloc(sizeof(connection_information_raw));
-
-    if (raw == NULL) {
-        return NULL;
-    }
+    RETURN_NULL_IF_NULL_PERROR(raw, "malloc");
 
     raw->header = connection_header_value(codereq, info->id, info->eq);
 
@@ -147,9 +139,7 @@ connection_information_raw *serialize_connection_information(const connection_in
 
 connection_information *deserialize_connection_information(const connection_information_raw *info) {
     connection_information *connection_info = malloc(sizeof(connection_information));
-    if (connection_info == NULL) {
-        return NULL;
-    }
+    RETURN_NULL_IF_NULL_PERROR(connection_info, "malloc");
 
     uint16_t header = ntohs(info->header);
 

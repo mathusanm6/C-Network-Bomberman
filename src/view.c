@@ -86,9 +86,7 @@ int init_view() {
     noecho();    /* Don't echo() while we do getch (we will manually print characters when relevant) */
     curs_set(0); // Set the cursor to invisible
 
-    if (init_colors() == EXIT_FAILURE) { // Initialize the colors
-        return EXIT_FAILURE;
-    }
+    RETURN_FAILURE_IF_ERROR(init_colors()); // Initialize the colors
 
     if (!is_valid_terminal_size()) { // Check if the terminal is big enough
         end_view();
@@ -97,9 +95,7 @@ int init_view() {
         return EXIT_FAILURE;
     }
 
-    if (init_windows() == EXIT_FAILURE) { // Initialize the windows
-        return EXIT_FAILURE;
-    }
+    RETURN_FAILURE_IF_ERROR(init_windows()); // Initialize the windows
 
     return EXIT_SUCCESS;
 }
@@ -170,13 +166,8 @@ int init_windows() {
     chat_history_wc = malloc(sizeof(window_context));
     chat_input_wc = malloc(sizeof(window_context));
 
-    if (split_terminal_window(game_wc, chat_wc) == EXIT_FAILURE) {
-        return EXIT_FAILURE;
-    }
-
-    if (split_chat_window(chat_wc, chat_history_wc, chat_input_wc) == EXIT_FAILURE) {
-        return EXIT_FAILURE;
-    }
+    RETURN_FAILURE_IF_ERROR(split_terminal_window(game_wc, chat_wc));
+    RETURN_FAILURE_IF_ERROR(split_chat_window(chat_wc, chat_history_wc, chat_input_wc));
 
     return EXIT_SUCCESS;
 }
