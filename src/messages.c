@@ -173,7 +173,7 @@ uint16_t game_action_value(int messages_num, GAME_ACTION action) {
     return htons(messages_num + (action << 12));
 }
 
-char *serialize_game_action(const game_action *action) {
+char *serialize_game_action(const game_action *game_action) {
     char *raw = malloc(sizeof(uint16_t) * 2);
     if (raw == NULL) {
         return NULL;
@@ -181,7 +181,7 @@ char *serialize_game_action(const game_action *action) {
 
     int codereq = 1;
 
-    switch (action->game_mode) {
+    switch (game_action->game_mode) {
         case SOLO:
             codereq = 5;
             break;
@@ -193,50 +193,50 @@ char *serialize_game_action(const game_action *action) {
             return NULL;
     }
 
-    if (action->id < 0 || action->id > 3) {
+    if (game_action->id < 0 || game_action->id > 3) {
         free(raw);
         return NULL;
     }
 
-    if (action->eq < 0 || action->eq > 1) {
+    if (game_action->eq < 0 || game_action->eq > 1) {
         free(raw);
         return NULL;
     }
 
-    uint16_t header = connection_header_value(codereq, action->id, action->eq);
+    uint16_t header = connection_header_value(codereq, game_action->id, game_action->eq);
 
-    if (action->message_number < 0 || action->message_number > (1 << 13)) {
+    if (game_action->message_number < 0 || game_action->message_number > (1 << 13)) {
         free(raw);
         return NULL;
     }
 
-    if (action->action < 0 || action->action > 5) {
+    if (game_action->action < 0 || game_action->action > 5) {
         free(raw);
         return NULL;
     }
 
-    uint16_t action_ = game_action_value(action->message_number, action->action);
+    uint16_t action = game_action_value(game_action->message_number, game_action->action);
 
     memcpy(raw, &header, sizeof(uint16_t));
-    memcpy(raw + sizeof(uint16_t), &action_, sizeof(uint16_t));
+    memcpy(raw + sizeof(uint16_t), &action, sizeof(uint16_t));
 
     return raw;
 }
 
-game_action *deserialize_game_action(const char *action) {
+game_action *deserialize_game_action(const char *game_action_raw) {
     game_action *game_action_ = malloc(sizeof(game_action));
     if (game_action_ == NULL) {
         return NULL;
     }
 
     uint16_t header;
-    uint16_t action_;
+    uint16_t action;
 
-    memcpy(&header, action, sizeof(uint16_t));
-    memcpy(&action_, action + sizeof(uint16_t), sizeof(uint16_t));
+    memcpy(&header, game_action_raw, sizeof(uint16_t));
+    memcpy(&action, game_action_raw + sizeof(uint16_t), sizeof(uint16_t));
 
     header = ntohs(header);
-    action_ = ntohs(action_);
+    action = ntohs(action);
 
     switch (header & BIT_OFFSET_13) {
         case 5:
@@ -253,8 +253,8 @@ game_action *deserialize_game_action(const char *action) {
     game_action_->id = (header >> 12) & 0x3; // We only need 2 bits
     game_action_->eq = (header >> 14) & 0x1; // We only need 1 bit
 
-    game_action_->message_number = action_ & BIT_OFFSET_13;
-    game_action_->action = (action_ >> 12) & 0x7; // We only need 3 bits
+    game_action_->message_number = action & BIT_OFFSET_13;
+    game_action_->action = (action >> 12) & 0x7; // We only need 3 bits
 
     return game_action_;
 }
@@ -333,15 +333,15 @@ game_board_information *deserialize_game_board(const char *info) {
     return game_board_info;
 }
 
-char *serialize_game_board_update(const game_board_update *info) {
+char *serialize_game_board_update(const game_board_update *update) {
     // 16 * 3 corresponds to the header, the message number and the height and width of the board
-    char *serialized = malloc((info->nb * 3) + 5);
+    char *serialized = malloc((update->nb * 3) + 5);
     if (serialized == NULL) {
         return NULL;
     }
 
     uint16_t header = connection_header_value(12, 0, 0);
-    uint16_t num = htons(info->num);
+    uint16_t num = htons(update->num);
 
     // Split into 2 bytes
     serialized[0] = header & 0xFF;
@@ -351,16 +351,16 @@ char *serialize_game_board_update(const game_board_update *info) {
     serialized[2] = num & 0xFF;
     serialized[3] = num >> 8;
 
-    serialized[4] = info->nb;
+    serialized[4] = update->nb;
 
-    for (int i = 0; i < info->nb; ++i) {
-        if (info->diff[i].tile > 8) {
+    for (int i = 0; i < update->nb; ++i) {
+        if (update->diff[i].tile > 8) {
             free(serialized);
             return NULL;
         }
-        serialized[5 + i * 3] = info->diff[i].x;
-        serialized[6 + i * 3] = info->diff[i].y;
-        serialized[7 + i * 3] = info->diff[i].tile;
+        serialized[5 + i * 3] = update->diff[i].x;
+        serialized[6 + i * 3] = update->diff[i].y;
+        serialized[7 + i * 3] = update->diff[i].tile;
     }
 
     return serialized;
