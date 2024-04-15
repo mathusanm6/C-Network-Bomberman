@@ -57,16 +57,8 @@ $(CINTAOBJ)/%.o: $(CINTA)/%.c
 
 all: $(EXEC_CLIENT) $(EXEC_SERVER)
 
-.PHONY: client
-
-client: $(EXEC_CLIENT)
-
 $(EXEC_CLIENT): $(OBJFILESCLIENT) 
 	$(CC) -o $@ $^ $(CFLAGS)
-
-.PHONY: server
-
-server: $(EXEC_SERVER)
 
 $(EXEC_SERVER): $(OBJFILESSERVER) 
 	$(CC) -o $@ $^ $(CFLAGS)
