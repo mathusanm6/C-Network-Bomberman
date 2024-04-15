@@ -50,15 +50,29 @@ int init_game_board_content() {
     }
 
     // Destructible wall part
-    for (int c = 2; c < game_board->dim.width - 2; c++) { // Fill the first and last line
+    for (int c = 3; c < game_board->dim.width - 3; c++) { // Fill the first and last line
         game_board->grid[coord_to_int(c, 0)] = get_probably_destructible_wall();
         game_board->grid[coord_to_int(c, game_board->dim.height - 1)] = get_probably_destructible_wall();
     }
-    for (int c = 2; c < game_board->dim.width - 2; c += 2) { // Fill the second and the second last line
-        game_board->grid[coord_to_int(c, 1)] = get_probably_destructible_wall();
-        game_board->grid[coord_to_int(c, game_board->dim.height - 2)] = get_probably_destructible_wall();
+    for (int l = 1; l < 3; l += 1) { // Fill the second, the third, the second last and the third last line
+        int jump;
+        int start;
+        int end;
+        if (l % 2 == 0) {
+            start = 1;
+            end = game_board->dim.width - 1;
+            jump = 1;
+        } else {
+            start = 2;
+            end = game_board->dim.width - 2;
+            jump = 2;
+        }
+        for (int c = start; c < end; c += jump) {
+            game_board->grid[coord_to_int(c, l)] = get_probably_destructible_wall();
+            game_board->grid[coord_to_int(c, game_board->dim.height - (l + 1))] = get_probably_destructible_wall();
+        }
     }
-    for (int l = 2; l < game_board->dim.height - 2; l++) { // Fill the other lines
+    for (int l = 3; l < game_board->dim.height - 3; l++) { // Fill the other lines
         if (l % 2 == 0) { // There are no indestructible walls between destructible walls on this line
             for (int c = 0; c < game_board->dim.width; c++) {
                 game_board->grid[coord_to_int(c, l)] = get_probably_destructible_wall();
