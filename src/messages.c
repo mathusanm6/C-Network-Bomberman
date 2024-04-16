@@ -169,8 +169,8 @@ connection_information *deserialize_connection_information(const connection_info
     return connection_info;
 }
 
-uint16_t game_action_value(int messages_num, GAME_ACTION action) {
-    return htons(messages_num + (action << 12));
+uint16_t game_action_value(int message_num, GAME_ACTION action) {
+    return htons(message_num + (action << 12));
 }
 
 char *serialize_game_action(const game_action *game_action) {
