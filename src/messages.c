@@ -260,7 +260,8 @@ game_action *deserialize_game_action(const char *game_action_raw) {
 }
 
 char *serialize_game_board(const game_board_information *info) {
-    // 6 corresponds to the header, the message number and the height and width of the board
+    // 6 corresponds to the number of bytes of the header, the
+    // message number and the height and width of the board
     char *serialized = malloc((info->height * info->width) + 6);
     if (serialized == NULL) {
         return NULL;
@@ -334,7 +335,8 @@ game_board_information *deserialize_game_board(const char *info) {
 }
 
 char *serialize_game_board_update(const game_board_update *update) {
-    // 16 * 3 corresponds to the header, the message number and the height and width of the board
+    // 5 corresponds to the number of bytes of the header, the message number
+    // and the number of tile_diffs
     char *serialized = malloc((update->nb * 3) + 5);
     if (serialized == NULL) {
         return NULL;
