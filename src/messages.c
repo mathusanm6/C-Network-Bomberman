@@ -175,9 +175,7 @@ uint16_t game_action_value(int message_num, GAME_ACTION action) {
 
 char *serialize_game_action(const game_action *game_action) {
     char *raw = malloc(sizeof(uint16_t) * 2);
-    if (raw == NULL) {
-        return NULL;
-    }
+    RETURN_NULL_IF_NULL_PERROR(raw, "malloc");
 
     int codereq = 1;
 
@@ -225,9 +223,7 @@ char *serialize_game_action(const game_action *game_action) {
 
 game_action *deserialize_game_action(const char *game_action_raw) {
     game_action *game_action_ = malloc(sizeof(game_action));
-    if (game_action_ == NULL) {
-        return NULL;
-    }
+    RETURN_NULL_IF_NULL_PERROR(game_action_, "malloc");
 
     uint16_t header;
     uint16_t action;
@@ -263,9 +259,7 @@ char *serialize_game_board(const game_board_information *info) {
     // 6 corresponds to the number of bytes of the header, the
     // message number and the height and width of the board
     char *serialized = malloc((info->height * info->width) + 6);
-    if (serialized == NULL) {
-        return NULL;
-    }
+    RETURN_NULL_IF_NULL_PERROR(serialized, "malloc");
 
     uint16_t header = connection_header_value(11, 0, 0);
     uint16_t num = htons(info->num);
@@ -294,9 +288,7 @@ char *serialize_game_board(const game_board_information *info) {
 
 game_board_information *deserialize_game_board(const char *info) {
     game_board_information *game_board_info = malloc(sizeof(game_board_information));
-    if (game_board_info == NULL) {
-        return NULL;
-    }
+    RETURN_NULL_IF_NULL_PERROR(game_board_info, "malloc");
 
     uint16_t header = ntohs(*(uint16_t *)info);
 
@@ -338,9 +330,7 @@ char *serialize_game_board_update(const game_board_update *update) {
     // 5 corresponds to the number of bytes of the header, the message number
     // and the number of tile_diffs
     char *serialized = malloc((update->nb * 3) + 5);
-    if (serialized == NULL) {
-        return NULL;
-    }
+    RETURN_NULL_IF_NULL_PERROR(serialized, "malloc");
 
     uint16_t header = connection_header_value(12, 0, 0);
     uint16_t num = htons(update->num);
@@ -370,9 +360,7 @@ char *serialize_game_board_update(const game_board_update *update) {
 
 game_board_update *deserialize_game_board_update(const char *update) {
     game_board_update *game_board_update_ = malloc(sizeof(game_board_update));
-    if (game_board_update_ == NULL) {
-        return NULL;
-    }
+    RETURN_NULL_IF_NULL_PERROR(game_board_update_, "malloc");
 
     uint16_t header = ntohs(*(uint16_t *)update);
 
