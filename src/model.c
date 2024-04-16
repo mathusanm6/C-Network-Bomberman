@@ -548,10 +548,10 @@ bool is_game_over() {
     }
 
     // In team mode, the game is over when all players of a team are dead
-    // The teams are always 0-1 and 2-3
+    // The teams are always 0-3 and 1-2
 
-    bool team1_dead = players[0]->dead && players[1]->dead;
-    bool team2_dead = players[2]->dead && players[3]->dead;
+    bool team1_dead = players[0]->dead && players[3]->dead;
+    bool team2_dead = players[1]->dead && players[2]->dead;
 
     return team1_dead || team2_dead;
 }
