@@ -350,7 +350,9 @@ void print_game(board *b, window_context *game_wc) {
     char hb = tile_to_char(HORIZONTAL_BORDER);
     for (y = 0; y < b->dim.height; y++) {
         for (x = 0; x < b->dim.width; x++) {
-            TILE t = get_grid(x, y);
+            /* TODO: Implement multiple games. The issue is that this will change as here won't be a real game on the
+             * client side */
+            TILE t = get_grid(x, y, 0);
             char c = tile_to_char(t);
             activate_color_for_tile(game_wc, t);
             mvwaddch(game_wc->win, y + 1 + pad.top, x + 1 + pad.left, c);
