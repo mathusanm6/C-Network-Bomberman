@@ -1,5 +1,6 @@
 #include "./controller.h"
 #include "./model.h"
+#include "./utils.h"
 #include "./view.h"
 
 #include <ncurses.h>
@@ -177,19 +178,14 @@ bool control() {
 }
 
 int init_game() {
-    if (init_view() == EXIT_FAILURE) {
-        return EXIT_FAILURE;
-    }
+    RETURN_FAILURE_IF_ERROR(init_view());
 
     init_controller();
 
     dimension dim;
     get_computed_board_dimension(&dim);
 
-    if (init_model(dim, SOLO) == EXIT_FAILURE) {
-        return EXIT_FAILURE;
-    }
-    return EXIT_SUCCESS;
+    return init_model(dim, SOLO);
 }
 
 int game_loop() {
