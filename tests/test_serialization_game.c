@@ -134,6 +134,8 @@ void test_game_action_ignores_eq_on_solo(test_info *info) {
     CINTA_ASSERT(deserialized->id == action->id, info);
 
     free(action);
+    free(deserialized);
+    free(serialized);
 }
 
 void test_invalid_game_action_id(test_info *info) {
