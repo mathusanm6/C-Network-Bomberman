@@ -205,7 +205,7 @@ char *serialize_game_action(const game_action *game_action) {
 
     uint16_t header = connection_header_value(codereq, game_action->id, game_action->eq);
 
-    if (game_action->message_number < 0 || game_action->message_number > (1 << 13)) {
+    if (game_action->message_number < 0 || game_action->message_number >= (1 << 13)) {
         free(raw);
         return NULL;
     }
