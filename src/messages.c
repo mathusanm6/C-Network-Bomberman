@@ -76,11 +76,11 @@ connection_header_raw *serialize_ready_connection(const ready_connection_header 
         return NULL;
     }
 
-    if (header->eq < 0 || header->eq > 1) {
+    if (header->game_mode == TEAM && (header->eq < 0 || header->eq > 1)) {
         return NULL;
     }
 
-    return create_connection_header_raw(codereq, header->id, header->eq);
+    return create_connection_header_raw(codereq, header->id, header->eq & 0x1);
 }
 ready_connection_header *deserialize_ready_connection(const connection_header_raw *header) {
     ready_connection_header *ready_connection = malloc(sizeof(ready_connection_header));

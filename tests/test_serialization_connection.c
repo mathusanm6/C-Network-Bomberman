@@ -1,10 +1,11 @@
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 #include "../src/messages.h"
 #include "test.h"
 
-#define NUMBER_TESTS 14
+#define NUMBER_TESTS 16
 
 void test_initial_connection_solo(test_info *info);
 void test_initial_connection_team(test_info *info);
@@ -16,6 +17,8 @@ void test_ready_connection_team(test_info *info);
 void test_ready_connection_invalid_game_mode(test_info *info);
 void test_ready_connection_invalid_team_number(test_info *info);
 void test_ready_connection_invalid_id(test_info *info);
+void test_ready_connection_ignores_eq(test_info *info);
+void test_ready_connnection_invalid_eq(test_info *info);
 
 void test_connection_information_solo(test_info *info);
 void test_connection_information_team(test_info *info);
@@ -36,6 +39,8 @@ test_info *serialization_connection() {
         QUICK_CASE("De/Serializing invalid ready connection with invalid team number",
                    test_ready_connection_invalid_team_number),
         QUICK_CASE("De/Serializing invalid ready connection with invalid id", test_ready_connection_invalid_id),
+        QUICK_CASE("De/Serializing ready connection solo ignores eq", test_ready_connection_ignores_eq),
+        QUICK_CASE("De/Serializing invalid ready connection with invalid eq", test_ready_connnection_invalid_eq),
         QUICK_CASE("De/Serializing connection information in SOLO mode", test_connection_information_solo),
         QUICK_CASE("De/Serializing connection information in TEAM mode", test_connection_information_team),
         QUICK_CASE("De/Serializing invalid connection information with invalid game mode",
@@ -169,6 +174,32 @@ void test_ready_connection_invalid_id(test_info *info) {
     CINTA_ASSERT_NULL(deserialized, info);
     free(connection2);
     free(deserialized);
+}
+
+void test_ready_connection_ignores_eq(test_info *info) {
+    ready_connection_header *header = malloc(sizeof(ready_connection_header));
+    header->game_mode = SOLO;
+    header->id = 0;
+    header->eq = 3;
+    connection_header_raw *connection = serialize_ready_connection(header);
+    ready_connection_header *deserialized = deserialize_ready_connection(connection);
+    CINTA_ASSERT(header->game_mode == deserialized->game_mode, info);
+    CINTA_ASSERT(header->id == deserialized->id, info);
+    CINTA_ASSERT(deserialized->eq == 1, info);
+    free(header);
+    free(connection);
+    free(deserialized);
+}
+
+void test_ready_connnection_invalid_eq(test_info *info) {
+    ready_connection_header *header = malloc(sizeof(ready_connection_header));
+    header->game_mode = TEAM;
+    header->id = 0;
+    header->eq = 3;
+    connection_header_raw *connection = serialize_ready_connection(header);
+    CINTA_ASSERT_NULL(connection, info);
+    free(header);
+    free(connection);
 }
 
 void test_connection_information(GAME_MODE game_mode, test_info *info, int portudp, int portmdiff, int *adrmdiff) {
