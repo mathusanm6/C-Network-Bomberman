@@ -194,7 +194,7 @@ int init_game() {
 
 int game_loop() {
     while (true) {
-        if (control()) {
+        if (is_game_over() || control()) {
             break;
         }
         board *game_board = get_game_board();

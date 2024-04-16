@@ -147,4 +147,8 @@ bool is_player_dead(int);
  */
 void update_bombs();
 
+/** Returns true if the game is over
+ */
+bool is_game_over();
+
 #endif // SRC_MODEL_H_
