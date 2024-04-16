@@ -198,7 +198,7 @@ char *serialize_game_action(const game_action *game_action) {
         return NULL;
     }
 
-    if (game_action->eq < 0 || game_action->eq > 1) {
+    if (game_action->game_mode == TEAM && (game_action->eq < 0 || game_action->eq > 1)) {
         free(raw);
         return NULL;
     }

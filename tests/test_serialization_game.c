@@ -6,8 +6,9 @@
 void test_solo_game_action(test_info *info);
 void test_team_game_action(test_info *info);
 void test_invalid_game_action_game_mode(test_info *info);
-void test_invalid_game_action_eq(test_info *info);
 void test_invalid_game_action_id(test_info *info);
+void test_game_action_ignores_eq_on_solo(test_info *info);
+void test_invalid_game_action_eq(test_info *info);
 void test_invalid_game_action_message_number(test_info *info);
 void test_invalid_game_action_action(test_info *info);
 
@@ -23,15 +24,16 @@ void test_game_board_update_large(test_info *info);
 void test_game_board_update_invalid_header(test_info *info);
 void test_game_board_update_invalid_diff(test_info *info);
 
-#define NUMBER_TESTS 17
+#define NUMBER_TESTS 18
 
 test_info *serialization_game() {
     test_case cases[NUMBER_TESTS] = {
         QUICK_CASE("Test solo game action", test_solo_game_action),
         QUICK_CASE("Test team game action", test_team_game_action),
         QUICK_CASE("Test invalid game action game mode", test_invalid_game_action_game_mode),
-        QUICK_CASE("Test invalid game action eq", test_invalid_game_action_eq),
         QUICK_CASE("Test invalid game action id", test_invalid_game_action_id),
+        QUICK_CASE("Test game action ignores eq on solo", test_game_action_ignores_eq_on_solo),
+        QUICK_CASE("Test invalid game action eq", test_invalid_game_action_eq),
         QUICK_CASE("Test invalid game action message number", test_invalid_game_action_message_number),
         QUICK_CASE("Test invalid game action action", test_invalid_game_action_action),
         QUICK_CASE("Test small board", test_small_board),
@@ -104,7 +106,7 @@ void test_invalid_game_action_game_mode(test_info *info) {
 
 void test_invalid_game_action_eq(test_info *info) {
     game_action *action = malloc(sizeof(game_action));
-    action->game_mode = SOLO;
+    action->game_mode = TEAM;
     action->eq = 2;
     action->id = 0;
     action->message_number = 0;
@@ -112,6 +114,24 @@ void test_invalid_game_action_eq(test_info *info) {
 
     char *serialized = serialize_game_action(action);
     CINTA_ASSERT(serialized == NULL, info);
+
+    free(action);
+}
+
+void test_game_action_ignores_eq_on_solo(test_info *info) {
+    game_action *action = malloc(sizeof(game_action));
+    action->game_mode = SOLO;
+    action->eq = 2;
+    action->id = 0;
+    action->message_number = 0;
+    action->action = GAME_UP;
+
+    char *serialized = serialize_game_action(action);
+    game_action *deserialized = deserialize_game_action(serialized);
+
+    CINTA_ASSERT(deserialized->eq == 0, info);
+    CINTA_ASSERT(deserialized->game_mode == action->game_mode, info);
+    CINTA_ASSERT(deserialized->id == action->id, info);
 
     free(action);
 }
