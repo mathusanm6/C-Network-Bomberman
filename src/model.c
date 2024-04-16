@@ -35,7 +35,7 @@ static game *games[1] = {NULL};
 
 TILE get_player(int);
 
-static game *init_game() {
+static game *init_game_struct() {
     game *g = malloc(sizeof(game));
     if (g == NULL) {
         perror("malloc");
@@ -65,12 +65,10 @@ TILE get_probably_destructible_wall() {
 
 int init_game_board_content(unsigned int game_id) {
     RETURN_FAILURE_IF_NULL(games[game_id]);
-    if (games[game_id] == NULL) {
-        return EXIT_FAILURE;
-    }
 
     board *game_board = games[game_id]->game_board;
     RETURN_FAILURE_IF_NULL(game_board);
+
     srandom(time(NULL));
 
     // Indestructible wall part
@@ -111,8 +109,7 @@ int init_game_board_content(unsigned int game_id) {
 }
 
 int init_game_board(dimension dim, unsigned int game_id) {
-    if (games[game_id] == NULL) {
-    }
+    RETURN_FAILURE_IF_NULL(games[game_id]);
 
     if (dim.width % 2 == 0) { // The game_board width has to be odd to fill it with content
         dim.width--;
@@ -125,21 +122,24 @@ int init_game_board(dimension dim, unsigned int game_id) {
         return EXIT_FAILURE;
     }
 
-    board *game_board = games[game_id]->game_board;
-
-    if (game_board == NULL) {
-        game_board = malloc(sizeof(board));
+    if (games[game_id]->game_board == NULL) {
+        board *game_board = malloc(sizeof(board));
         RETURN_FAILURE_IF_NULL_PERROR(game_board, "malloc");
 
         game_board->dim.height = dim.height - 2; // 2 rows reserved for border
         game_board->dim.width = dim.width - 2;   // 2 columns reserved for border
-        game_board->grid = calloc((game_board->dim.width) * (game_board->dim.height), sizeof(char));
 
+        game_board->grid = calloc((game_board->dim.width) * (game_board->dim.height), sizeof(char));
         RETURN_FAILURE_IF_NULL_PERROR(game_board->grid, "calloc");
+
+        games[game_id]->game_board = game_board;
     }
+
     if (init_game_board_content(game_id) == EXIT_FAILURE) {
-        free_board(game_board);
+        free_board(games[game_id]->game_board);
+        return EXIT_FAILURE;
     }
+
     return EXIT_SUCCESS;
 }
 
@@ -182,7 +182,7 @@ int init_player_positions(unsigned int game_id) {
 }
 
 int init_model(dimension dim, GAME_MODE game_mode_, unsigned int game_id) {
-    game *g = init_game();
+    game *g = init_game_struct();
     RETURN_FAILURE_IF_NULL(g);
 
     g->game_mode = game_mode_;
@@ -439,17 +439,17 @@ void place_bomb(int player_id, unsigned int game_id) {
         return;
     }
 
-    bomb_collection all_bombs = games[game_id]->all_bombs;
+    game *g = games[game_id];
 
-    if (all_bombs.total_count == all_bombs.max_capacity) {
-        int new_capacity = (all_bombs.max_capacity == 0) ? 4 : all_bombs.max_capacity * 2;
-        bomb *new_list = realloc(all_bombs.arr, new_capacity * sizeof(bomb));
+    if (g->all_bombs.total_count == g->all_bombs.max_capacity) {
+        int new_capacity = (g->all_bombs.max_capacity == 0) ? 4 : g->all_bombs.max_capacity * 2;
+        bomb *new_list = realloc(g->all_bombs.arr, new_capacity * sizeof(bomb));
         if (new_list == NULL) {
             perror("realloc");
             return;
         }
-        all_bombs.arr = new_list;
-        all_bombs.max_capacity = new_capacity;
+        g->all_bombs.arr = new_list;
+        g->all_bombs.max_capacity = new_capacity;
     }
 
     player **players = games[game_id]->players;
@@ -466,8 +466,8 @@ void place_bomb(int player_id, unsigned int game_id) {
     new_bomb.pos.y = current_pos.y;
     new_bomb.placement_time = time(NULL);
 
-    all_bombs.arr[all_bombs.total_count] = new_bomb;
-    all_bombs.total_count++;
+    g->all_bombs.arr[g->all_bombs.total_count] = new_bomb;
+    g->all_bombs.total_count++;
 
     set_grid(current_pos.x, current_pos.y, BOMB, game_id);
 }
@@ -622,19 +622,19 @@ void update_bombs(unsigned int game_id) {
         return;
     }
 
-    bomb_collection all_bombs = games[game_id]->all_bombs;
+    game *g = games[game_id];
 
     time_t current_time = time(NULL);
 
-    for (int i = 0; i < all_bombs.total_count; ++i) {
-        bomb b = all_bombs.arr[i];
+    for (int i = 0; i < g->all_bombs.total_count; ++i) {
+        bomb b = g->all_bombs.arr[i];
         if (difftime(current_time, b.placement_time) >= BOMB_LIFETIME) {
             update_explosion(b, game_id);
             set_grid(b.pos.x, b.pos.y, EMPTY, game_id);
 
             // Get rid of the exploded bomb
-            all_bombs.total_count -= 1;
-            all_bombs.arr[i] = all_bombs.arr[all_bombs.total_count]; // no need to free memory
+            g->all_bombs.total_count -= 1;
+            g->all_bombs.arr[i] = g->all_bombs.arr[g->all_bombs.total_count]; // no need to free memory
         }
     }
 }
