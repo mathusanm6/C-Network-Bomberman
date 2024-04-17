@@ -58,17 +58,32 @@ typedef struct board {
     dimension dim;
 } board;
 
-typedef struct line {
-    char data[TEXT_SIZE];
-    int cursor;
-} line;
-
 typedef struct coord {
     int x;
     int y;
 } coord;
 
-extern line *chat_line; // line of text that can be filled in with chat
+typedef struct chat_node {
+    char *message;
+    struct char_node *next;
+} chat_node;
+
+typedef struct chat_history {
+    chat_node *head;
+    int count;
+} chat_history;
+
+typedef struct chat_line {
+    char data[TEXT_SIZE];
+    int cursor;
+} chat_line;
+
+typedef struct chat {
+    chat_history *history;
+    chat_line *line;
+} chat;
+
+extern chat *chat_;
 
 /** Initializes - The game board with the width and the height
  *              - The chat line
@@ -122,6 +137,9 @@ void clear_line();
 /** Adds the character at the end of chat_line if it does not exceed TEXT_SIZE and increment the cursor
  */
 void add_to_line(char);
+
+// TODO! : ADD COMMENTS
+void add_message(chat_history *, char *);
 
 /** Depending on the action, changes the player's position in the table if the argument is a move.
  */

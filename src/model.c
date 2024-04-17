@@ -3,7 +3,11 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
+
+// TODO! : DEFINE IT BETTER
+#define MAX_CHAT_HISTORY_LEN 100
 
 typedef struct player {
     coord *pos;
@@ -21,7 +25,7 @@ typedef struct bomb_collection {
     int max_capacity;
 } bomb_collection;
 
-line *chat_line = NULL;
+chat *chat_ = NULL;
 
 typedef struct game {
     board *game_board;
@@ -143,11 +147,14 @@ int init_game_board(dimension dim, unsigned int game_id) {
     return EXIT_SUCCESS;
 }
 
-int init_chat_line() {
-    if (chat_line == NULL) {
-        chat_line = malloc(sizeof(line));
-        RETURN_FAILURE_IF_NULL_PERROR(chat_line, "malloc");
-        chat_line->cursor = 0;
+int init_chat() {
+    if (chat_ == NULL) {
+        chat_ = malloc(sizeof(chat_));
+        RETURN_FAILURE_IF_NULL_PERROR(chat_, "malloc");
+        chat_->history = NULL;
+        chat_->line = malloc(sizeof(chat_line));
+        RETURN_FAILURE_IF_NULL_PERROR(chat_->line, "malloc");
+        chat_->line->cursor = 0;
     }
     return EXIT_SUCCESS;
 }
@@ -190,7 +197,7 @@ int init_model(dimension dim, GAME_MODE game_mode_, unsigned int game_id) {
     games[game_id] = g;
 
     RETURN_FAILURE_IF_ERROR(init_game_board(dim, game_id));
-    RETURN_FAILURE_IF_ERROR(init_chat_line());
+    RETURN_FAILURE_IF_ERROR(init_chat());
     RETURN_FAILURE_IF_ERROR(init_player_positions(game_id));
 
     return EXIT_SUCCESS;
@@ -215,11 +222,65 @@ void free_game_board(unsigned int game_id) {
     free_board(game_board);
 }
 
-void free_chat_line() {
-    if (chat_line != NULL) {
-        free(chat_line);
-        chat_line = NULL;
+// TODO!: CHECK IF SIGSEGV
+void free_chat_node(chat_node *node) {
+    if (node == NULL) {
+        return;
     }
+
+    if (node->message != NULL) {
+        free(node->message); // Free the duplicated message string
+        node->message = NULL;
+    }
+
+    free(node);
+}
+
+// TODO!: CHECK IF SIGSEGV
+void free_chat_history(chat_history *history) {
+    if (history == NULL) {
+        return;
+    }
+
+    if (history->head == NULL) {
+        free(history);
+        return;
+    }
+
+    chat_node *current = history->head->next; // Start from the second node
+    chat_node *next;
+
+    while (current != history->head) {
+        next = current->next;
+        free_chat_node(current);
+        current = next;
+    }
+
+    free_chat_node(history->head);
+
+    history->head = NULL;
+    history->count = 0;
+
+    free(history);
+}
+
+void free_chat() {
+    if (chat_ == NULL) {
+        return;
+    }
+
+    if (chat_->history != NULL) {
+        free_chat_history(chat_->history);
+        chat_->history = NULL;
+    }
+
+    if (chat_->line != NULL) {
+        free(chat_->line);
+        chat_->line = NULL;
+    }
+
+    free(chat_);
+    chat_ = NULL;
 }
 
 void free_player_positions(unsigned int game_id) {
@@ -241,7 +302,7 @@ void free_player_positions(unsigned int game_id) {
 
 void free_model(unsigned int game_id) {
     free_game_board(game_id);
-    free_chat_line();
+    free_chat();
     free_player_positions(game_id);
 }
 
@@ -337,21 +398,68 @@ void set_grid(int x, int y, TILE v, unsigned int game_id) {
 }
 
 void decrement_line() {
-    if (chat_line != NULL && chat_line->cursor > 0) {
-        chat_line->cursor--;
+    if (chat_->line != NULL && chat_->line->cursor > 0) {
+        chat_->line->cursor--;
     }
 }
 
 void clear_line() {
-    if (chat_line != NULL) {
-        chat_line->cursor = 0;
+    if (chat_->line != NULL) {
+        chat_->line->cursor = 0;
     }
 }
 
 void add_to_line(char c) {
-    if (chat_line != NULL && chat_line->cursor < TEXT_SIZE && c >= ' ' && c <= '~') {
-        chat_line->data[(chat_line->cursor)] = c;
-        (chat_line->cursor)++;
+    if (chat_->line != NULL && chat_->line->cursor < TEXT_SIZE && c >= ' ' && c <= '~') {
+        chat_->line->data[(chat_->line->cursor)] = c;
+        (chat_->line->cursor)++;
+    }
+}
+
+chat_node *create_chat_node(char *msg) {
+    chat_node *new_node = malloc(sizeof(chat_node));
+    if (new_node != NULL) {
+        // Duplicate the message string to avoid SIGSEGV if dynamically allocated message freed
+        new_node->message = strdup(msg);
+        if (new_node->message == NULL) {
+            free(new_node);
+            return NULL;
+        }
+        new_node->next = NULL;
+    }
+    return new_node;
+}
+
+void add_message(chat_history *history, char *msg) {
+    chat_node *new_node = create_chat_node(msg);
+    if (new_node == NULL) {
+        return;
+    }
+
+    if (history->count == MAX_CHAT_HISTORY_LEN) {
+        // If the history is full, replace the oldest message
+        chat_node *temp = history->head;
+        while (temp->next != history->head) { // Find the last node before head
+            temp = temp->next;
+        }
+        temp->next = new_node;                // Link the new node after the last node
+        new_node->next = history->head->next; // New node points to second oldest node
+        free(history->head);
+        history->head = new_node->next; // New head is the second oldest node
+    } else {
+        // List is not full, add the new node to the end
+        if (history->head == NULL) {
+            history->head = new_node;
+            new_node->next = new_node;
+        } else {
+            chat_node *temp = history->head;
+            while (temp->next != history->head) {
+                temp = temp->next;
+            }
+            temp->next = new_node;
+            new_node->next = history->head;
+        }
+        history->count++;
     }
 }
 

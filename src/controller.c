@@ -197,7 +197,7 @@ int game_loop() {
             break;
         }
         board *game_board = get_game_board(TMP_GAME_ID);
-        refresh_game(game_board, chat_line);
+        refresh_game(game_board, chat_);
         free_board(game_board);
         update_bombs(TMP_GAME_ID);
         usleep(30 * 1000);

@@ -21,6 +21,6 @@ void get_computed_board_dimension(dimension *);
 
 /** Updates terminal display with board data
  */
-void refresh_game(board *, line *);
+void refresh_game(board *, chat *);
 
 #endif // SRC_VIEW_H_
