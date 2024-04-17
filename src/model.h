@@ -65,7 +65,7 @@ typedef struct coord {
 
 typedef struct chat_node {
     char *message;
-    struct char_node *next;
+    struct chat_node *next;
 } chat_node;
 
 typedef struct chat_history {

@@ -10,6 +10,7 @@
 #define PADDING_SCREEN_LEFT 2
 #define PADDING_PLAYABLE_TOP 2
 #define PADDING_PLAYABLE_LEFT 4
+#define CHAT_TAG_SIZE 12
 
 typedef struct window_context {
     dimension dim;
@@ -44,6 +45,7 @@ static int split_chat_window(window_context *, window_context *, window_context 
 
 // Helper functions for refreshing the game and chat windows
 static void print_game(board *, window_context *);
+static void print_player_chat_tag(int, window_context *);
 static void print_chat(chat_line *, window_context *, window_context *);
 
 int init_colors() {
@@ -136,11 +138,12 @@ void get_computed_board_dimension(dimension *dim) {
     }
 }
 
-void refresh_game(board *b, chat *c) {
+void refresh_game(board *b, chat *c, int current_player) {
 
     print_game(b, game_wc);
     wrefresh(game_wc->win); // Refresh the game window
 
+    print_player_chat_tag(current_player, chat_input_wc);
     print_chat(c->line, chat_history_wc, chat_input_wc);
     wrefresh(chat_input_wc->win);   // Refresh the chat input window (Before chat_win refresh)
     wrefresh(chat_history_wc->win); // Refresh the chat history window
@@ -375,20 +378,67 @@ void print_game(board *b, window_context *game_wc) {
     deactivate_color_for_tile(game_wc, vb);
 }
 
+void activate_color_for_player(window_context *wc, int current_player) {
+    switch (current_player) {
+        case 1:
+            wattron(wc->win, COLOR_PAIR(4));
+            break;
+        case 2:
+            wattron(wc->win, COLOR_PAIR(5));
+            break;
+        case 3:
+            wattron(wc->win, COLOR_PAIR(6));
+            break;
+        case 4:
+            wattron(wc->win, COLOR_PAIR(7));
+            break;
+        default:
+            break;
+    }
+}
+
+void deactivate_color_for_player(window_context *wc, int current_player) {
+    switch (current_player) {
+        case 1:
+            wattroff(wc->win, COLOR_PAIR(4));
+            break;
+        case 2:
+            wattroff(wc->win, COLOR_PAIR(5));
+            break;
+        case 3:
+            wattroff(wc->win, COLOR_PAIR(6));
+            break;
+        case 4:
+            wattroff(wc->win, COLOR_PAIR(7));
+            break;
+        default:
+            break;
+    }
+}
+
+void print_player_chat_tag(int current_player, window_context *chat_input_wc) {
+    // Update chat text
+    activate_color_for_player(chat_input_wc, current_player + 1);
+    wattron(chat_input_wc->win, A_BOLD);        // Enable bold
+
+    mvwprintw(chat_input_wc->win, 1, 1, " Player %d : ", current_player + 1);
+
+    wattroff(chat_input_wc->win, A_BOLD);        // Disable bold
+    deactivate_color_for_player(chat_input_wc, current_player + 1);
+}
+
 void print_chat(chat_line *l, window_context *chat_history_wc, window_context *chat_input_wc) {
     // Update chat text
     wattron(chat_input_wc->win, COLOR_PAIR(3)); // Enable custom color 3
-    wattron(chat_input_wc->win, A_BOLD);        // Enable bold
     int x;
     char e = tile_to_char(EMPTY);
-    for (x = 0; x < chat_input_wc->dim.width - 2; x++) {
+    for (x = 0; x < chat_input_wc->dim.width - 2 - CHAT_TAG_SIZE; x++) {
         if (x >= TEXT_SIZE || x >= l->cursor) {
-            mvwaddch(chat_input_wc->win, 1, x + 1, e);
+            mvwaddch(chat_input_wc->win, 1, x + 1 + CHAT_TAG_SIZE, e);
         } else {
-            mvwaddch(chat_input_wc->win, 1, x + 1, l->data[x]);
+            mvwaddch(chat_input_wc->win, 1, x + 1 + CHAT_TAG_SIZE, l->data[x]);
         }
     }
-    wattroff(chat_input_wc->win, A_BOLD);        // Disable bold
     wattroff(chat_input_wc->win, COLOR_PAIR(3)); // Disable custom color 3
 
     // Update chat history

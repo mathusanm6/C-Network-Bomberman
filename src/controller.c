@@ -152,6 +152,7 @@ bool perform_game_action(int c) {
         case GAME_QUIT:
             return true;
         case SWITCH_PLAYER:
+            clear_line();
             do {
                 current_player = (current_player + 1) % PLAYER_NUM;
             } while (is_player_dead(current_player, TMP_GAME_ID));
@@ -197,7 +198,7 @@ int game_loop() {
             break;
         }
         board *game_board = get_game_board(TMP_GAME_ID);
-        refresh_game(game_board, chat_);
+        refresh_game(game_board, chat_, current_player);
         free_board(game_board);
         update_bombs(TMP_GAME_ID);
         usleep(30 * 1000);
