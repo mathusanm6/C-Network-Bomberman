@@ -117,7 +117,8 @@ bool perform_chat_action(int c) {
             decrement_line();
             break;
         case CHAT_SEND:
-            // TODO : ADD MESSAGE TO CHAT
+            add_message(chat_->history, chat_->line->data);
+            clear_line();
             break;
         case CHAT_CLEAR:
             clear_line();

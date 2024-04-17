@@ -419,11 +419,11 @@ void deactivate_color_for_player(window_context *wc, int current_player) {
 void print_player_chat_tag(int current_player, window_context *chat_input_wc) {
     // Update chat text
     activate_color_for_player(chat_input_wc, current_player + 1);
-    wattron(chat_input_wc->win, A_BOLD);        // Enable bold
+    wattron(chat_input_wc->win, A_BOLD); // Enable bold
 
     mvwprintw(chat_input_wc->win, 1, 1, " Player %d : ", current_player + 1);
 
-    wattroff(chat_input_wc->win, A_BOLD);        // Disable bold
+    wattroff(chat_input_wc->win, A_BOLD); // Disable bold
     deactivate_color_for_player(chat_input_wc, current_player + 1);
 }
 

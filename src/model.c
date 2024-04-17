@@ -7,7 +7,7 @@
 #include <time.h>
 
 // TODO! : DEFINE IT BETTER
-#define MAX_CHAT_HISTORY_LEN 100
+#define MAX_CHAT_HISTORY_LEN 10
 
 typedef struct player {
     coord *pos;
@@ -151,7 +151,8 @@ int init_chat() {
     if (chat_ == NULL) {
         chat_ = malloc(sizeof(chat_));
         RETURN_FAILURE_IF_NULL_PERROR(chat_, "malloc");
-        chat_->history = NULL;
+        chat_->history = malloc(sizeof(chat_history));
+        RETURN_FAILURE_IF_NULL_PERROR(chat_->history, "malloc");
         chat_->line = malloc(sizeof(chat_line));
         RETURN_FAILURE_IF_NULL_PERROR(chat_->line, "malloc");
         chat_->line->cursor = 0;
@@ -431,6 +432,10 @@ chat_node *create_chat_node(char *msg) {
 }
 
 void add_message(chat_history *history, char *msg) {
+    if (history == NULL) {
+        return;
+    }
+
     chat_node *new_node = create_chat_node(msg);
     if (new_node == NULL) {
         return;
