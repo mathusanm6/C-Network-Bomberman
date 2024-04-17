@@ -93,8 +93,12 @@ typedef struct chat_message {
     char *message; // `\0` terminated
 } chat_message;
 
-char *serialize_chat_message(const chat_message *message);
+char *client_serialize_chat_message(const chat_message *message);
 
-chat_message *deserialize_chat_message(const char *message);
+chat_message *client_deserialize_chat_message(const char *message);
+
+char *server_serialize_chat_message(const chat_message *message);
+
+chat_message *server_deserialize_chat_message(const char *message);
 
 #endif // MESSAGES_CLIENT_H

@@ -35,6 +35,14 @@ test_info *serialization_chat() {
     return cinta_run_cases("Serialization tests | Chat", cases, NUMBER_TESTS);
 }
 
+void assert_chat_message_info(test_info *info, chat_message *msg1, chat_message *msg2) {
+    CINTA_ASSERT_INT(msg1->type, msg2->type, info);
+    CINTA_ASSERT_INT(msg1->id, msg2->id, info);
+    CINTA_ASSERT_INT(msg1->eq, msg2->eq, info);
+    CINTA_ASSERT_INT(msg1->message_length, msg2->message_length, info);
+    CINTA_ASSERT(strncmp(msg1->message, msg2->message, msg1->message_length) == 0, info);
+}
+
 /** Assumes `message` to be `\0` terminated and `length` to be the length of the message without the `\0` */
 void test_message(test_info *info, char *message, uint8_t length, chat_message_type type) {
     chat_message *msg = malloc(sizeof(chat_message));
@@ -47,14 +55,24 @@ void test_message(test_info *info, char *message, uint8_t length, chat_message_t
         for (int j = 0; j < 2; j++) {
             msg->eq = j;
 
-            char *serialized = serialize_chat_message(msg);
-            chat_message *deserialized = deserialize_chat_message(serialized);
+            char *serialized;
+            chat_message *deserialized;
 
-            CINTA_ASSERT_INT(deserialized->type, msg->type, info);
-            CINTA_ASSERT_INT(deserialized->id, msg->id, info);
-            CINTA_ASSERT_INT(deserialized->eq, msg->eq, info);
-            CINTA_ASSERT_INT(deserialized->message_length, msg->message_length, info);
-            CINTA_ASSERT(strncmp(deserialized->message, msg->message, length) == 0, info);
+            serialized = client_serialize_chat_message(msg);
+            deserialized = client_deserialize_chat_message(serialized);
+
+            assert_chat_message_info(info, msg, deserialized);
+            assert_chat_message_info(info, msg, deserialized);
+
+            free(serialized);
+            free(deserialized->message);
+            free(deserialized);
+
+            serialized = server_serialize_chat_message(msg);
+            deserialized = server_deserialize_chat_message(serialized);
+
+            assert_chat_message_info(info, msg, deserialized);
+            assert_chat_message_info(info, msg, deserialized);
 
             free(serialized);
             free(deserialized->message);
@@ -120,7 +138,10 @@ void test_team_message_invalid_type(test_info *info) {
     msg->id = 0;
     msg->eq = 0;
 
-    char *serialized = serialize_chat_message(msg);
+    char *serialized = client_serialize_chat_message(msg);
+    CINTA_ASSERT_NULL(serialized, info);
+
+    serialized = server_serialize_chat_message(msg);
     CINTA_ASSERT_NULL(serialized, info);
 
     free(msg);
@@ -134,7 +155,10 @@ void test_team_message_invalid_id(test_info *info) {
     msg->id = 5;
     msg->eq = 0;
 
-    char *serialized = serialize_chat_message(msg);
+    char *serialized = client_serialize_chat_message(msg);
+    CINTA_ASSERT_NULL(serialized, info);
+
+    serialized = server_serialize_chat_message(msg);
     CINTA_ASSERT_NULL(serialized, info);
 
     free(msg);
@@ -148,7 +172,10 @@ void test_team_message_invalid_eq(test_info *info) {
     msg->id = 0;
     msg->eq = 2;
 
-    char *serialized = serialize_chat_message(msg);
+    char *serialized = client_serialize_chat_message(msg);
+    CINTA_ASSERT_NULL(serialized, info);
+
+    serialized = server_serialize_chat_message(msg);
     CINTA_ASSERT_NULL(serialized, info);
 
     free(msg);
@@ -162,8 +189,8 @@ void test_team_message_ignore_eq_on_global(test_info *info) {
     msg->id = 0;
     msg->eq = 3;
 
-    char *serialized = serialize_chat_message(msg);
-    chat_message *deserialized = deserialize_chat_message(serialized);
+    char *serialized = client_serialize_chat_message(msg);
+    chat_message *deserialized = client_deserialize_chat_message(serialized);
 
     CINTA_ASSERT_INT(deserialized->type, msg->type, info);
     CINTA_ASSERT_INT(deserialized->id, msg->id, info);
@@ -171,8 +198,21 @@ void test_team_message_ignore_eq_on_global(test_info *info) {
     CINTA_ASSERT_INT(deserialized->message_length, msg->message_length, info);
     CINTA_ASSERT_STRING(deserialized->message, msg->message, info);
 
-    free(msg);
     free(serialized);
     free(deserialized->message);
     free(deserialized);
+
+    serialized = server_serialize_chat_message(msg);
+    deserialized = server_deserialize_chat_message(serialized);
+
+    CINTA_ASSERT_INT(deserialized->type, msg->type, info);
+    CINTA_ASSERT_INT(deserialized->id, msg->id, info);
+    CINTA_ASSERT_INT(deserialized->eq, 1, info);
+    CINTA_ASSERT_INT(deserialized->message_length, msg->message_length, info);
+    CINTA_ASSERT_STRING(deserialized->message, msg->message, info);
+
+    free(serialized);
+    free(deserialized->message);
+    free(deserialized);
+    free(msg);
 }

@@ -398,23 +398,20 @@ game_board_update *deserialize_game_board_update(const char *update) {
     return game_board_update_;
 }
 
-char *serialize_chat_message(const chat_message *message) {
+static char *serialize_chat_message(const chat_message *message, int initial_codereq) {
     // 2 for the header and 1 for the message length (2+1=3)
     char *serialized = malloc(3 + message->message_length);
     RETURN_NULL_IF_NULL_PERROR(serialized, "malloc");
 
-    int codereq = 1;
+    int codereq = 0;
 
-    switch (message->type) {
-        case GLOBAL_M:
-            codereq = 7;
-            break;
-        case TEAM_M:
-            codereq = 8;
-            break;
-        default:
-            free(serialized);
-            return NULL;
+    if (message->type == GLOBAL_M) {
+        codereq = initial_codereq;
+    } else if (message->type == TEAM_M) {
+        codereq = initial_codereq + 1;
+    } else {
+        free(serialized);
+        return NULL;
     }
 
     if (message->id < 0 || message->id > 3) {
@@ -440,27 +437,30 @@ char *serialize_chat_message(const chat_message *message) {
     return serialized;
 }
 
-chat_message *deserialize_chat_message(const char *message) {
+#define CLIENT_CHAT_CODE 7
+#define SERVER_CHAT_CODE 13
+
+char *client_serialize_chat_message(const chat_message *message) {
+    return serialize_chat_message(message, CLIENT_CHAT_CODE);
+}
+
+char *server_serialize_chat_message(const chat_message *message) {
+    return serialize_chat_message(message, SERVER_CHAT_CODE);
+}
+
+chat_message *deserialize_chat_message(const char *message, int codereq) {
     chat_message *chat_message_ = malloc(sizeof(chat_message));
     RETURN_NULL_IF_NULL_PERROR(chat_message_, "malloc");
 
     uint16_t header = ntohs(*(uint16_t *)message);
 
-    if ((header & BIT_OFFSET_13) != 7 && (header & BIT_OFFSET_13) != 8) {
+    if ((header & BIT_OFFSET_13) == codereq) {
+        chat_message_->type = GLOBAL_M;
+    } else if ((header & BIT_OFFSET_13) == codereq + 1) {
+        chat_message_->type = TEAM_M;
+    } else {
         free(chat_message_);
         return NULL;
-    }
-
-    switch (header & BIT_OFFSET_13) {
-        case 7:
-            chat_message_->type = GLOBAL_M;
-            break;
-        case 8:
-            chat_message_->type = TEAM_M;
-            break;
-        default:
-            free(chat_message_);
-            return NULL;
     }
 
     chat_message_->id = (header >> 12) & 0x3; // We only need 2 bits
@@ -478,4 +478,12 @@ chat_message *deserialize_chat_message(const char *message) {
     chat_message_->message[chat_message_->message_length] = '\0';
 
     return chat_message_;
+}
+
+chat_message *client_deserialize_chat_message(const char *message) {
+    return deserialize_chat_message(message, CLIENT_CHAT_CODE);
+}
+
+chat_message *server_deserialize_chat_message(const char *message) {
+    return deserialize_chat_message(message, SERVER_CHAT_CODE);
 }
