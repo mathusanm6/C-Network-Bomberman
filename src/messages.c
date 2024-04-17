@@ -487,3 +487,64 @@ chat_message *client_deserialize_chat_message(const char *message) {
 chat_message *server_deserialize_chat_message(const char *message) {
     return deserialize_chat_message(message, SERVER_CHAT_CODE);
 }
+
+char *serialize_game_end(const game_end *end) {
+    char *serialized = malloc(2);
+    RETURN_NULL_IF_NULL_PERROR(serialized, "malloc");
+
+    int codereq = 1;
+
+    switch (end->game_mode) {
+        case SOLO:
+            codereq = 15;
+            break;
+        case TEAM:
+            codereq = 16;
+            break;
+        default:
+            free(serialized);
+            return NULL;
+    }
+
+    if (end->game_mode == SOLO && (end->id < 0 || end->id > 3)) {
+        free(serialized);
+        return NULL;
+    }
+
+    if (end->game_mode == TEAM && (end->eq < 0 || end->eq > 1)) {
+        free(serialized);
+        return NULL;
+    }
+
+    uint16_t header = connection_header_value(codereq, end->id, end->eq);
+
+    // Split into 2 bytes
+    serialized[0] = header & 0xFF;
+    serialized[1] = header >> 8;
+
+    return serialized;
+}
+
+game_end *deserialize_game_end(const char *end) {
+    game_end *game_end_ = malloc(sizeof(game_end));
+    RETURN_NULL_IF_NULL_PERROR(game_end_, "malloc");
+
+    uint16_t header = ntohs(*(uint16_t *)end);
+
+    switch (header & BIT_OFFSET_13) {
+        case 15:
+            game_end_->game_mode = SOLO;
+            break;
+        case 16:
+            game_end_->game_mode = TEAM;
+            break;
+        default:
+            free(game_end_);
+            return NULL;
+    }
+
+    game_end_->id = (header >> 12) & 0x3; // We only need 2 bits
+    game_end_->eq = (header >> 14) & 0x1; // We only need 1 bit
+
+    return game_end_;
+}

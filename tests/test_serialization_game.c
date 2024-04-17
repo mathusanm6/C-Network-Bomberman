@@ -24,7 +24,15 @@ void test_game_board_update_large(test_info *info);
 void test_game_board_update_invalid_header(test_info *info);
 void test_game_board_update_invalid_diff(test_info *info);
 
-#define NUMBER_TESTS 18
+void test_game_end_solo(test_info *info);
+void test_game_end_team(test_info *info);
+void test_invalid_game_end_game_mode(test_info *info);
+void test_invalid_game_end_id(test_info *info);
+void test_team_ignore_id(test_info *info);
+void test_invalid_game_end_eq(test_info *info);
+void test_solo_ignores_eq(test_info *info);
+
+#define NUMBER_TESTS 25
 
 test_info *serialization_game() {
     test_case cases[NUMBER_TESTS] = {
@@ -36,16 +44,26 @@ test_info *serialization_game() {
         QUICK_CASE("Test invalid game action eq", test_invalid_game_action_eq),
         QUICK_CASE("Test invalid game action message number", test_invalid_game_action_message_number),
         QUICK_CASE("Test invalid game action action", test_invalid_game_action_action),
+
         QUICK_CASE("Test small board", test_small_board),
         QUICK_CASE("Test medium board", test_medium_board),
         QUICK_CASE("Test big board", test_big_board),
         QUICK_CASE("Test invalid header", test_invalid_header),
         QUICK_CASE("Test invalid board", test_invalid_board),
+
         QUICK_CASE("Test game board update small", test_game_board_update_small),
         QUICK_CASE("Test game board update medium", test_game_board_update_medium),
         QUICK_CASE("Test game board update large", test_game_board_update_large),
         QUICK_CASE("Test game board update invalid header", test_game_board_update_invalid_header),
         QUICK_CASE("Test game board update invalid diff", test_game_board_update_invalid_diff),
+
+        QUICK_CASE("Test game end solo", test_game_end_solo),
+        QUICK_CASE("Test game end team", test_game_end_team),
+        QUICK_CASE("Test invalid game end game mode", test_invalid_game_end_game_mode),
+        QUICK_CASE("Test invalid game end id", test_invalid_game_end_id),
+        QUICK_CASE("Test team ignore id", test_team_ignore_id),
+        QUICK_CASE("Test invalid game end eq", test_invalid_game_end_eq),
+        QUICK_CASE("Test solo ignores eq", test_solo_ignores_eq),
     };
 
     return cinta_run_cases("Serialization tests | Game", cases, NUMBER_TESTS);
@@ -323,4 +341,107 @@ void test_game_board_update_invalid_diff(test_info *info) {
 
     free(update->diff);
     free(update);
+}
+
+void test_game_end(GAME_MODE game_mode, test_info *info) {
+    game_end *end = malloc(sizeof(game_end));
+    end->game_mode = game_mode;
+
+    for (int i = 0; i < 4; i++) {
+        end->id = i;
+
+        for (int j = 0; j < 2; j++) {
+            end->eq = j;
+
+            char *serialized = serialize_game_end(end);
+            game_end *deserialized = deserialize_game_end(serialized);
+
+            CINTA_ASSERT(end->game_mode == deserialized->game_mode, info);
+            CINTA_ASSERT(end->id == deserialized->id, info);
+            CINTA_ASSERT(end->eq == deserialized->eq, info);
+
+            free(serialized);
+            free(deserialized);
+        }
+    }
+
+    free(end);
+}
+
+void test_game_end_solo(test_info *info) {
+    test_game_end(SOLO, info);
+}
+
+void test_game_end_team(test_info *info) {
+    test_game_end(TEAM, info);
+}
+
+void test_invalid_game_end_game_mode(test_info *info) {
+    game_end *end = malloc(sizeof(game_end));
+    end->game_mode = 2;
+    end->id = 0;
+    end->eq = 0;
+
+    char *serialized = serialize_game_end(end);
+    CINTA_ASSERT(serialized == NULL, info);
+
+    free(end);
+}
+
+void test_invalid_game_end_id(test_info *info) {
+    game_end *end = malloc(sizeof(game_end));
+    end->game_mode = SOLO;
+    end->id = 5;
+    end->eq = 0;
+
+    char *serialized = serialize_game_end(end);
+    CINTA_ASSERT(serialized == NULL, info);
+
+    free(end);
+}
+
+void test_team_ignore_id(test_info *info) {
+    game_end *end = malloc(sizeof(game_end));
+    end->game_mode = TEAM;
+    end->id = 5;
+    end->eq = 1;
+
+    char *serialized = serialize_game_end(end);
+    game_end *deserialized = deserialize_game_end(serialized);
+
+    CINTA_ASSERT_INT(deserialized->id, 1, info);
+    CINTA_ASSERT(deserialized->game_mode == end->game_mode, info);
+
+    free(end);
+    free(deserialized);
+    free(serialized);
+}
+
+void test_invalid_game_end_eq(test_info *info) {
+    game_end *end = malloc(sizeof(game_end));
+    end->game_mode = TEAM;
+    end->id = 0;
+    end->eq = 2;
+
+    char *serialized = serialize_game_end(end);
+    CINTA_ASSERT(serialized == NULL, info);
+
+    free(end);
+}
+
+void test_solo_ignores_eq(test_info *info) {
+    game_end *end = malloc(sizeof(game_end));
+    end->game_mode = SOLO;
+    end->id = 1;
+    end->eq = 2;
+
+    char *serialized = serialize_game_end(end);
+    game_end *deserialized = deserialize_game_end(serialized);
+
+    CINTA_ASSERT_INT(deserialized->id, 1, info);
+    CINTA_ASSERT(deserialized->game_mode == end->game_mode, info);
+
+    free(end);
+    free(deserialized);
+    free(serialized);
 }

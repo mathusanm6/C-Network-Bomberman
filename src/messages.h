@@ -101,4 +101,14 @@ char *server_serialize_chat_message(const chat_message *message);
 
 chat_message *server_deserialize_chat_message(const char *message);
 
+typedef struct game_end {
+    GAME_MODE game_mode;
+    int id;
+    int eq;
+} game_end;
+
+char *serialize_game_end(const game_end *end);
+
+game_end *deserialize_game_end(const char *end);
+
 #endif // MESSAGES_CLIENT_H
