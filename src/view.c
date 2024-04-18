@@ -425,7 +425,6 @@ int print_player_tag_chat(bool whispering, int current_player, window_context *c
     } else {
         len = snprintf(buf, sizeof(buf), " Player %d :", current_player + 1);
     }
-    
 
     mvwprintw(chat_input_wc->win, 1, 1, "%s", buf);
 
@@ -456,7 +455,6 @@ void print_chat(chat *c, int current_player, window_context *chat_history_wc, wi
     if (c->whispering) {
         whispering_tag_len = print_whispering_tag_chat(player_tag_len, current_player, chat_input_wc);
     }
-
 
     // Update chat text
     wattron(chat_input_wc->win, COLOR_PAIR(3)); // Enable custom color 3

@@ -151,7 +151,7 @@ int init_chat() {
     if (chat_ == NULL) {
         chat_ = malloc(sizeof(chat));
         RETURN_FAILURE_IF_NULL_PERROR(chat_, "malloc");
-        
+
         for (int i = 0; i < PLAYER_NUM; ++i) {
             chat_->history_list[i] = malloc(sizeof(chat_history));
             RETURN_FAILURE_IF_NULL_PERROR(chat_->history_list[i], "malloc");
@@ -278,8 +278,8 @@ void free_chat() {
 
     for (int i = 0; i < PLAYER_NUM; ++i) {
         if (chat_->history_list[i] != NULL) {
-        free_chat_history(chat_->history_list[i]);
-        chat_->history_list[i] = NULL;
+            free_chat_history(chat_->history_list[i]);
+            chat_->history_list[i] = NULL;
         }
     }
 
@@ -440,7 +440,7 @@ chat_node *create_chat_node(char *msg, bool whispered) {
     return new_node;
 }
 
-void add_message(int player_id, char * msg, bool whispered) {
+void add_message(int player_id, char *msg, bool whispered) {
     if (player_id < 0 && player_id >= PLAYER_NUM) {
         return;
     }
@@ -460,7 +460,7 @@ void add_message(int player_id, char * msg, bool whispered) {
         while (temp->next != chat_->history_list[player_id]->head) { // Find the last node before head
             temp = temp->next;
         }
-        temp->next = new_node;                // Link the new node after the last node
+        temp->next = new_node;                                       // Link the new node after the last node
         new_node->next = chat_->history_list[player_id]->head->next; // New node points to second oldest node
         free(chat_->history_list[player_id]->head);
         chat_->history_list[player_id]->head = new_node->next; // New head is the second oldest node

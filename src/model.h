@@ -143,7 +143,7 @@ void clear_line();
 void add_to_line(char);
 
 // TODO! : ADD COMMENTS
-void add_message(int player_id, char * msg, bool whispered);
+void add_message(int player_id, char *msg, bool whispered);
 
 void toggle_whispering();
 
