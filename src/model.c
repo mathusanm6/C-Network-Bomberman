@@ -149,11 +149,12 @@ int init_game_board(dimension dim, unsigned int game_id) {
 
 int init_chat() {
     if (chat_ == NULL) {
-        chat_ = malloc(sizeof(chat_));
+        chat_ = malloc(sizeof(chat));
         RETURN_FAILURE_IF_NULL_PERROR(chat_, "malloc");
         
         for (int i = 0; i < PLAYER_NUM; ++i) {
             chat_->history_list[i] = malloc(sizeof(chat_history));
+            RETURN_FAILURE_IF_NULL_PERROR(chat_->history_list[i], "malloc");
         }
 
         chat_->line = malloc(sizeof(chat_line));
@@ -480,10 +481,8 @@ void add_message(int player_id, char * msg, bool whispered) {
     }
 }
 
-void toggle_whispering(unsigned int game_id) {
-    if (get_game_mode(game_id) == TEAM) {
-        chat_->whispering = !chat_->whispering;
-    }
+void toggle_whispering() {
+    chat_->whispering = !chat_->whispering;
 }
 
 TILE get_player(int player_id) {

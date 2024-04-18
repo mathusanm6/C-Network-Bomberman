@@ -145,7 +145,7 @@ void add_to_line(char);
 // TODO! : ADD COMMENTS
 void add_message(int player_id, char * msg, bool whispered);
 
-void toggle_whispering(unsigned int game_id);
+void toggle_whispering();
 
 /** Depending on the action, changes the player's position in the table if the argument is a move.
  */

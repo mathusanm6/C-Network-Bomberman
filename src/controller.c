@@ -76,6 +76,7 @@ CHAT_ACTION key_press_to_chat_action(int c) {
             a = CHAT_SEND;
             break;
         case KEY_STAB:
+        case '\t':
             a = CHAT_TOGGLE_WHISPER;
             break;
         case KEY_CONTROL_D:
@@ -123,7 +124,7 @@ bool perform_chat_action(int c) {
             clear_line();
             break;
         case CHAT_TOGGLE_WHISPER:
-            toggle_whispering(TMP_GAME_ID);
+            toggle_whispering();
             break;
         case CHAT_CLEAR:
             clear_line();

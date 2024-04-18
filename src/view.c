@@ -413,13 +413,19 @@ void deactivate_color_for_player(window_context *wc, int current_player) {
     }
 }
 
-int print_player_tag_chat(int current_player, window_context *chat_input_wc) {
+int print_player_tag_chat(bool whispering, int current_player, window_context *chat_input_wc) {
     // Update chat text
     activate_color_for_player(chat_input_wc, current_player + 1);
     wattron(chat_input_wc->win, A_BOLD); // Enable bold
 
     char buf[30];
-    int len = snprintf(buf, sizeof(buf), " Player %d", current_player + 1);
+    int len = 0;
+    if (whispering) {
+        len = snprintf(buf, sizeof(buf), " Player %d ", current_player + 1);
+    } else {
+        len = snprintf(buf, sizeof(buf), " Player %d :", current_player + 1);
+    }
+    
 
     mvwprintw(chat_input_wc->win, 1, 1, "%s", buf);
 
@@ -429,13 +435,13 @@ int print_player_tag_chat(int current_player, window_context *chat_input_wc) {
     return len;
 }
 
-int print_whispering_tag_chat(int offset_player_tag, int current_player, window_context *chat_input_wc) {
+int print_whispering_tag_chat(int player_tag_len, int current_player, window_context *chat_input_wc) {
     activate_color_for_player(chat_input_wc, current_player + 1);
 
     char buf[30];
     int len = snprintf(buf, sizeof(buf), "(whispering) :");
 
-    mvwprintw(chat_input_wc->win, 1, offset_player_tag, "%s", buf);
+    mvwprintw(chat_input_wc->win, 1, 1 + player_tag_len, "%s", buf);
 
     deactivate_color_for_player(chat_input_wc, current_player + 1);
 
@@ -444,7 +450,8 @@ int print_whispering_tag_chat(int offset_player_tag, int current_player, window_
 
 void print_chat(chat *c, int current_player, window_context *chat_history_wc, window_context *chat_input_wc) {
 
-    int player_tag_len = print_player_tag_chat(current_player, chat_input_wc);
+    // Add player tag and whisper tag
+    int player_tag_len = print_player_tag_chat(c->whispering, current_player, chat_input_wc);
     int whispering_tag_len = 0;
     if (c->whispering) {
         whispering_tag_len = print_whispering_tag_chat(player_tag_len, current_player, chat_input_wc);
