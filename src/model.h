@@ -26,10 +26,11 @@ typedef enum CHAT_ACTION {
     CHAT_WRITE = 0,
     CHAT_ERASE = 1,
     CHAT_SEND = 2,
-    CHAT_CLEAR = 3,
-    CHAT_QUIT = 4,
-    CHAT_GAME_QUIT = 5,
-    CHAT_NONE = 6
+    CHAT_TOGGLE_WHISPER = 3,
+    CHAT_CLEAR = 4,
+    CHAT_QUIT = 5,
+    CHAT_GAME_QUIT = 6,
+    CHAT_NONE = 7
 } CHAT_ACTION;
 
 typedef enum TILE {
@@ -65,6 +66,7 @@ typedef struct coord {
 
 typedef struct chat_node {
     char *message;
+    bool whispered;
     struct chat_node *next;
 } chat_node;
 
@@ -79,8 +81,10 @@ typedef struct chat_line {
 } chat_line;
 
 typedef struct chat {
-    chat_history *history;
+    chat_history *history_list[PLAYER_NUM];
     chat_line *line;
+    bool on_focus;
+    bool whispering;
 } chat;
 
 extern chat *chat_;
@@ -139,7 +143,9 @@ void clear_line();
 void add_to_line(char);
 
 // TODO! : ADD COMMENTS
-void add_message(chat_history *, char *);
+void add_message(int player_id, char * msg, bool whispered);
+
+void toggle_whispering(unsigned int game_id);
 
 /** Depending on the action, changes the player's position in the table if the argument is a move.
  */

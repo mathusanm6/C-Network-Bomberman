@@ -21,7 +21,6 @@
 #define TMP_GAME_ID 0
 
 static int current_player = 0;
-static bool is_chat_on_focus = false;
 
 void init_controller() {
     intrflush(stdscr, FALSE); /* No need to flush when intr key is pressed */
@@ -76,6 +75,9 @@ CHAT_ACTION key_press_to_chat_action(int c) {
         case KEY_ENTER_NUMERIC:
             a = CHAT_SEND;
             break;
+        case KEY_STAB:
+            a = CHAT_TOGGLE_WHISPER;
+            break;
         case KEY_CONTROL_D:
             a = CHAT_CLEAR;
             break;
@@ -117,14 +119,17 @@ bool perform_chat_action(int c) {
             decrement_line();
             break;
         case CHAT_SEND:
-            add_message(chat_->history, chat_->line->data);
+            add_message(current_player, chat_->line->data, chat_->whispering);
             clear_line();
+            break;
+        case CHAT_TOGGLE_WHISPER:
+            toggle_whispering(TMP_GAME_ID);
             break;
         case CHAT_CLEAR:
             clear_line();
             break;
         case CHAT_QUIT:
-            is_chat_on_focus = false;
+            chat_->on_focus = false;
             break;
         case CHAT_GAME_QUIT:
             return true;
@@ -148,7 +153,7 @@ bool perform_game_action(int c) {
             place_bomb(current_player, TMP_GAME_ID);
             break;
         case GAME_ACTIVATE_CHAT:
-            is_chat_on_focus = true;
+            chat_->on_focus = true;
             break;
         case GAME_QUIT:
             return true;
@@ -169,7 +174,7 @@ bool perform_game_action(int c) {
 bool control() {
     int c = get_pressed_key();
 
-    if (is_chat_on_focus) {
+    if (chat_->on_focus) {
         if (perform_chat_action(c)) {
             return true;
         }

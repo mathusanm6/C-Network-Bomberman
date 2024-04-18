@@ -151,11 +151,16 @@ int init_chat() {
     if (chat_ == NULL) {
         chat_ = malloc(sizeof(chat_));
         RETURN_FAILURE_IF_NULL_PERROR(chat_, "malloc");
-        chat_->history = malloc(sizeof(chat_history));
-        RETURN_FAILURE_IF_NULL_PERROR(chat_->history, "malloc");
+        
+        for (int i = 0; i < PLAYER_NUM; ++i) {
+            chat_->history_list[i] = malloc(sizeof(chat_history));
+        }
+
         chat_->line = malloc(sizeof(chat_line));
         RETURN_FAILURE_IF_NULL_PERROR(chat_->line, "malloc");
         chat_->line->cursor = 0;
+        chat_->on_focus = false;
+        chat_->whispering = false;
     }
     return EXIT_SUCCESS;
 }
@@ -270,9 +275,11 @@ void free_chat() {
         return;
     }
 
-    if (chat_->history != NULL) {
-        free_chat_history(chat_->history);
-        chat_->history = NULL;
+    for (int i = 0; i < PLAYER_NUM; ++i) {
+        if (chat_->history_list[i] != NULL) {
+        free_chat_history(chat_->history_list[i]);
+        chat_->history_list[i] = NULL;
+        }
     }
 
     if (chat_->line != NULL) {
@@ -417,7 +424,7 @@ void add_to_line(char c) {
     }
 }
 
-chat_node *create_chat_node(char *msg) {
+chat_node *create_chat_node(char *msg, bool whispered) {
     chat_node *new_node = malloc(sizeof(chat_node));
     if (new_node != NULL) {
         // Duplicate the message string to avoid SIGSEGV if dynamically allocated message freed
@@ -426,45 +433,56 @@ chat_node *create_chat_node(char *msg) {
             free(new_node);
             return NULL;
         }
+        new_node->whispered = whispered;
         new_node->next = NULL;
     }
     return new_node;
 }
 
-void add_message(chat_history *history, char *msg) {
-    if (history == NULL) {
+void add_message(int player_id, char * msg, bool whispered) {
+    if (player_id < 0 && player_id >= PLAYER_NUM) {
         return;
     }
 
-    chat_node *new_node = create_chat_node(msg);
+    if (chat_->history_list[player_id] == NULL) {
+        return;
+    }
+
+    chat_node *new_node = create_chat_node(msg, whispered);
     if (new_node == NULL) {
         return;
     }
 
-    if (history->count == MAX_CHAT_HISTORY_LEN) {
+    if (chat_->history_list[player_id]->count == MAX_CHAT_HISTORY_LEN) {
         // If the history is full, replace the oldest message
-        chat_node *temp = history->head;
-        while (temp->next != history->head) { // Find the last node before head
+        chat_node *temp = chat_->history_list[player_id]->head;
+        while (temp->next != chat_->history_list[player_id]->head) { // Find the last node before head
             temp = temp->next;
         }
         temp->next = new_node;                // Link the new node after the last node
-        new_node->next = history->head->next; // New node points to second oldest node
-        free(history->head);
-        history->head = new_node->next; // New head is the second oldest node
+        new_node->next = chat_->history_list[player_id]->head->next; // New node points to second oldest node
+        free(chat_->history_list[player_id]->head);
+        chat_->history_list[player_id]->head = new_node->next; // New head is the second oldest node
     } else {
         // List is not full, add the new node to the end
-        if (history->head == NULL) {
-            history->head = new_node;
+        if (chat_->history_list[player_id]->head == NULL) {
+            chat_->history_list[player_id]->head = new_node;
             new_node->next = new_node;
         } else {
-            chat_node *temp = history->head;
-            while (temp->next != history->head) {
+            chat_node *temp = chat_->history_list[player_id]->head;
+            while (temp->next != chat_->history_list[player_id]->head) {
                 temp = temp->next;
             }
             temp->next = new_node;
-            new_node->next = history->head;
+            new_node->next = chat_->history_list[player_id]->head;
         }
-        history->count++;
+        chat_->history_list[player_id]->count++;
+    }
+}
+
+void toggle_whispering(unsigned int game_id) {
+    if (get_game_mode(game_id) == TEAM) {
+        chat_->whispering = !chat_->whispering;
     }
 }
 
