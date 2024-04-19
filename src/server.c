@@ -4,6 +4,7 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "model.h"
 #include "network_server.h"
 #include "utils.h"
 
@@ -14,9 +15,7 @@ typedef struct tcp_thread_data {
 } tcp_thread_data;
 
 static tcp_thread_data *tcp_threads_data_players[PLAYER_NUM];
-
-static unsigned connected_player_number = 0;
-static unsigned ready_player_number = 0;
+static pthread_t game_threads[3];
 
 pthread_mutex_t lock_waiting_all_players_join;
 pthread_mutex_t lock_all_players_ready;
@@ -25,6 +24,16 @@ pthread_mutex_t lock_waiting_the_game_finish;
 pthread_cond_t cond_lock_waiting_all_players_join;
 pthread_cond_t cond_lock_all_players_ready;
 pthread_cond_t cond_lock_waiting_the_game_finish;
+
+static unsigned connected_player_number = 0;
+static unsigned ready_player_number = 0;
+
+#define LIMIT_LAST_NUM_MESSAGE_UDP 8192   // 2^13
+#define LIMIT_LAST_NUM_MESSAGE_MULT 65536 // 2^16
+
+static unsigned last_num_received_messages[PLAYER_NUM];
+static unsigned last_num_freq_message = 0;
+static unsigned last_num_sec_message = 0;
 
 void *serve_client(void *);
 
@@ -171,6 +180,21 @@ void join_tcp_threads() {
         pthread_join(tcp_threads_data_players[i]->thread_id, NULL);
     }
     free_tcp_threads_data();
+}
+
+void increment_last_num_freq_message() {
+    last_num_freq_message = last_num_freq_message + 1 % LIMIT_LAST_NUM_MESSAGE_MULT;
+}
+
+void increment_last_num_sec_message() {
+    last_num_sec_message = last_num_sec_message + 1 % LIMIT_LAST_NUM_MESSAGE_MULT;
+}
+
+void increment_last_num_received_messages(unsigned id) {
+    if (id >= PLAYER_NUM) {
+        return;
+    }
+    last_num_received_messages[id] = last_num_received_messages[id] + 1 % LIMIT_LAST_NUM_MESSAGE_UDP;
 }
 
 int main() {
