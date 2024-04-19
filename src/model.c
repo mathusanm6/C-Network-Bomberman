@@ -6,7 +6,6 @@
 #include <string.h>
 #include <time.h>
 
-// TODO! : DEFINE IT BETTER
 #define MAX_CHAT_HISTORY_LEN 10
 
 typedef struct player {
@@ -229,7 +228,6 @@ void free_game_board(unsigned int game_id) {
     free_board(game_board);
 }
 
-// TODO!: CHECK IF SIGSEGV
 void free_chat_node(chat_node *node) {
     if (node == NULL) {
         return;
@@ -243,7 +241,6 @@ void free_chat_node(chat_node *node) {
     free(node);
 }
 
-// TODO!: CHECK IF SIGSEGV
 void free_chat_history(chat_history *history) {
     if (history == NULL) {
         return;
