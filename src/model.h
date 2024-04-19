@@ -19,7 +19,7 @@ typedef enum GAME_ACTION {
     GAME_NONE = 5,
     GAME_ACTIVATE_CHAT = 6,
     GAME_QUIT = 7,
-    SWITCH_PLAYER = 8
+    GAME_SWITCH_PLAYER = 8
 } GAME_ACTION;
 
 typedef enum CHAT_ACTION {
@@ -30,7 +30,8 @@ typedef enum CHAT_ACTION {
     CHAT_CLEAR = 4,
     CHAT_QUIT = 5,
     CHAT_GAME_QUIT = 6,
-    CHAT_NONE = 7
+    CHAT_SWITCH_PLAYER = 7,
+    CHAT_NONE = 8
 } CHAT_ACTION;
 
 typedef enum TILE {

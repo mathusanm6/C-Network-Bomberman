@@ -421,9 +421,9 @@ int print_player_tag_chat(bool whispering, int current_player, window_context *c
     char buf[30];
     int len = 0;
     if (whispering) {
-        len = snprintf(buf, sizeof(buf), " Player %d ", current_player + 1);
+        len = snprintf(buf, sizeof(buf), " Player%d ", current_player + 1);
     } else {
-        len = snprintf(buf, sizeof(buf), " Player %d :", current_player + 1);
+        len = snprintf(buf, sizeof(buf), " Player%d : ", current_player + 1);
     }
 
     mvwprintw(chat_input_wc->win, 1, 1, "%s", buf);
@@ -438,7 +438,7 @@ int print_whispering_tag_chat(int player_tag_len, int current_player, window_con
     activate_color_for_player(chat_input_wc, current_player + 1);
 
     char buf[30];
-    int len = snprintf(buf, sizeof(buf), "(whispering) :");
+    int len = snprintf(buf, sizeof(buf), "(whispering) : ");
 
     mvwprintw(chat_input_wc->win, 1, 1 + player_tag_len, "%s", buf);
 
