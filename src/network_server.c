@@ -27,7 +27,7 @@ static uint16_t port_udp = 0;
 static uint16_t port_mult = 0;
 
 static uint16_t adrmdiff[8]; // Multicast address
-static struct sockaddr_in6 *addr_mult;
+static struct sockaddr_in6 *addr_mult = NULL;
 
 void close_socket(int sock) {
     if (sock != -1) {
@@ -206,6 +206,7 @@ exit_freeing_addr_string:
 void free_addr_mult() {
     if (addr_mult != NULL) {
         free(addr_mult);
+        addr_mult = NULL;
     }
 }
 
@@ -222,14 +223,14 @@ int init_addr_mult() {
     free(addr_string);
 
     if (res < 0) {
-        free(addr_mult);
+        free_addr_mult();
         perror("inet_pton addr_mult");
         return EXIT_FAILURE;
     }
 
     int ifindex = if_nametoindex("eth0");
     if (ifindex < 0) {
-        free(addr_mult);
+        free_addr_mult();
         perror("if_nametoindex eth0");
         return EXIT_FAILURE;
     }
