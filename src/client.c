@@ -100,9 +100,7 @@ int try_to_init_mode_client() {
 }
 
 int try_to_init_port_and_connect_client() {
-    if (init_tcp_socket() < 0) {
-        return EXIT_FAILURE;
-    }
+    RETURN_FAILURE_IF_ERROR(init_tcp_socket());
 
     while (1) {
         int r;
@@ -145,7 +143,7 @@ int try_to_init_client() {
 
 int be_ready() {
     int res = ask_natural_number("Type 0 if you are ready", 0, 0);
-    if (res != 0) {
+    if (res != EXIT_SUCCESS) {
         return EXIT_ASKED;
     }
     printf("You are ready, wait for other players.\n");
@@ -153,9 +151,7 @@ int be_ready() {
 }
 
 int main(int argc, char *argv[]) {
-    if (init_client_flags() < 0) {
-        return EXIT_FAILURE;
-    }
+    RETURN_FAILURE_IF_ERROR(init_client_flags());
     parse_client_flags(argc, argv);
     int r = try_to_init_client();
     free_client_flags();
@@ -163,9 +159,7 @@ int main(int argc, char *argv[]) {
     if (r != EXIT_SUCCESS) {
         return r;
     }
-    if (start_initialisation_game(choosen_game_mode) < 0) {
-        return EXIT_FAILURE;
-    }
+    RETURN_FAILURE_IF_ERROR(start_initialisation_game(choosen_game_mode));
 
     r = be_ready();
     if (r != EXIT_SUCCESS) {

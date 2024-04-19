@@ -1,4 +1,5 @@
 #include "communication_server.h"
+#include "utils.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -22,10 +23,7 @@ int send_connexion_information_raw(int sock, connection_information_raw *seriali
 int send_connexion_information(int sock, GAME_MODE mode, int id, int eq, int portudp, int portmdiff,
                                uint16_t adrmdiff[8]) {
     connection_information *head = malloc(sizeof(connection_information));
-    if (head == NULL) {
-        perror("malloc connection_information");
-        return EXIT_FAILURE;
-    }
+    RETURN_FAILURE_IF_NULL_PERROR(head, "malloc connection_information");
     head->game_mode = mode;
     head->id = id;
     head->eq = eq;
@@ -38,9 +36,7 @@ int send_connexion_information(int sock, GAME_MODE mode, int id, int eq, int por
     connection_information_raw *serialized_head = serialize_connection_information(head);
     free(head);
 
-    if (serialized_head == NULL) {
-        return EXIT_FAILURE;
-    }
+    RETURN_FAILURE_IF_NULL(serialized_head);
     int res = send_connexion_information_raw(sock, serialized_head);
     free(serialized_head);
 
@@ -49,10 +45,7 @@ int send_connexion_information(int sock, GAME_MODE mode, int id, int eq, int por
 
 connection_header_raw *recv_connexion_header_raw(int sock) {
     connection_header_raw *head = malloc(sizeof(connection_header_raw));
-    if (head == NULL) {
-        perror("malloc connection_header_raw");
-        return NULL;
-    }
+    RETURN_NULL_IF_NULL_PERROR(head, "malloc connection_header_raw");
     unsigned received = 0;
     while (received < sizeof(connection_header_raw)) {
         int res = recv(sock, head + received, sizeof(connection_header_raw) - received, 0);
@@ -69,9 +62,7 @@ connection_header_raw *recv_connexion_header_raw(int sock) {
 
 initial_connection_header *recv_initial_connection_header(int sock) {
     connection_header_raw *head = recv_connexion_header_raw(sock);
-    if (head == NULL) {
-        return NULL;
-    }
+    RETURN_NULL_IF_NULL(head);
     initial_connection_header *deserialized_head = deserialize_initial_connection(head);
     free(head);
     return deserialized_head;
@@ -79,9 +70,7 @@ initial_connection_header *recv_initial_connection_header(int sock) {
 
 ready_connection_header *recv_ready_connexion_header(int sock) {
     connection_header_raw *head = recv_connexion_header_raw(sock);
-    if (head == NULL) {
-        return NULL;
-    }
+    RETURN_NULL_IF_NULL(head);
     ready_connection_header *deserialized_head = deserialize_ready_connection(head);
     free(head);
     return deserialized_head;

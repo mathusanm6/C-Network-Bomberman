@@ -5,6 +5,7 @@
 #include <unistd.h>
 
 #include "network_server.h"
+#include "utils.h"
 
 typedef struct tcp_thread_data {
     unsigned id;
@@ -35,9 +36,10 @@ void free_tcp_threads_data() {
 }
 
 int init_server_network() {
-    if (init_socket_tcp() == EXIT_FAILURE || init_socket_udp() || init_socket_mult()) {
-        return EXIT_FAILURE;
-    }
+    RETURN_FAILURE_IF_ERROR(init_socket_tcp());
+    RETURN_FAILURE_IF_ERROR(init_socket_udp());
+    RETURN_FAILURE_IF_ERROR(init_socket_mult());
+
     if (try_to_bind_random_port_on_socket_tcp() != EXIT_SUCCESS) {
         goto exit_closing_sockets;
     }
@@ -168,9 +170,7 @@ void join_tcp_threads() {
 int main() {
     srandom(time(NULL));
     int return_value = EXIT_SUCCESS;
-    if (init_server_network() != EXIT_SUCCESS) {
-        return EXIT_FAILURE;
-    }
+    RETURN_FAILURE_IF_ERROR(init_server_network());
     if (connect_player_to_game() != EXIT_SUCCESS) {
         return_value = EXIT_FAILURE;
         goto exit_closing_sockets;

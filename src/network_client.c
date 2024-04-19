@@ -1,6 +1,7 @@
 #include "network_client.h"
 #include "communication_client.h"
 #include "messages.h"
+#include "utils.h"
 
 #include <arpa/inet.h>
 #include <stdio.h>
@@ -69,10 +70,7 @@ void set_tcp_port(uint16_t port) {
 
 struct sockaddr_in6 *prepare_address(int port) {
     struct sockaddr_in6 *addrsock = malloc(sizeof(struct sockaddr_in6));
-    if (addrsock == NULL) {
-        perror("malloc addrsock");
-        return NULL;
-    }
+    RETURN_NULL_IF_NULL_PERROR(addrsock, "malloc addrsock");
     memset(addrsock, 0, sizeof(struct sockaddr_in6));
     addrsock->sin6_family = AF_INET6;
     addrsock->sin6_port = port;
@@ -82,6 +80,7 @@ struct sockaddr_in6 *prepare_address(int port) {
 
 int try_to_connect_tcp() {
     struct sockaddr_in6 *addrsock = prepare_address(port_tcp);
+    RETURN_FAILURE_IF_NULL(addrsock);
     return connect(sock_tcp, (struct sockaddr *)addrsock, sizeof(struct sockaddr_in6));
 }
 
@@ -99,14 +98,10 @@ void set_server_informations(connection_information *head) {
 }
 
 int start_initialisation_game(GAME_MODE mode) {
-    if (send_initial_connexion_information(sock_tcp, mode) != EXIT_SUCCESS) {
-        return EXIT_FAILURE;
-    }
+    RETURN_FAILURE_IF_ERROR(send_initial_connexion_information(sock_tcp, mode));
     printf("You have to wait for other players.\n");
     connection_information *head = recv_connexion_information(sock_tcp);
-    if (head == NULL) {
-        return EXIT_FAILURE;
-    }
+    RETURN_FAILURE_IF_NULL(head);
     set_server_informations(head);
     free(head);
     printf("The server is ready.\n");
