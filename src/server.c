@@ -94,7 +94,6 @@ void init_connexion_with_client(tcp_thread_data *tcp_data) {
     // TODO separate solo and eq client
     initial_connection_header *head = recv_initial_connection_header_of_client(tcp_data->id);
     free(head);
-
     wait_all_clients_join();
     // TODO verify well send
     send_connexion_information_of_client(tcp_data->id, 0);

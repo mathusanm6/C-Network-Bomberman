@@ -1,4 +1,5 @@
 #include "network_server.h"
+#include "model.h"
 
 #include <arpa/inet.h>
 #include <errno.h>
@@ -98,8 +99,8 @@ int try_to_init_socket_of_client(int id) {
         return EXIT_FAILURE;
     }
     struct sockaddr_in6 client_addr;
-    socklen_t client_addr_len;
-    int res = accept(sock_tcp, (struct sockaddr *)&client_addr, &client_addr_len);
+    int client_addr_len = sizeof(client_addr);
+    int res = accept(sock_tcp, (struct sockaddr *)&client_addr, (socklen_t *)&client_addr_len);
     if (res < 0) {
         perror("client acceptance");
         return EXIT_FAILURE;
@@ -191,5 +192,6 @@ ready_connection_header *recv_ready_connexion_header_of_client(int id) {
 }
 
 int send_connexion_information_of_client(int id, int eq) {
-    return send_connexion_information(sock_clients[id], get_game_mode(0), id, eq, port_udp, port_mult, adrmdiff);
+    // TODO Replace the gamemode
+    return send_connexion_information(sock_clients[id], SOLO, id, eq, port_udp, port_mult, adrmdiff);
 }
