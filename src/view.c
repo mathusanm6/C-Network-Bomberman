@@ -46,6 +46,8 @@ static int split_chat_window(window_context *, window_context *, window_context 
 static void print_game(board *, window_context *);
 static void print_chat(chat *, int, window_context *, window_context *);
 
+static void toggle_focus(chat *, window_context *, window_context *, window_context *);
+
 int init_colors() {
     // TODO : Might be an issue for university computers
     if (has_colors() == FALSE) {
@@ -55,24 +57,24 @@ int init_colors() {
     }
 
     start_color();                           // Enable colors
-    init_pair(1, COLOR_WHITE, COLOR_BLACK);  // For the game window
-    init_pair(2, COLOR_GREEN, COLOR_BLACK);  // For the chat window
-    init_pair(3, COLOR_YELLOW, COLOR_BLACK); // For the chat box
+    init_pair(1, COLOR_WHITE, COLOR_BLACK);  // For the unfocused window
+    init_pair(2, COLOR_YELLOW, COLOR_BLACK); // For the focused window
+    init_pair(3, COLOR_WHITE, COLOR_BLACK);  // For chat text
 
     // Initialize the colors for the players
-    init_pair(4, COLOR_CYAN, COLOR_BLACK);
-    init_pair(5, COLOR_GREEN, COLOR_BLACK);
+    init_pair(4, COLOR_BLUE, COLOR_BLACK);
+    init_pair(5, COLOR_MAGENTA, COLOR_BLACK);
     init_pair(6, COLOR_YELLOW, COLOR_BLACK);
-    init_pair(7, COLOR_WHITE, COLOR_BLACK);
+    init_pair(7, COLOR_GREEN, COLOR_BLACK);
 
     // Initialize the color for the borders
     init_pair(8, COLOR_WHITE, COLOR_BLACK);
 
     // Initialize the color for indestructible walls
-    init_pair(9, COLOR_MAGENTA, COLOR_BLACK);
+    init_pair(9, COLOR_WHITE, COLOR_BLACK);
 
     // Initialize the color for destructible walls
-    init_pair(10, COLOR_BLUE, COLOR_BLACK);
+    init_pair(10, COLOR_CYAN, COLOR_BLACK);
 
     // Initialize the color for the bomb
     init_pair(11, COLOR_RED, COLOR_BLACK);
@@ -137,6 +139,7 @@ void get_computed_board_dimension(dimension *dim) {
 }
 
 void refresh_game(board *b, chat *c, int current_player) {
+    toggle_focus(c, game_wc, chat_history_wc, chat_input_wc);
 
     print_game(b, game_wc);
     wrefresh(game_wc->win); // Refresh the game window
@@ -225,8 +228,8 @@ int split_terminal_window(window_context *game_wc, window_context *chat_wc) {
     box(chat_wc->win, 0, 0);
 
     // Apply color to the borders
-    wbkgd(game_wc->win, COLOR_PAIR(1));
-    wbkgd(chat_wc->win, COLOR_PAIR(2));
+    wbkgd(game_wc->win, COLOR_PAIR(2));
+    wbkgd(chat_wc->win, COLOR_PAIR(1));
 
     return EXIT_SUCCESS;
 }
@@ -264,8 +267,8 @@ int split_chat_window(window_context *chat_wc, window_context *chat_history_wc, 
     box(chat_history_wc->win, 0, 0);
     box(chat_input_wc->win, 0, 0);
 
-    wbkgd(chat_history_wc->win, COLOR_PAIR(3));
-    wbkgd(chat_input_wc->win, COLOR_PAIR(3));
+    wbkgd(chat_history_wc->win, COLOR_PAIR(2));
+    wbkgd(chat_input_wc->win, COLOR_PAIR(2));
 
     return EXIT_SUCCESS;
 }
@@ -457,7 +460,7 @@ void print_chat(chat *c, int current_player, window_context *chat_history_wc, wi
     }
 
     // Update chat text
-    wattron(chat_input_wc->win, COLOR_PAIR(3)); // Enable custom color 3
+    wattron(chat_input_wc->win, COLOR_PAIR(3)); // Enable custom color 2
     int x;
     char e = tile_to_char(EMPTY);
     for (x = 0; x < chat_input_wc->dim.width - 2 - player_tag_len - whispering_tag_len; x++) {
@@ -473,4 +476,16 @@ void print_chat(chat *c, int current_player, window_context *chat_history_wc, wi
     wattron(chat_history_wc->win, COLOR_PAIR(3)); // Enable custom color 3
     // TODO: Implement chat history
     wattroff(chat_history_wc->win, COLOR_PAIR(3)); // Disable custom color 3
+}
+
+void toggle_focus(chat *c, window_context *game_wc, window_context *chat_history_wc, window_context *chat_input_wc) {
+    if (!c->on_focus) {
+        wbkgd(game_wc->win, COLOR_PAIR(2));
+        wbkgd(chat_history_wc->win, COLOR_PAIR(1));
+        wbkgd(chat_input_wc->win, COLOR_PAIR(1));
+    } else {
+        wbkgd(game_wc->win, COLOR_PAIR(1));
+        wbkgd(chat_history_wc->win, COLOR_PAIR(2));
+        wbkgd(chat_input_wc->win, COLOR_PAIR(2));
+    }
 }
