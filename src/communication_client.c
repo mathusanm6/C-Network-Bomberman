@@ -39,7 +39,7 @@ int send_initial_connexion_information(int sock, GAME_MODE mode) {
     return res;
 }
 
-int send_ready_connexion_information(int sock, GAME_MODE mode, int id, int team_number) {
+int send_ready_connexion_information(int sock, GAME_MODE mode, int id, int eq) {
     ready_connection_header *head = malloc(sizeof(ready_connection_header));
     if (head == NULL) {
         perror("malloc ready connection header");
@@ -47,7 +47,7 @@ int send_ready_connexion_information(int sock, GAME_MODE mode, int id, int team_
     }
     head->game_mode = mode;
     head->id = id;
-    head->eq = team_number;
+    head->eq = eq;
 
     connection_header_raw *serialized_head = serialize_ready_connection(head);
     free(head);

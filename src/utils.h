@@ -54,6 +54,6 @@ int max(int, int);
 
 /** Returns -1 in case of error, since the minimum is necessarily greater than or equal to 0
  */
-int bounded_nat_of_string(const char *, unsigned, unsigned);
+int parse_unsigned_within_bounds(const char *, unsigned, unsigned);
 
 #endif // SRC_UTILS_H_

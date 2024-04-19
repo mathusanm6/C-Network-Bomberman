@@ -20,7 +20,7 @@ static unsigned ready_player_number = 0;
 pthread_mutex_t lock_waiting_all_players_join;
 pthread_mutex_t lock_all_players_ready;
 
-pthread_cond_t cond_lock_waiting_all_payers_join;
+pthread_cond_t cond_lock_waiting_all_players_join;
 pthread_cond_t cond_lock_all_players_ready;
 
 void *serve_client(void *);
@@ -77,7 +77,7 @@ int init_tcp_threads_data() {
 
 void wait_all_clients_join() {
     pthread_mutex_lock(&lock_waiting_all_players_join);
-    pthread_cond_wait(&cond_lock_waiting_all_payers_join, &lock_waiting_all_players_join);
+    pthread_cond_wait(&cond_lock_waiting_all_players_join, &lock_waiting_all_players_join);
     pthread_mutex_unlock(&lock_waiting_all_players_join);
 }
 
@@ -154,7 +154,7 @@ int connect_player_to_game() {
 
 void unlock_all_players_join() {
     pthread_mutex_lock(&lock_waiting_all_players_join);
-    pthread_cond_broadcast(&cond_lock_waiting_all_payers_join);
+    pthread_cond_broadcast(&cond_lock_waiting_all_players_join);
     pthread_mutex_unlock(&lock_waiting_all_players_join);
 }
 

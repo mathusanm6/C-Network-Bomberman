@@ -21,7 +21,7 @@ bool is_integer(const char *str) {
     return true;
 }
 
-int bounded_nat_of_string(const char *str, unsigned minimum, unsigned maximum) {
+int parse_unsigned_within_bounds(const char *str, unsigned minimum, unsigned maximum) {
     if (!is_integer(str)) {
         return -1;
     }

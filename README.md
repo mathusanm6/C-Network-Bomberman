@@ -48,7 +48,7 @@ To run the client, run the following command:
 ./client
 ```
 
-The client program has some flag :
+The client program has some flags :
 - `-p PORT` to connect the client to the server with the port `PORT`.
 - `-m MODE` to choose the mode between `0` for `SOLO` and `1` for `TEAM`.
 
