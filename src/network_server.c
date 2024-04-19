@@ -191,5 +191,5 @@ ready_connection_header *recv_ready_connexion_header_of_client(int id) {
 }
 
 int send_connexion_information_of_client(int id, int eq) {
-    return send_connexion_information(sock_clients[id], get_game_mode(), id, eq, port_udp, port_mult, adrmdiff);
+    return send_connexion_information(sock_clients[id], get_game_mode(0), id, eq, port_udp, port_mult, adrmdiff);
 }
