@@ -4,6 +4,9 @@
 
 #include <arpa/inet.h>
 #include <errno.h>
+#include <net/if.h>
+#include <netinet/in.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -24,6 +27,7 @@ static uint16_t port_udp = 0;
 static uint16_t port_mult = 0;
 
 static uint16_t adrmdiff[8]; // Multicast address
+static struct sockaddr_in6 *addr_mult;
 
 void close_socket(int sock) {
     if (sock != -1) {
@@ -169,6 +173,67 @@ int init_random_adrmdiff() {
         adrmdiff[i] = random() % size_2_bytes;
     }
 
+    return EXIT_SUCCESS;
+}
+
+char *convert_adrmdif_into_string(uint16_t adrmdiff_[8]) {
+    size_t size_addr_string = sizeof(char) * 8 * 5; // : and \0 are counted
+    char *addr_string = malloc(size_addr_string);
+    RETURN_NULL_IF_NULL(addr_string);
+    int n = 0;
+    for (unsigned i = 0; i < 8; i++) {
+        int r = sprintf(addr_string + n, "%04X", adrmdiff_[i]);
+        if (r < 0) {
+            goto exit_freeing_addr_string;
+        }
+        n += r;
+        if (i != 7) {
+            int r = sprintf(addr_string + n, "%c", ':');
+            if (r < 0) {
+                goto exit_freeing_addr_string;
+            }
+            n += r;
+        }
+    }
+    return addr_string;
+
+exit_freeing_addr_string:
+    free(addr_string);
+    perror("sprintf addr_string");
+    return NULL;
+}
+
+void free_addr_mult() {
+    if (addr_mult != NULL) {
+        free(addr_mult);
+    }
+}
+
+int init_addr_mult() {
+    addr_mult = malloc(sizeof(struct sockaddr_in6));
+    RETURN_FAILURE_IF_NULL_PERROR(addr_mult, "malloc addr_mult");
+
+    memset(addr_mult, 0, sizeof(struct sockaddr_in6));
+    addr_mult->sin6_family = AF_INET6;
+    addr_mult->sin6_port = htons(port_mult);
+
+    char *addr_string = convert_adrmdif_into_string(adrmdiff);
+    int res = inet_pton(AF_INET6, addr_string, &addr_mult->sin6_addr);
+    free(addr_string);
+
+    if (res < 0) {
+        free(addr_mult);
+        perror("inet_pton addr_mult");
+        return EXIT_FAILURE;
+    }
+
+    int ifindex = if_nametoindex("eth0");
+    if (ifindex < 0) {
+        free(addr_mult);
+        perror("if_nametoindex eth0");
+        return EXIT_FAILURE;
+    }
+    addr_mult->sin6_scope_id = ifindex;
     return EXIT_SUCCESS;
 }
 

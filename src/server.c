@@ -63,6 +63,9 @@ int init_server_network() {
     if (init_random_adrmdiff() == EXIT_FAILURE) {
         goto exit_closing_sockets;
     }
+    if (init_addr_mult() == EXIT_FAILURE) {
+        goto exit_closing_sockets;
+    }
     return EXIT_SUCCESS;
 
 exit_closing_sockets:
@@ -214,5 +217,6 @@ exit_closing_sockets:
     close_socket_tcp();
     close_socket_udp();
     close_socket_mult();
+    free_addr_mult();
     return return_value;
 }
