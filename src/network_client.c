@@ -85,9 +85,7 @@ int try_to_connect_tcp() {
 }
 
 void set_server_informations(connection_information *head) {
-    if (head == NULL) {
-        return;
-    }
+    RETURN_IF_NULL_PTR(head);
     port_udp = head->portudp;
     port_mult = head->portmdiff;
     id = head->id;

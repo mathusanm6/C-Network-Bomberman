@@ -1,5 +1,6 @@
 #include "network_server.h"
 #include "model.h"
+#include "utils.h"
 
 #include <arpa/inet.h>
 #include <errno.h>
@@ -143,18 +144,14 @@ int try_to_bind_random_port_on_socket(int sock) {
 
 int try_to_bind_random_port_on_socket_tcp() {
     int res = try_to_bind_random_port_on_socket(sock_tcp);
-    if (res == EXIT_FAILURE) {
-        return EXIT_FAILURE;
-    }
+    RETURN_FAILURE_IF_ERROR(res);
     port_tcp = res;
     return EXIT_SUCCESS;
 }
 
 int try_to_bind_random_port_on_socket_udp() {
     int res = try_to_bind_random_port_on_socket(sock_udp);
-    if (res == EXIT_FAILURE) {
-        return EXIT_FAILURE;
-    }
+    RETURN_FAILURE_IF_ERROR(res);
     port_udp = res;
     return EXIT_SUCCESS;
 }

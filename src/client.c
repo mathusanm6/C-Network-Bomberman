@@ -26,9 +26,7 @@ void free_client_flags() {
 
 int init_client_flags() {
     client_flags = malloc(sizeof(flags));
-    if (client_flags == NULL) {
-        return EXIT_FAILURE;
-    }
+    RETURN_FAILURE_IF_NULL(client_flags);
     client_flags->mode = NULL;
     client_flags->port = NULL;
 
