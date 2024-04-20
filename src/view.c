@@ -345,9 +345,9 @@ void print_game(board *b, window_context *game_wc) {
     // Update grid
     int x, y;
     dimension dim = b->dim;
-    int pad_top =
-        (game_wc->dim.height - dim.height - 2) / 2; // We can substract 2 or 1 but the first enable a left align
-    int pad_left = (game_wc->dim.width - dim.width - 2) / 2; // whether 1 is for a right align
+    int pad_top = (game_wc->dim.height - dim.height - 2) / 2; // We can substract 2 or 1 but the first enable a left
+                                                              // align whether 1 is for a right align
+    int pad_left = (game_wc->dim.width - dim.width - 2) / 2;
     padding pad = {pad_top, pad_left};
     char vb = tile_to_char(VERTICAL_BORDER);
     char hb = tile_to_char(HORIZONTAL_BORDER);
@@ -363,19 +363,19 @@ void print_game(board *b, window_context *game_wc) {
         }
     }
 
-    activate_color_for_tile(game_wc, hb);
+    activate_color_for_tile(game_wc, HORIZONTAL_BORDER);
     for (x = 0; x < b->dim.width + 2; x++) {
         mvwaddch(game_wc->win, pad.top, x + pad.left, hb);
         mvwaddch(game_wc->win, b->dim.height + 1 + pad.top, x + pad.left, hb);
     }
-    deactivate_color_for_tile(game_wc, hb);
+    deactivate_color_for_tile(game_wc, HORIZONTAL_BORDER);
 
-    activate_color_for_tile(game_wc, vb);
+    activate_color_for_tile(game_wc, VERTICAL_BORDER);
     for (y = 0; y < b->dim.height + 2; y++) {
         mvwaddch(game_wc->win, y + pad.top, pad.left, vb);
         mvwaddch(game_wc->win, y + pad.top, b->dim.width + 1 + pad.left, vb);
     }
-    deactivate_color_for_tile(game_wc, vb);
+    deactivate_color_for_tile(game_wc, VERTICAL_BORDER);
 }
 
 void activate_color_for_player(window_context *wc, int current_player) {
