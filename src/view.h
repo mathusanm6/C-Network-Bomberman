@@ -18,7 +18,6 @@ void end_view();
  * Does nothing if the pointer is NULL
  */
 void get_computed_board_dimension(dimension *);
-
 /** Updates terminal display with board data
  */
 void refresh_game(board *, chat *, int);

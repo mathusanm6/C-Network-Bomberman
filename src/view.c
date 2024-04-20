@@ -5,8 +5,10 @@
 
 #include "utils.h"
 
-#define WINDOW_WIDTH 140
-#define WINDOW_HEIGHT 40
+#define MIN_WINDOW_WIDTH 200
+#define MAX_WINDOW_WIDTH 260
+#define MIN_WINDOW_HEIGHT 30
+#define MAX_WINDOW_HEIGHT 60
 #define PADDING_SCREEN_TOP 1
 #define PADDING_SCREEN_LEFT 2
 #define PADDING_PLAYABLE_TOP 2
@@ -29,7 +31,6 @@ static window_context *chat_wc;
 static window_context *chat_history_wc;
 static window_context *chat_input_wc;
 
-static const padding PLAYABLE_PADDING = {PADDING_PLAYABLE_TOP, PADDING_PLAYABLE_LEFT};
 static const padding SCREEN_PADDING = {PADDING_SCREEN_TOP, PADDING_SCREEN_LEFT};
 
 static void get_height_width_terminal(dimension *);
@@ -98,9 +99,10 @@ int init_view() {
         dimension dim;
         get_height_width_terminal(&dim);
         end_view();
-        printf("Please resize your terminal to have exactly %d rows and %d columns and restart the game. Currently, "
-               "your terminal has %d rows and %d columns.\n",
-               WINDOW_HEIGHT, WINDOW_WIDTH, dim.height, dim.width);
+        printf("Please resize your terminal to %d-%d rows and %d-%d columns (now %d rows, %d columns) and restart the "
+               "game.\n",
+               MIN_WINDOW_HEIGHT, MAX_WINDOW_HEIGHT, MIN_WINDOW_WIDTH, MAX_WINDOW_WIDTH, dim.height, dim.width);
+
         return EXIT_FAILURE;
     }
 
@@ -140,7 +142,11 @@ void get_computed_board_dimension(dimension *dim) {
         dimension scr_dim;
         get_height_width_terminal(&scr_dim);
         get_height_width_playable(dim, scr_dim);
-        add_padding(dim, PLAYABLE_PADDING);
+        padding pad;
+        pad.left = (dim->width - GAMEBOARD_WIDTH) / 2;
+        pad.top = (dim->height - GAMEBOARD_HEIGHT) / 2;
+        add_padding(dim, pad);
+        // add_padding(dim, PLAYABLE_PADDING);
         add_padding(dim, SCREEN_PADDING);
     }
 }
@@ -163,7 +169,8 @@ bool is_valid_terminal_size() {
     dimension dim;
     get_height_width_terminal(&dim);
 
-    if (dim.height != WINDOW_HEIGHT || dim.width != WINDOW_WIDTH) {
+    if (dim.height > MAX_WINDOW_HEIGHT || dim.height < MIN_WINDOW_HEIGHT || dim.width < MIN_WINDOW_WIDTH ||
+        dim.width > MAX_WINDOW_WIDTH) {
         return false;
     }
 
