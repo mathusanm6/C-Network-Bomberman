@@ -254,7 +254,19 @@ ready_connection_header *recv_ready_connexion_header_of_client(int id) {
     return recv_ready_connexion_header(sock_clients[id]);
 }
 
+game_action *recv_game_action_of_clients() {
+    return recv_game_action(sock_udp);
+}
+
 int send_connexion_information_of_client(int id, int eq) {
     // TODO Replace the gamemode
     return send_connexion_information(sock_clients[id], SOLO, id, eq, port_udp, port_mult, adrmdiff);
+}
+
+int send_game_board_for_clients(uint16_t num, board *board_) {
+    return send_game_board(sock_mult, addr_mult, num, board_);
+}
+
+int send_game_update_for_clients(uint16_t num, tile_diff *diff, uint8_t nb) {
+    return send_game_update(sock_mult, addr_mult, num, diff, nb);
 }
