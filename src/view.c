@@ -1,6 +1,7 @@
 #include "./view.h"
 
 #include <stdlib.h>
+#include <string.h>
 
 #include "utils.h"
 
@@ -78,6 +79,8 @@ int init_colors() {
 
     // Initialize the color for the bomb
     init_pair(11, COLOR_RED, COLOR_BLACK);
+
+    init_pair(12, COLOR_RED, COLOR_BLACK);
 
     return EXIT_SUCCESS;
 }
@@ -438,14 +441,21 @@ int print_player_tag_chat(bool whispering, int sender, window_context *wc, int o
 }
 
 int print_whispering_tag_chat(int player_tag_len, int sender, window_context *wc, int offset_y) {
-    activate_color_for_player(wc, sender + 1);
-
     char buf[30];
-    int len = snprintf(buf, sizeof(buf), "(whispering) : ");
+    int len = snprintf(buf, sizeof(buf), "(whispering)");
 
+    wattron(wc->win, COLOR_PAIR(12));
     mvwprintw(wc->win, 1 + offset_y, 1 + player_tag_len, "%s", buf);
+    wattroff(wc->win, COLOR_PAIR(12));
 
+    memset(buf, 0, 30);
+    int tmp = snprintf(buf, sizeof(buf), " : ");
+
+    activate_color_for_player(wc, sender + 1);
+    mvwprintw(wc->win, 1 + offset_y, 1 + player_tag_len + len, "%s", buf);
     deactivate_color_for_player(wc, sender + 1);
+
+    len += tmp;
 
     return len;
 }
@@ -481,7 +491,10 @@ void print_chat_history(chat *c, window_context *chat_history_wc) {
         int player_tag_len = 0;
         int whispering_tag_len = 0;
         print_tag_chat(&player_tag_len, &whispering_tag_len, cnode->sender, cnode->whispered, chat_history_wc, i);
+
+        activate_color_for_player(chat_history_wc, cnode->sender + 1);
         mvwprintw(chat_history_wc->win, i + 1, 1 + player_tag_len + whispering_tag_len, cnode->message);
+        deactivate_color_for_player(chat_history_wc, cnode->sender + 1);
         cnode = cnode->next;
         ++i;
     }

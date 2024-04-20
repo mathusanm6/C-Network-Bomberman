@@ -151,6 +151,7 @@ int init_chat() {
 
         chat_->history = malloc(sizeof(chat_history));
         RETURN_FAILURE_IF_NULL_PERROR(chat_->history, "malloc");
+        chat_->history->count = 0;
 
         chat_->line = malloc(sizeof(chat_line));
         RETURN_FAILURE_IF_NULL_PERROR(chat_->line, "malloc");
