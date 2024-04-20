@@ -4,7 +4,7 @@
 #include "./messages.h"
 #include "./model.h"
 
-int send_connexion_information(int sock, GAME_MODE mode, int id, int eq_id, int port_udp, int portmdiff,
+int send_connexion_information(int sock, GAME_MODE mode, int id, int eq, int port_udp, int portmdiff,
                                uint16_t adrmdiff[8]);
 
 initial_connection_header *recv_initial_connection_header(int sock);
