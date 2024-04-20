@@ -69,12 +69,6 @@ char *serialize_game_board(const game_board_information *info);
 
 game_board_information *deserialize_game_board(const char *info);
 
-typedef struct tile_diff {
-    uint8_t x;
-    uint8_t y;
-    TILE tile;
-} tile_diff;
-
 typedef struct game_board_update {
     uint16_t num;
     uint8_t nb;

@@ -7,7 +7,6 @@
 #define MIN_GAMEBOARD_HEIGHT 10
 #define GAMEBOARD_WIDTH 52
 #define GAMEBOARD_HEIGHT 25
-
 #define DESTRUCTIBLE_WALL_CHANCE 20
 #define BOMB_LIFETIME 3 // in seconds
 
@@ -15,6 +14,7 @@
 #define MAX_CHAT_HISTORY_LEN 23
 
 #include <stdbool.h>
+#include <stdint.h>
 
 typedef enum GAME_ACTION {
     GAME_UP = 0,
@@ -70,6 +70,12 @@ typedef struct coord {
     int x;
     int y;
 } coord;
+
+typedef struct tile_diff {
+    uint8_t x;
+    uint8_t y;
+    TILE tile;
+} tile_diff;
 
 typedef struct chat_node {
     int sender;
@@ -159,6 +165,11 @@ bool is_player_dead(int, unsigned int game_id);
 /** Iterates over all bombs, removing any that have exceeded their lifetime.
  */
 void update_bombs(unsigned int game_id);
+
+/** Returns the tiles of the current board of game_id, which differates with different_board, and change size with the
+ * size of the result
+ */
+tile_diff *get_diff_with_board(unsigned game_id, board *different_board, unsigned *size);
 
 /** Returns true if the game is over
  */

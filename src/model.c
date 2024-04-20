@@ -671,6 +671,34 @@ void update_bombs(unsigned int game_id) {
     }
 }
 
+tile_diff *get_diff_with_board(unsigned game_id, board *different_board, unsigned *size) {
+    board *current_board = games[game_id]->game_board;
+    if (current_board->dim.height != different_board->dim.height ||
+        current_board->dim.width != different_board->dim.width || size == NULL) {
+        return NULL;
+    }
+    unsigned cmpt = 0;
+    tile_diff diffs[current_board->dim.width * current_board->dim.height];
+    for (int i = 0; i < current_board->dim.height * current_board->dim.width; i++) {
+        if (current_board->grid[i] != different_board->grid[i]) {
+            coord c = int_to_coord(i, game_id);
+
+            tile_diff diff;
+            diff.x = c.x;
+            diff.y = c.y;
+            diff.tile = current_board->grid[i];
+
+            diffs[cmpt] = diff;
+            cmpt++;
+        }
+    }
+    tile_diff *res_diffs = malloc(sizeof(tile_diff) * cmpt);
+    RETURN_NULL_IF_NULL(res_diffs);
+    memmove(res_diffs, diffs, sizeof(tile_diff) * cmpt);
+    *size = cmpt;
+    return res_diffs;
+}
+
 bool is_game_over(unsigned int game_id) {
     if (games[game_id] == NULL) {
         return true;
