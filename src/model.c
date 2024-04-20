@@ -229,11 +229,6 @@ void free_chat_node(chat_node *node) {
         return;
     }
 
-    if (node->message != NULL) {
-        free(node->message); // Free the duplicated message string
-        node->message = NULL;
-    }
-
     free(node);
 }
 
@@ -399,12 +394,14 @@ void set_grid(int x, int y, TILE v, unsigned int game_id) {
 
 void decrement_line() {
     if (chat_->line != NULL && chat_->line->cursor > 0) {
+        chat_->line->data[chat_->line->cursor] = tile_to_char(EMPTY);
         chat_->line->cursor--;
     }
 }
 
 void clear_line() {
     if (chat_->line != NULL) {
+        memset(chat_->line->data, tile_to_char(EMPTY), chat_->line->cursor);
         chat_->line->cursor = 0;
     }
 }
@@ -416,27 +413,25 @@ void add_to_line(char c) {
     }
 }
 
-chat_node *create_chat_node(char *msg, bool whispered) {
+chat_node *create_chat_node(int sender, char msg[TEXT_SIZE], bool whispered) {
     chat_node *new_node = malloc(sizeof(chat_node));
     if (new_node != NULL) {
-        // Duplicate the message string to avoid SIGSEGV if dynamically allocated message freed
-        new_node->message = strdup(msg);
-        if (new_node->message == NULL) {
-            free(new_node);
-            return NULL;
-        }
+        new_node->sender = sender;
+        strncpy(new_node->message, msg, TEXT_SIZE);
+        // Ensure null terminated string
+        new_node->message[TEXT_SIZE - 1] = '\0';
         new_node->whispered = whispered;
         new_node->next = NULL;
     }
     return new_node;
 }
 
-void add_message(char *msg, bool whispered) {
+void add_message(int sender, char *msg, bool whispered) {
     if (chat_->history == NULL) {
         return;
     }
 
-    chat_node *new_node = create_chat_node(msg, whispered);
+    chat_node *new_node = create_chat_node(sender, msg, whispered);
     if (new_node == NULL) {
         return;
     }

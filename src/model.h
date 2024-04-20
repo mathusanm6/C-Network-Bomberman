@@ -67,7 +67,8 @@ typedef struct coord {
 } coord;
 
 typedef struct chat_node {
-    char *message;
+    int sender;
+    char message[TEXT_SIZE];
     bool whispered;
     struct chat_node *next;
 } chat_node;
@@ -145,7 +146,7 @@ void clear_line();
 void add_to_line(char);
 
 // TODO! : ADD COMMENTS
-void add_message(char *msg, bool whispered);
+void add_message(int sender, char *msg, bool whispered);
 
 void toggle_whispering();
 

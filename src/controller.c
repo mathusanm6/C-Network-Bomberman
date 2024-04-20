@@ -132,7 +132,7 @@ bool perform_chat_action(int c) {
             decrement_line();
             break;
         case CHAT_SEND:
-            add_message(chat_->line->data, chat_->whispering);
+            add_message(current_player, chat_->line->data, chat_->whispering);
             clear_line();
             break;
         case CHAT_TOGGLE_WHISPER:
