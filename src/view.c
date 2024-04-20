@@ -5,8 +5,8 @@
 
 #include "utils.h"
 
-#define MIN_GAME_WIDTH 80
-#define MIN_GAME_HEIGHT 24
+#define WINDOW_WIDTH 140
+#define WINDOW_HEIGHT 40
 #define PADDING_SCREEN_TOP 1
 #define PADDING_SCREEN_LEFT 2
 #define PADDING_PLAYABLE_TOP 2
@@ -32,6 +32,7 @@ static window_context *chat_input_wc;
 static const padding PLAYABLE_PADDING = {PADDING_PLAYABLE_TOP, PADDING_PLAYABLE_LEFT};
 static const padding SCREEN_PADDING = {PADDING_SCREEN_TOP, PADDING_SCREEN_LEFT};
 
+static void get_height_width_terminal(dimension *);
 static bool is_valid_terminal_size();
 
 // Helper functions for managing windows
@@ -94,9 +95,12 @@ int init_view() {
     RETURN_FAILURE_IF_ERROR(init_colors()); // Initialize the colors
 
     if (!is_valid_terminal_size()) { // Check if the terminal is big enough
+        dimension dim;
+        get_height_width_terminal(&dim);
         end_view();
-        printf("Please resize your terminal to have at least %d rows and %d columns and restart the game.\n",
-               MIN_GAME_HEIGHT, MIN_GAME_WIDTH);
+        printf("Please resize your terminal to have exactly %d rows and %d columns and restart the game. Currently, "
+               "your terminal has %d rows and %d columns.\n",
+               WINDOW_HEIGHT, WINDOW_WIDTH, dim.height, dim.width);
         return EXIT_FAILURE;
     }
 
@@ -159,7 +163,7 @@ bool is_valid_terminal_size() {
     dimension dim;
     get_height_width_terminal(&dim);
 
-    if (dim.height < MIN_GAME_HEIGHT || dim.width < MIN_GAME_WIDTH) {
+    if (dim.height != WINDOW_HEIGHT || dim.width != WINDOW_WIDTH) {
         return false;
     }
 
