@@ -474,7 +474,10 @@ void print_chat(chat *c, int current_player, window_context *chat_history_wc, wi
 
     // Update chat history
     wattron(chat_history_wc->win, COLOR_PAIR(3)); // Enable custom color 3
-    // TODO: Implement chat history
+    // for (int i = 0; i < MAX_CHAT_HISTORY_LEN; ++i) {
+    //     mvwprintw(chat_history_wc->win, i + 1, 1, chat_->history_list)
+    // }
+    // TODO : I'LL BE BACK !
     wattroff(chat_history_wc->win, COLOR_PAIR(3)); // Disable custom color 3
 }
 

@@ -5,6 +5,7 @@
 #define PLAYER_NUM 4
 #define MIN_GAMEBOARD_WIDTH 11
 #define MIN_GAMEBOARD_HEIGHT 10
+#define MAX_CHAT_HISTORY_LEN 10
 #define DESTRUCTIBLE_WALL_CHANCE 20
 #define BOMB_LIFETIME 3 // in seconds
 
@@ -82,7 +83,7 @@ typedef struct chat_line {
 } chat_line;
 
 typedef struct chat {
-    chat_history *history_list[PLAYER_NUM];
+    chat_history *history;
     chat_line *line;
     bool on_focus;
     bool whispering;
@@ -144,7 +145,7 @@ void clear_line();
 void add_to_line(char);
 
 // TODO! : ADD COMMENTS
-void add_message(int player_id, char *msg, bool whispered);
+void add_message(char *msg, bool whispered);
 
 void toggle_whispering();
 
