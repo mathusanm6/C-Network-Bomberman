@@ -1,11 +1,13 @@
 #include "./controller.h"
-#include "./model.h"
-#include "./utils.h"
-#include "./view.h"
 
 #include <ncurses.h>
 #include <stdlib.h>
 #include <unistd.h>
+
+#include "./chat_model.h"
+#include "./game_model.h"
+#include "./utils.h"
+#include "./view.h"
 
 #define KEY_BACKSPACE_1 0407
 #define KEY_BACKSPACE_2 127

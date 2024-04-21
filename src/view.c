@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "utils.h"
+#include "./utils.h"
 
 #define MIN_WINDOW_WIDTH 200
 #define MAX_WINDOW_WIDTH 260

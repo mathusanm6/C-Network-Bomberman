@@ -1,13 +1,13 @@
-#ifndef SRC_MODEL_H_
-#define SRC_MODEL_H_
+#ifndef SRC_GAME_MODEL_H_
+#define SRC_GAME_MODEL_H_
 
-#define TEXT_SIZE 100
 #define PLAYER_NUM 4
+
 #define MIN_GAMEBOARD_WIDTH 10
 #define MIN_GAMEBOARD_HEIGHT 10
 #define GAMEBOARD_WIDTH 52
 #define GAMEBOARD_HEIGHT 25
-#define MAX_CHAT_HISTORY_LEN 23
+
 #define DESTRUCTIBLE_WALL_CHANCE 20
 #define BOMB_LIFETIME 3 // in seconds
 
@@ -24,18 +24,6 @@ typedef enum GAME_ACTION {
     GAME_QUIT = 7,
     GAME_SWITCH_PLAYER = 8
 } GAME_ACTION;
-
-typedef enum CHAT_ACTION {
-    CHAT_WRITE = 0,
-    CHAT_ERASE = 1,
-    CHAT_SEND = 2,
-    CHAT_TOGGLE_WHISPER = 3,
-    CHAT_CLEAR = 4,
-    CHAT_QUIT = 5,
-    CHAT_GAME_QUIT = 6,
-    CHAT_SWITCH_PLAYER = 7,
-    CHAT_NONE = 8
-} CHAT_ACTION;
 
 typedef enum TILE {
     EMPTY = 0,
@@ -67,32 +55,6 @@ typedef struct coord {
     int x;
     int y;
 } coord;
-
-typedef struct chat_node {
-    int sender;
-    char message[TEXT_SIZE];
-    bool whispered;
-    struct chat_node *next;
-} chat_node;
-
-typedef struct chat_history {
-    chat_node *head;
-    int count;
-} chat_history;
-
-typedef struct chat_line {
-    char data[TEXT_SIZE];
-    int cursor;
-} chat_line;
-
-typedef struct chat {
-    chat_history *history;
-    chat_line *line;
-    bool on_focus;
-    bool whispering;
-} chat;
-
-extern chat *chat_;
 
 /** Initializes - The game board with the width and the height
  *              - The chat line
@@ -135,23 +97,6 @@ void set_grid(int, int, TILE, unsigned int game_id);
  */
 bool is_outside_board(int x, int y, unsigned int game_id);
 
-/** Decrements the line cursor
- */
-void decrement_line();
-
-/** Nullifies the line cursor
- */
-void clear_line();
-
-/** Adds the character at the end of chat_line if it does not exceed TEXT_SIZE and increment the cursor
- */
-void add_to_line(char);
-
-// TODO! : ADD COMMENTS
-void add_message(int sender, char *msg, bool whispered);
-
-void toggle_whispering();
-
 /** Depending on the action, changes the player's position in the table if the argument is a move.
  */
 void perform_move(GAME_ACTION, int player_id, unsigned int game_id);
@@ -180,4 +125,4 @@ void update_bombs(unsigned int game_id);
  */
 bool is_game_over(unsigned int game_id);
 
-#endif // SRC_MODEL_H_
+#endif // SRC_GAME_MODEL_H_

@@ -1,7 +1,8 @@
 #ifndef SRC_VIEW_H_
 #define SRC_VIEW_H_
 
-#include "./model.h"
+#include "./chat_model.h"
+#include "./game_model.h"
 
 #include <ncurses.h>
 
@@ -18,6 +19,7 @@ void end_view();
  * Does nothing if the pointer is NULL
  */
 void get_computed_board_dimension(dimension *);
+
 /** Updates terminal display with board data
  */
 void refresh_game(board *, chat *, int);

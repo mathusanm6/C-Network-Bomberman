@@ -1,11 +1,12 @@
-#include "messages.h"
-#include "model.h"
-#include "utils.h"
+#include "./messages.h"
+
 #include <arpa/inet.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "./utils.h"
 
 #define BIT_OFFSET_13 ((1 << 12) - 1)
 #define BYTE_SIZE 8
