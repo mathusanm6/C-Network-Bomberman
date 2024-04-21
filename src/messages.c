@@ -448,15 +448,15 @@ char *server_serialize_chat_message(const chat_message *message) {
     return serialize_chat_message(message, SERVER_CHAT_CODE);
 }
 
-chat_message *deserialize_chat_message(const char *message, int codereq) {
+chat_message *deserialize_chat_message(const char *message, int initial_codereq) {
     chat_message *chat_message_ = malloc(sizeof(chat_message));
     RETURN_NULL_IF_NULL_PERROR(chat_message_, "malloc");
 
     uint16_t header = ntohs(*(uint16_t *)message);
 
-    if ((header & BIT_OFFSET_13) == codereq) {
+    if ((header & BIT_OFFSET_13) == initial_codereq) {
         chat_message_->type = GLOBAL_M;
-    } else if ((header & BIT_OFFSET_13) == codereq + 1) {
+    } else if ((header & BIT_OFFSET_13) == initial_codereq + 1) {
         chat_message_->type = TEAM_M;
     } else {
         free(chat_message_);
