@@ -397,3 +397,93 @@ game_board_update *deserialize_game_board_update(const char *update) {
 
     return game_board_update_;
 }
+
+static char *serialize_chat_message(const chat_message *message, int initial_codereq) {
+    // 2 for the header and 1 for the message length (2+1=3)
+    char *serialized = malloc(3 + message->message_length);
+    RETURN_NULL_IF_NULL_PERROR(serialized, "malloc");
+
+    int codereq = 0;
+
+    if (message->type == GLOBAL_M) {
+        codereq = initial_codereq;
+    } else if (message->type == TEAM_M) {
+        codereq = initial_codereq + 1;
+    } else {
+        free(serialized);
+        return NULL;
+    }
+
+    if (message->id < 0 || message->id > 3) {
+        free(serialized);
+        return NULL;
+    }
+
+    if (message->type == TEAM_M && (message->eq < 0 || message->eq > 1)) {
+        free(serialized);
+        return NULL;
+    }
+
+    uint16_t header = connection_header_value(codereq, message->id, message->eq);
+
+    // Split into 2 bytes
+    serialized[0] = header & 0xFF;
+    serialized[1] = header >> 8;
+
+    serialized[2] = message->message_length;
+
+    strncpy(serialized + 3, message->message, message->message_length);
+
+    return serialized;
+}
+
+#define CLIENT_CHAT_CODE 7
+#define SERVER_CHAT_CODE 13
+
+char *client_serialize_chat_message(const chat_message *message) {
+    return serialize_chat_message(message, CLIENT_CHAT_CODE);
+}
+
+char *server_serialize_chat_message(const chat_message *message) {
+    return serialize_chat_message(message, SERVER_CHAT_CODE);
+}
+
+chat_message *deserialize_chat_message(const char *message, int initial_codereq) {
+    chat_message *chat_message_ = malloc(sizeof(chat_message));
+    RETURN_NULL_IF_NULL_PERROR(chat_message_, "malloc");
+
+    uint16_t header = ntohs(*(uint16_t *)message);
+
+    if ((header & BIT_OFFSET_13) == initial_codereq) {
+        chat_message_->type = GLOBAL_M;
+    } else if ((header & BIT_OFFSET_13) == initial_codereq + 1) {
+        chat_message_->type = TEAM_M;
+    } else {
+        free(chat_message_);
+        return NULL;
+    }
+
+    chat_message_->id = (header >> 12) & 0x3; // We only need 2 bits
+    chat_message_->eq = (header >> 14) & 0x1; // We only need 1 bit
+
+    chat_message_->message_length = message[2];
+
+    chat_message_->message = malloc(chat_message_->message_length + 1);
+    if (chat_message_->message == NULL) {
+        free(chat_message_);
+        return NULL;
+    }
+
+    strncpy(chat_message_->message, message + 3, chat_message_->message_length);
+    chat_message_->message[chat_message_->message_length] = '\0';
+
+    return chat_message_;
+}
+
+chat_message *client_deserialize_chat_message(const char *message) {
+    return deserialize_chat_message(message, CLIENT_CHAT_CODE);
+}
+
+chat_message *server_deserialize_chat_message(const char *message) {
+    return deserialize_chat_message(message, SERVER_CHAT_CODE);
+}

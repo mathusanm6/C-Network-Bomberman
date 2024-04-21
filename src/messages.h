@@ -83,4 +83,22 @@ char *serialize_game_board_update(const game_board_update *update);
 
 game_board_update *deserialize_game_board_update(const char *update);
 
+typedef enum chat_message_type { GLOBAL_M, TEAM_M } chat_message_type;
+
+typedef struct chat_message {
+    chat_message_type type;
+    int id;
+    int eq;
+    uint8_t message_length;
+    char *message; // `\0` terminated
+} chat_message;
+
+char *client_serialize_chat_message(const chat_message *message);
+
+chat_message *client_deserialize_chat_message(const char *message);
+
+char *server_serialize_chat_message(const chat_message *message);
+
+chat_message *server_deserialize_chat_message(const char *message);
+
 #endif // MESSAGES_CLIENT_H
