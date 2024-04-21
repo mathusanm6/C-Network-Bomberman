@@ -430,6 +430,14 @@ void deactivate_color_for_player(window_context *wc, int current_player) {
     }
 }
 
+void clear_view_line(window_context *wc, int offset_y, int offset_x) {
+    int x;
+    char e = tile_to_char(EMPTY);
+    for (x = 0; x < wc->dim.width - offset_x - 1; x++) {
+        mvwaddch(wc->win, offset_y, x + offset_x, e);
+    }
+}
+
 int print_player_tag_chat(bool whispering, int sender, window_context *wc, int offset_y) {
     // Update chat text
     activate_color_for_player(wc, sender + 1);
@@ -443,6 +451,7 @@ int print_player_tag_chat(bool whispering, int sender, window_context *wc, int o
         len = snprintf(buf, sizeof(buf), " Player%d : ", sender + 1);
     }
 
+    clear_view_line(wc, 1 + offset_y, 1);
     mvwprintw(wc->win, 1 + offset_y, 1, "%s", buf);
 
     wattroff(wc->win, A_BOLD); // Disable bold
@@ -463,6 +472,7 @@ int print_whispering_tag_chat(int player_tag_len, int sender, window_context *wc
     int tmp = snprintf(buf, sizeof(buf), " : ");
 
     activate_color_for_player(wc, sender + 1);
+    clear_view_line(wc, 1 + offset_y, 1 + player_tag_len + len);
     mvwprintw(wc->win, 1 + offset_y, 1 + player_tag_len + len, "%s", buf);
     deactivate_color_for_player(wc, sender + 1);
 
@@ -504,6 +514,7 @@ void print_chat_history(chat *c, window_context *chat_history_wc) {
         print_tag_chat(&player_tag_len, &whispering_tag_len, cnode->sender, cnode->whispered, chat_history_wc, i);
 
         activate_color_for_player(chat_history_wc, cnode->sender + 1);
+        clear_view_line(chat_history_wc, i + 1, 1 + player_tag_len + whispering_tag_len);
         mvwprintw(chat_history_wc->win, i + 1, 1 + player_tag_len + whispering_tag_len, cnode->message);
         deactivate_color_for_player(chat_history_wc, cnode->sender + 1);
         cnode = cnode->next;

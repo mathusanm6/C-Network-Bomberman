@@ -1,6 +1,6 @@
 #include "./chat_model.h"
 
-#define EMPTY_CHAR ' '
+#define EMPTY_CHAR '\0'
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -84,8 +84,8 @@ void free_chat() {
 
 void decrement_line() {
     if (chat_->line != NULL && chat_->line->cursor > 0) {
-        chat_->line->data[chat_->line->cursor] = EMPTY_CHAR;
         chat_->line->cursor--;
+        chat_->line->data[chat_->line->cursor] = EMPTY_CHAR;
     }
 }
 
