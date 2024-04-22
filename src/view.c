@@ -5,8 +5,8 @@
 
 #include "./utils.h"
 
-#define MIN_WINDOW_WIDTH 200
-#define MAX_WINDOW_WIDTH 260
+#define MIN_WINDOW_WIDTH 140
+#define MAX_WINDOW_WIDTH 200
 #define MIN_WINDOW_HEIGHT 30
 #define MAX_WINDOW_HEIGHT 40
 #define PADDING_SCREEN_TOP 1

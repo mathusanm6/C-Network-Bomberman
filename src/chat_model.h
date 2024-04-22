@@ -1,7 +1,7 @@
 #ifndef SRC_CHAT_MODEL_H_
 #define SRC_CHAT_MODEL_H_
 
-#define TEXT_SIZE 100
+#define TEXT_SIZE 60
 #define MAX_CHAT_HISTORY_LEN 23
 
 #include <stdbool.h>
