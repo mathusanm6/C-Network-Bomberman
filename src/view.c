@@ -5,8 +5,7 @@
 
 #include "./utils.h"
 
-#define MIN_WINDOW_WIDTH 140
-#define MAX_WINDOW_WIDTH 200
+#define MIN_WINDOW_WIDTH 150
 #define WINDOW_HEIGHT 30
 #define PADDING_SCREEN_TOP 1
 #define PADDING_SCREEN_LEFT 2
@@ -98,9 +97,10 @@ int init_view() {
         dimension dim;
         get_height_width_terminal(&dim);
         end_view();
-        printf("Please resize your terminal to %d rows and %d-%d columns (now %d rows, %d columns) and restart the "
-               "game.\n",
-               WINDOW_HEIGHT, MIN_WINDOW_WIDTH, MAX_WINDOW_WIDTH, dim.height, dim.width);
+        printf(
+            "Please resize your terminal to %d rows and at least %d columns (now %d rows, %d columns) and restart the "
+            "game.\n",
+            WINDOW_HEIGHT, MIN_WINDOW_WIDTH, dim.height, dim.width);
 
         return EXIT_FAILURE;
     }
@@ -168,7 +168,7 @@ bool is_valid_terminal_size() {
     dimension dim;
     get_height_width_terminal(&dim);
 
-    if (dim.height != WINDOW_HEIGHT || dim.width < MIN_WINDOW_WIDTH || dim.width > MAX_WINDOW_WIDTH) {
+    if (dim.height != WINDOW_HEIGHT || dim.width < MIN_WINDOW_WIDTH) {
         return false;
     }
 
