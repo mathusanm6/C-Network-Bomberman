@@ -5,10 +5,15 @@
 
 #include "./utils.h"
 
+// Define the minimum size of the terminal window
 #define MIN_WINDOW_WIDTH 150
-#define WINDOW_HEIGHT 30
+#define MIN_WINDOW_HEIGHT 30
+
+// Define the padding for the screen (between the terminal window and the game/chat windows)
 #define PADDING_SCREEN_TOP 1
 #define PADDING_SCREEN_LEFT 2
+
+// Define the padding for the playable area
 #define PADDING_PLAYABLE_TOP 2
 #define PADDING_PLAYABLE_LEFT 4
 
@@ -98,9 +103,9 @@ int init_view() {
         get_height_width_terminal(&dim);
         end_view();
         printf(
-            "Please resize your terminal to %d rows and at least %d columns (now %d rows, %d columns) and restart the "
+            "Please resize your terminal to at least %d rows and %d columns (now %d rows, %d columns) and restart the "
             "game.\n",
-            WINDOW_HEIGHT, MIN_WINDOW_WIDTH, dim.height, dim.width);
+            MIN_WINDOW_HEIGHT, MIN_WINDOW_WIDTH, dim.height, dim.width);
 
         return EXIT_FAILURE;
     }
@@ -125,7 +130,7 @@ void get_height_width_terminal(dimension *dim) {
 void get_height_width_playable(dimension *dim, dimension scr_dim) {
     if (dim != NULL) {
         dim->height = min(scr_dim.height, scr_dim.width); // 2/3 of the terminal height is customizable
-        dim->width = dim->height * 2;                     // 2:1 aspect ratio (ncurses characters are not square)
+        dim->width = GAMEBOARD_WIDTH + 5;                 // 2:1 aspect ratio (ncurses characters are not square)
     }
 }
 
@@ -168,7 +173,7 @@ bool is_valid_terminal_size() {
     dimension dim;
     get_height_width_terminal(&dim);
 
-    if (dim.height != WINDOW_HEIGHT || dim.width < MIN_WINDOW_WIDTH) {
+    if (dim.height < MIN_WINDOW_HEIGHT || dim.width < MIN_WINDOW_WIDTH) {
         return false;
     }
 
