@@ -22,6 +22,7 @@ typedef struct udp_thread_data {
     unsigned size_game_actions;
     bool finished_flag;
     pthread_mutex_t lock_game_actions;
+    pthread_mutex_t lock_send_udp;
 } udp_thread_data;
 
 #define TMP_GAME_ID 0
@@ -249,7 +250,9 @@ void *serve_clients_send_mult_sec(void *arg_udp_thread_data) {
     int last_num_sec_message = 1;
     while (!data->finished_flag) {
         sleep(1);
+        pthread_mutex_lock(&data->lock_send_udp);
         send_game_board_for_clients(last_num_sec_message, get_game_board(data->game_id));
+        pthread_mutex_unlock(&data->lock_send_udp);
         increment_last_num_message(&last_num_sec_message);
         // TODO manage errors
     }
@@ -309,7 +312,9 @@ void *serve_clients_send_mult_freq(void *arg_udp_thread_data) {
         unsigned size = 0;
         tile_diff *diffs = get_diff_with_board(data->game_id, current_board, &size);
         if (diffs != NULL) {
+            pthread_mutex_lock(&data->lock_send_udp);
             send_game_update_for_clients(last_num_freq_message, diffs, size);
+            pthread_mutex_unlock(&data->lock_send_udp);
         }
         free(diffs);
         increment_last_num_message(&last_num_freq_message);
@@ -327,6 +332,9 @@ int init_game_threads(unsigned id) {
     udp_thread_data_game->nb_game_actions = 0;
 
     if (pthread_mutex_init(&udp_thread_data_game->lock_game_actions, NULL) < 0) {
+        goto EXIT_FREEING_DATA;
+    }
+    if (pthread_mutex_init(&udp_thread_data_game->lock_send_udp, NULL) < 0) {
         goto EXIT_FREEING_DATA;
     }
     if (pthread_create(&game_threads[0], NULL, serv_client_recv_game_action, udp_thread_data_game) < 0) {

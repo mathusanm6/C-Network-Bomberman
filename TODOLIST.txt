@@ -1,0 +1,5 @@
+- Faire en sorte que la fonction update renvoit les tiles modifiés
+- Soigner tout
+- Vérifier tout les mutex
+- Augmenter freq
+
