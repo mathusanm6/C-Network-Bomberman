@@ -175,7 +175,6 @@ int init_player_positions(unsigned int game_id) {
     return EXIT_SUCCESS;
 }
 
-// TODO! : Verify this working
 int init_chat(unsigned int game_id) {
     RETURN_FAILURE_IF_NULL(games[game_id]);
 
@@ -196,7 +195,6 @@ int init_chat(unsigned int game_id) {
     return EXIT_SUCCESS;
 }
 
-// TODO! : Verify this working
 int init_model(dimension dim, GAME_MODE game_mode_, unsigned int game_id) {
     game *g = init_game_struct();
     RETURN_FAILURE_IF_NULL(g);
@@ -283,7 +281,6 @@ void free_chat_history(chat_history *history) {
     free(history);
 }
 
-// TODO! : Verify this working
 void free_chat(unsigned int game_id) {
     if (games[game_id] == NULL) {
         return;
@@ -307,7 +304,6 @@ void free_chat(unsigned int game_id) {
     games[game_id]->chat = NULL;
 }
 
-// TODO : Fix this
 void free_model(unsigned int game_id) {
     free_game_board(game_id);
     free_chat(game_id);
@@ -716,7 +712,6 @@ bool is_game_over(unsigned int game_id) {
     return team1_dead || team2_dead;
 }
 
-// TODO! : Verify this working
 void decrement_line(unsigned int game_id) {
     if (games[game_id] == NULL) {
         return;

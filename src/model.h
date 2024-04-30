@@ -180,6 +180,8 @@ void add_to_line(char, unsigned int game_id);
  */
 int add_message(int sender, unsigned int game_id);
 
+/** Returns the chat information from the game
+ */
 chat *get_chat(unsigned int game_id);
 
 bool is_chat_on_focus(unsigned int game_id);
