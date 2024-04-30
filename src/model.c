@@ -746,6 +746,18 @@ void add_to_line(char c, unsigned int game_id) {
 }
 
 chat_node *create_chat_node(int sender, char msg[TEXT_SIZE], bool whispered) {
+    if (sender < 0 || sender >= PLAYER_NUM) {
+        return NULL;
+    }
+
+    if (msg == NULL) {
+        return NULL;
+    }
+
+    if (strlen(msg) == 0) {
+        return NULL;
+    }
+
     chat_node *new_node = malloc(sizeof(chat_node));
     if (new_node != NULL) {
         new_node->sender = sender;

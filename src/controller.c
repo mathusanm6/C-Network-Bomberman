@@ -59,7 +59,7 @@ GAME_ACTION key_press_to_game_action(int c) {
             a = GAME_PLACE_BOMB;
             break;
         case KEY_BACKSLASH:
-            a = GAME_ACTIVATE_CHAT;
+            a = GAME_CHAT_MODE_START;
             break;
         case KEY_TILDA:
             a = GAME_QUIT;
@@ -93,7 +93,7 @@ CHAT_ACTION key_press_to_chat_action(int c) {
             a = CHAT_CLEAR;
             break;
         case KEY_BACKSLASH:
-            a = CHAT_QUIT;
+            a = CHAT_MODE_QUIT;
             break;
         case KEY_TILDA:
             a = CHAT_GAME_QUIT;
@@ -143,7 +143,7 @@ bool perform_chat_action(int c) {
         case CHAT_CLEAR:
             clear_line(TMP_GAME_ID);
             break;
-        case CHAT_QUIT:
+        case CHAT_MODE_QUIT:
             set_chat_focus(false, TMP_GAME_ID);
             break;
         case CHAT_GAME_QUIT:
@@ -170,7 +170,7 @@ bool perform_game_action(int c) {
         case GAME_PLACE_BOMB:
             place_bomb(current_player, TMP_GAME_ID);
             break;
-        case GAME_ACTIVATE_CHAT:
+        case GAME_CHAT_MODE_START:
             set_chat_focus(true, TMP_GAME_ID);
             break;
         case GAME_QUIT:
