@@ -4,8 +4,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "./chat_model.h"
-#include "./game_model.h"
+#include "./model.h"
 #include "./utils.h"
 #include "./view.h"
 
@@ -27,7 +26,7 @@
 static int current_player = 0;
 
 static void switch_player() {
-    clear_line();
+    clear_line(TMP_GAME_ID);
     do {
         current_player = (current_player + 1) % PLAYER_NUM;
     } while (is_player_dead(current_player, TMP_GAME_ID));
@@ -128,25 +127,24 @@ bool perform_chat_action(int c) {
     CHAT_ACTION a = key_press_to_chat_action(c);
     switch (a) {
         case CHAT_WRITE:
-            add_to_line(c);
+            add_to_line(c, TMP_GAME_ID);
             break;
         case CHAT_ERASE:
-            decrement_line();
+            decrement_line(TMP_GAME_ID);
             break;
         case CHAT_SEND:
-            if (!(chat_->line->cursor == 0)) {
-                add_message(current_player, chat_->line->data, chat_->whispering);
-                clear_line();
+            if (add_message(current_player, TMP_GAME_ID) == EXIT_SUCCESS) {
+                clear_line(TMP_GAME_ID);
             }
             break;
         case CHAT_TOGGLE_WHISPER:
-            toggle_whispering();
+            toggle_whispering(TMP_GAME_ID);
             break;
         case CHAT_CLEAR:
-            clear_line();
+            clear_line(TMP_GAME_ID);
             break;
         case CHAT_QUIT:
-            chat_->on_focus = false;
+            set_chat_focus(false, TMP_GAME_ID);
             break;
         case CHAT_GAME_QUIT:
             return true;
@@ -173,7 +171,7 @@ bool perform_game_action(int c) {
             place_bomb(current_player, TMP_GAME_ID);
             break;
         case GAME_ACTIVATE_CHAT:
-            chat_->on_focus = true;
+            set_chat_focus(true, TMP_GAME_ID);
             break;
         case GAME_QUIT:
             return true;
@@ -190,7 +188,7 @@ bool perform_game_action(int c) {
 bool control() {
     int c = get_pressed_key();
 
-    if (chat_->on_focus) {
+    if (is_chat_on_focus(TMP_GAME_ID)) {
         if (perform_chat_action(c)) {
             return true;
         }
@@ -220,6 +218,7 @@ int game_loop() {
             break;
         }
         board *game_board = get_game_board(TMP_GAME_ID);
+        chat *chat_ = get_chat(TMP_GAME_ID);
         refresh_game(game_board, chat_, current_player);
         free_board(game_board);
         update_bombs(TMP_GAME_ID);

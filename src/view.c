@@ -511,7 +511,7 @@ void print_chat_history(chat *c, window_context *chat_history_wc) {
     wattron(chat_history_wc->win, COLOR_PAIR(3)); // Enable custom color 3
     chat_node *cnode = c->history->head;
     int i = 0;
-    while (i < chat_->history->count) {
+    while (i < c->history->count) {
         int player_tag_len = 0;
         int whispering_tag_len = 0;
         print_tag_chat(&player_tag_len, &whispering_tag_len, cnode->sender, cnode->whispered, chat_history_wc, i);

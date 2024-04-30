@@ -1,5 +1,5 @@
-#ifndef SRC_GAME_MODEL_H_
-#define SRC_GAME_MODEL_H_
+#ifndef SRC_MODEL_H_
+#define SRC_MODEL_H_
 
 #define PLAYER_NUM 4
 
@@ -10,6 +10,9 @@
 
 #define DESTRUCTIBLE_WALL_CHANCE 20
 #define BOMB_LIFETIME 3 // in seconds
+
+#define TEXT_SIZE 60
+#define MAX_CHAT_HISTORY_LEN 23
 
 #include <stdbool.h>
 
@@ -24,6 +27,18 @@ typedef enum GAME_ACTION {
     GAME_QUIT = 7,
     GAME_SWITCH_PLAYER = 8
 } GAME_ACTION;
+
+typedef enum CHAT_ACTION {
+    CHAT_WRITE = 0,
+    CHAT_ERASE = 1,
+    CHAT_SEND = 2,
+    CHAT_TOGGLE_WHISPER = 3,
+    CHAT_CLEAR = 4,
+    CHAT_QUIT = 5,
+    CHAT_GAME_QUIT = 6,
+    CHAT_SWITCH_PLAYER = 7,
+    CHAT_NONE = 8
+} CHAT_ACTION;
 
 typedef enum TILE {
     EMPTY = 0,
@@ -55,6 +70,30 @@ typedef struct coord {
     int x;
     int y;
 } coord;
+
+typedef struct chat_node {
+    int sender;
+    char message[TEXT_SIZE];
+    bool whispered;
+    struct chat_node *next;
+} chat_node;
+
+typedef struct chat_history {
+    chat_node *head;
+    int count;
+} chat_history;
+
+typedef struct chat_line {
+    char data[TEXT_SIZE];
+    int cursor;
+} chat_line;
+
+typedef struct chat {
+    chat_history *history;
+    chat_line *line;
+    bool on_focus;
+    bool whispering;
+} chat;
 
 /** Initializes - The game board with the width and the height
  *              - The chat line
@@ -125,4 +164,30 @@ void update_bombs(unsigned int game_id);
  */
 bool is_game_over(unsigned int game_id);
 
-#endif // SRC_GAME_MODEL_H_
+/** Decrements the line cursor
+ */
+void decrement_line(unsigned int game_id);
+
+/** Nullifies the line cursor
+ */
+void clear_line(unsigned int game_id);
+
+/** Adds the character at the end of chat_line if it does not exceed TEXT_SIZE and increment the cursor
+ */
+void add_to_line(char, unsigned int game_id);
+
+/** Adds a message to the chat history with the sender and the message content and sets the whispered flag
+ */
+int add_message(int sender, unsigned int game_id);
+
+chat *get_chat(unsigned int game_id);
+
+bool is_chat_on_focus(unsigned int game_id);
+
+void set_chat_focus(bool on_focus, unsigned int game_id);
+
+/** Toggles the whispering flag in the chat
+ */
+void toggle_whispering(unsigned int game_id);
+
+#endif // SRC_MODEL_H_

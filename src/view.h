@@ -1,8 +1,7 @@
 #ifndef SRC_VIEW_H_
 #define SRC_VIEW_H_
 
-#include "./chat_model.h"
-#include "./game_model.h"
+#include "./model.h"
 
 #include <ncurses.h>
 
