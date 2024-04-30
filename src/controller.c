@@ -135,8 +135,6 @@ bool perform_chat_action(int c) {
         case CHAT_SEND:
             if (add_message(current_player, TMP_GAME_ID) == EXIT_SUCCESS) {
                 clear_line(TMP_GAME_ID);
-            } else {
-                perror("Error sending message");
             }
             break;
         case CHAT_TOGGLE_WHISPER:
