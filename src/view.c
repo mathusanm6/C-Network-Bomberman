@@ -518,7 +518,7 @@ void print_chat_history(chat *c, window_context *chat_history_wc) {
 
         activate_color_for_player(chat_history_wc, cnode->sender + 1);
         clear_view_line(chat_history_wc, i + 1, 1 + player_tag_len + whispering_tag_len);
-        mvwprintw(chat_history_wc->win, i + 1, 1 + player_tag_len + whispering_tag_len, cnode->message);
+        mvwprintw(chat_history_wc->win, i + 1, 1 + player_tag_len + whispering_tag_len, "%s", cnode->message);
         deactivate_color_for_player(chat_history_wc, cnode->sender + 1);
         cnode = cnode->next;
         ++i;
