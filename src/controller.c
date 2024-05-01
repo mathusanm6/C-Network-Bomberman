@@ -1,13 +1,15 @@
+#include "./communication_client.h"
 #include "./controller.h"
+#include "./messages.h"
+#include "./model.h"
+#include "./utils.h"
+#include "./view.h"
+
 
 #include <ncurses.h>
 #include <pthread.h>
 #include <stdlib.h>
 #include <unistd.h>
-
-#include "./model.h"
-#include "./utils.h"
-#include "./view.h"
 
 #define KEY_BACKSPACE_1 0407
 #define KEY_BACKSPACE_2 127
@@ -236,37 +238,63 @@ board *get_board() {
     return b;
 }
 
-/**
- * Updates the game board based on the server MESSAGE*/
+void update_board(board *b, TILE *grid) {
+    for (int i = 0; i < b->dim.height * b->dim.width; i++) {
+        b->grid[i] = grid[i];
+    }
+}
+
+void update_tile_diff(board *b, tile_diff *diff, int size) {
+    for (int i = 0; i < size; i++) {
+        int pos = diff[i].y * b->dim.width + diff[i].x;
+        b->grid[pos] = diff[i].tile;
+    }
+}
+
+/** Updates the game board based on the server MESSAGE*/
 void *game_board_info_thread_function(void *arg) {
+    udp_information *info = (udp_information *)arg;
+    // TODO : game end
     while (true) {
-<<<<<<< HEAD
-        if (is_game_over(TMP_GAME_ID) || control()) {
-            break;
+        received_game_message *received_message = recv_game_message(info);
+        if (received_message == NULL) {
+            continue;
         }
-        board *game_board = get_game_board(TMP_GAME_ID);
+        switch (received_message->type) {
+            case GAME_BOARD_UPDATE:
+                game_board_information *info = deserialize_game_board(received_message->message);
+                pthread_mutex_lock(&game_board_mutex);
+                update_board(game_board, info->board);
+                pthread_mutex_unlock(&game_board_mutex);
+                free_game_board_information(info);
+                break;
+            case GAME_BOARD_INFORMATION:
+                game_board_update *update = deserialize_game_board_update(received_message->message);
+                pthread_mutex_lock(&game_board_mutex);
+                update_tile_diff(game_board, update->diff, update->nb);
+                pthread_mutex_unlock(&game_board_mutex);
+                free_game_board_update(update);
+                break;
+            default:
+                /* TODO: Handle error */
+                break;
+        }
+
+        board *b = get_board();
+        // TODO: Chat
         chat *chat_ = get_chat(TMP_GAME_ID);
-        refresh_game(game_board, chat_, current_player);
-        free_board(game_board);
-        update_bombs(TMP_GAME_ID);
-=======
-        // TODO : communication
->>>>>>> 508d107 (feat: basic controller threads)
-        usleep(30 * 1000);
+        refresh_game(b, chat_, current_player);
     }
 
     return NULL;
 }
-/**
- * Sends to the server the performed action*/
+
+/** Sends to the server the performed action*/
 void *view_thread_function(void *arg) {
     while (true) {
-        // TODO : game end
         if (control()) {
             break;
         }
-        board *b = get_board();
-        refresh_game(b, chat_line);
     }
 
     return NULL;
@@ -275,8 +303,12 @@ void *view_thread_function(void *arg) {
 int game_loop() {
     RETURN_FAILURE_IF_NULL_PERROR(game_board, "malloc board_controller");
 
+    /* TODO: Use the correct udp_information */
+    udp_information *info = NULL;
+
+    /* TODO: Handle possible errors here */
     pthread_t game_board_info_thread;
-    pthread_create(&game_board_info_thread, NULL, game_board_info_thread_function, NULL);
+    pthread_create(&game_board_info_thread, NULL, game_board_info_thread_function, info);
 
     pthread_t view_thread;
     pthread_create(&view_thread, NULL, view_thread_function, NULL);

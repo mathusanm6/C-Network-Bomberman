@@ -152,7 +152,7 @@ char *recv_game_update(const udp_information *info, message_header *header) {
     return message;
 }
 
-recieved_game_message *recv_game_message(udp_information *info) {
+received_game_message *recv_game_message(udp_information *info) {
     message_header *header = recv_header_multidiff(info);
     RETURN_NULL_IF_NULL(header);
 
@@ -179,8 +179,8 @@ recieved_game_message *recv_game_message(udp_information *info) {
             return NULL;
     }
 
-    recieved_game_message *recieved = malloc(sizeof(recieved_game_message));
-    RETURN_NULL_IF_NULL_PERROR(recieved, "malloc recieved_game_message");
+    received_game_message *recieved = malloc(sizeof(received_game_message));
+    RETURN_NULL_IF_NULL_PERROR(recieved, "malloc received_game_message");
 
     recieved->message = message;
     recieved->type = type;

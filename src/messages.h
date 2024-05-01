@@ -65,6 +65,8 @@ typedef struct game_board_information {
     TILE *board;
 } game_board_information;
 
+void free_game_board_information(game_board_information *info);
+
 char *serialize_game_board(const game_board_information *info);
 
 game_board_information *deserialize_game_board(const char *info);
@@ -74,6 +76,8 @@ typedef struct game_board_update {
     uint8_t nb;
     tile_diff *diff;
 } game_board_update;
+
+void free_game_board_update(game_board_update *update);
 
 char *serialize_game_board_update(const game_board_update *update);
 

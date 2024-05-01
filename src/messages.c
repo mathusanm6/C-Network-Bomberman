@@ -168,6 +168,16 @@ connection_information *deserialize_connection_information(const connection_info
     return connection_info;
 }
 
+void free_game_board_information(game_board_information *info) {
+    free(info->board);
+    free(info);
+}
+
+void free_game_board_update(game_board_update *update) {
+    free(update->diff);
+    free(update);
+}
+
 uint16_t game_action_value(int message_num, GAME_ACTION action) {
     return htons((message_num << 3) | (action & 0x7));
 }

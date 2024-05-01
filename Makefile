@@ -22,7 +22,7 @@ VALGRIND_OPTS=--leak-check=full --show-leak-kinds=all --errors-for-leak-kinds=al
 
 
 SRCFILESCLIENT := $(shell find $(SRCDIR) -type f -name "*.c" ! -name "server.c" ! -name "network_server.c" ! -name "communication_server.c")
-SRCFILESSERVER := $(shell find $(SRCDIR) -type f -name "*.c" ! -name "client.c" ! -name "network_client.c" ! -name "communication_client.c")
+SRCFILESSERVER := $(shell find $(SRCDIR) -type f -name "*.c" ! -name "client.c" ! -name "network_client.c" ! -name "communication_client.c" ! -name "controller.c"  ! -name "view.c")
 TESTFILES := $(shell find $(TESTDIR) -type f -name "*.c")
 CINTAFILES := $(shell find $(CINTA) -type f -name "*.c")
 
