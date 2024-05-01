@@ -187,3 +187,21 @@ received_game_message *recv_game_message(udp_information *info) {
 
     return recieved;
 }
+
+int send_game_action(udp_information *info, game_action *action) {
+    char *serialized = serialize_game_action(action);
+
+    int sent = 0;
+
+    while (sent < 4) { // 4 Bytes
+        int res = sendto(info->sock, serialized + sent, 4 - sent, 0, (struct sockaddr *)info->addr, *info->addr_len);
+        if (res < 0) {
+            perror("sendto action");
+            free(serialized);
+            return EXIT_FAILURE;
+        }
+        sent += res;
+    }
+
+    return EXIT_SUCCESS;
+}

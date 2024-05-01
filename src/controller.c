@@ -35,8 +35,14 @@ static void switch_player() {
     } while (is_player_dead(current_player, TMP_GAME_ID));
 }
 
-board *game_board = NULL;
-pthread_mutex_t game_board_mutex = PTHREAD_MUTEX_INITIALIZER;
+static board *game_board = NULL;
+static pthread_mutex_t game_board_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+// TODO
+static GAME_MODE game_mode = SOLO;
+static int player_id = 0;
+
+static int message_number = 0;
 
 void init_controller() {
     intrflush(stdscr, FALSE); /* No need to flush when intr key is pressed */
@@ -164,25 +170,41 @@ bool perform_chat_action(int c) {
     return false;
 }
 
-bool perform_game_action(int c) {
+bool perform_game_action(int c, udp_information *info) {
     GAME_ACTION a = key_press_to_game_action(c);
     switch (a) {
         case GAME_UP:
         case GAME_RIGHT:
         case GAME_DOWN:
         case GAME_LEFT:
-            perform_move(a, current_player, TMP_GAME_ID);
-            break;
         case GAME_PLACE_BOMB:
-            place_bomb(current_player, TMP_GAME_ID);
+            game_action *action = malloc(sizeof(game_action));
+            if (action == NULL) {
+                return false;
+            }
+
+            action->game_mode = game_mode;
+            action->id = player_id;
+            action->eq = 0; // TODO
+            action->message_number = message_number;
+            message_number = (message_number + 1) % (1 << 13);
+            action->action = a;
+
+            send_game_action(info, action);
+
             break;
         case GAME_CHAT_MODE_START:
             set_chat_focus(true, TMP_GAME_ID);
             break;
         case GAME_QUIT:
+            // TODO: Quit connection
             return true;
         case GAME_SWITCH_PLAYER:
             switch_player();
+            // TODO: Remove this?
+            do {
+                current_player = (current_player + 1) % PLAYER_NUM;
+            } while (is_player_dead(current_player, TMP_GAME_ID));
             break;
         case GAME_NONE:
             break;
@@ -191,7 +213,7 @@ bool perform_game_action(int c) {
     return false;
 }
 
-bool control() {
+bool control(udp_information *info) {
     int c = get_pressed_key();
 
     if (is_chat_on_focus(TMP_GAME_ID)) {
@@ -199,7 +221,7 @@ bool control() {
             return true;
         }
     } else {
-        if (perform_game_action(c)) {
+        if (perform_game_action(c, info)) {
             return true;
         }
     }
@@ -291,8 +313,10 @@ void *game_board_info_thread_function(void *arg) {
 
 /** Sends to the server the performed action*/
 void *view_thread_function(void *arg) {
+    udp_information *info = (udp_information *)arg;
     while (true) {
-        if (control()) {
+        // TODO: Handle game quit
+        if (control(info)) {
             break;
         }
     }
@@ -311,9 +335,8 @@ int game_loop() {
     pthread_create(&game_board_info_thread, NULL, game_board_info_thread_function, info);
 
     pthread_t view_thread;
-    pthread_create(&view_thread, NULL, view_thread_function, NULL);
+    pthread_create(&view_thread, NULL, view_thread_function, info);
 
-    pthread_join(view_thread, NULL);
     pthread_join(game_board_info_thread, NULL);
 
     free_board(game_board);

@@ -30,4 +30,6 @@ typedef struct received_game_message {
 
 received_game_message *recv_game_message(udp_information *info);
 
+int send_game_action(udp_information *info, game_action *action);
+
 #endif // SRC_COMMUNICATION_CLIENT_H_
