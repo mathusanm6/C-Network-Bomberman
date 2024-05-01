@@ -14,11 +14,8 @@ int send_connexion_header_raw(int sock, connection_header_raw *serialized_head) 
     unsigned sent = 0;
     while (sent < sizeof(connection_header_raw)) {
         int res = send(sock, data + sent, sizeof(connection_header_raw) - sent, 0);
+        RETURN_FAILURE_IF_NEG_PERROR(res, "send connection_header_raw");
 
-        if (res < 0) {
-            perror("send connection_header_information");
-            return EXIT_FAILURE;
-        }
         sent += res;
     }
     return EXIT_SUCCESS;
@@ -84,10 +81,7 @@ connection_information *recv_connexion_information(int sock) {
 message_header *recv_header_multidiff(const udp_information *info) {
     uint16_t header;
     int res = recvfrom(info->sock, &header, sizeof(uint16_t), 0, (struct sockaddr *)info->addr, info->addr_len);
-    if (res < 0) {
-        perror("recvfrom header");
-        return NULL;
-    }
+    RETURN_NULL_IF_NEG_PERROR(res, "recvfrom header");
 
     return deserialize_message_header(header);
 }
@@ -97,10 +91,8 @@ void recvfrom_full(const udp_information *info, char *buffer, int size) {
     while (received < size) {
         int res =
             recvfrom(info->sock, buffer + received, size - received, 0, (struct sockaddr *)info->addr, info->addr_len);
-        if (res < 0) {
-            perror("recvfrom message");
-            return;
-        }
+        RETURN_IF_NEG_PERROR(res, "recvfrom_full");
+
         received += res;
     }
 }
@@ -108,24 +100,15 @@ void recvfrom_full(const udp_information *info, char *buffer, int size) {
 char *recv_game_board_information(const udp_information *info, message_header *header) {
     uint16_t message_num;
     int res = recvfrom(info->sock, &message_num, sizeof(uint16_t), 0, (struct sockaddr *)info->addr, info->addr_len);
-    if (res < 0) {
-        perror("recvfrom message_num");
-        return NULL;
-    }
+    RETURN_NULL_IF_NEG_PERROR(res, "recvfrom message_num");
 
     uint8_t height;
     res = recvfrom(info->sock, &height, sizeof(uint8_t), 0, (struct sockaddr *)info->addr, info->addr_len);
-    if (res < 0) {
-        perror("recvfrom height");
-        return NULL;
-    }
+    RETURN_NULL_IF_NEG_PERROR(res, "recvfrom height");
 
     uint8_t width;
     res = recvfrom(info->sock, &width, sizeof(uint8_t), 0, (struct sockaddr *)info->addr, info->addr_len);
-    if (res < 0) {
-        perror("recvfrom width");
-        return NULL;
-    }
+    RETURN_NULL_IF_NEG_PERROR(res, "recvfrom width");
 
     int message_size = height * width;
     int non_board_size = 2 + 2 + 1 + 1; // 2 for the header, 2 for the message_num, 1 for the height, 1 for the width
@@ -147,17 +130,11 @@ char *recv_game_board_information(const udp_information *info, message_header *h
 char *recv_game_update(const udp_information *info, message_header *header) {
     uint16_t message_num;
     int res = recvfrom(info->sock, &message_num, sizeof(uint16_t), 0, (struct sockaddr *)info->addr, info->addr_len);
-    if (res < 0) {
-        perror("recvfrom message_num");
-        return NULL;
-    }
+    RETURN_NULL_IF_NEG_PERROR(res, "recvfrom message_num");
 
     uint8_t updated_tiles;
     res = recvfrom(info->sock, &updated_tiles, sizeof(uint8_t), 0, (struct sockaddr *)info->addr, info->addr_len);
-    if (res < 0) {
-        perror("recvfrom height");
-        return NULL;
-    }
+    RETURN_NULL_IF_NEG_PERROR(res, "recvfrom updated_tiles");
 
     int message_size = updated_tiles * 3;
     int non_update_size = 2 + 2 + 1; // 2 for the header, 2 for the message_num, 1 for the number of updated tiles

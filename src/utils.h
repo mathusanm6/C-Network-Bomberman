@@ -49,6 +49,39 @@
         return;                                                                                                        \
     }
 
+#define RETURN_FAILURE_IF_NEG(expr)                                                                                    \
+    if (expr < 0) {                                                                                                    \
+        return EXIT_FAILURE;                                                                                           \
+    }
+
+#define RETURN_FAILURE_IF_NEG_PERROR(expr, msg)                                                                        \
+    if (expr < 0) {                                                                                                    \
+        perror(msg);                                                                                                   \
+        return EXIT_FAILURE;                                                                                           \
+    }
+
+#define RETURN_IF_NEG(expr)                                                                                            \
+    if (expr < 0) {                                                                                                    \
+        return;                                                                                                        \
+    }
+
+#define RETURN_IF_NEG_PERROR(expr, msg)                                                                                \
+    if (expr < 0) {                                                                                                    \
+        perror(msg);                                                                                                   \
+        return;                                                                                                        \
+    }
+
+#define RETURN_NULL_IF_NEG(expr)                                                                                       \
+    if (expr < 0) {                                                                                                    \
+        return NULL;                                                                                                   \
+    }
+
+#define RETURN_NULL_IF_NEG_PERROR(expr, msg)                                                                           \
+    if (expr < 0) {                                                                                                    \
+        perror(msg);                                                                                                   \
+        return NULL;                                                                                                   \
+    }
+
 int min(int, int);
 int max(int, int);
 
