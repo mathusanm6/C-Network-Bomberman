@@ -216,7 +216,7 @@ int init_addr_mult() {
 
     memset(addr_mult, 0, sizeof(struct sockaddr_in6));
     addr_mult->sin6_family = AF_INET6;
-    addr_mult->sin6_port = htons(port_mult);
+    addr_mult->sin6_port = port_mult;
 
     char *addr_string = convert_adrmdif_into_string(adrmdiff);
     int res = inet_pton(AF_INET6, addr_string, &addr_mult->sin6_addr);

@@ -708,6 +708,7 @@ tile_diff *update_game_board(unsigned game_id, player_action *actions, size_t nb
     RETURN_NULL_IF_NULL(size_tile_diff);
 
     board *current_board = get_game_board(game_id);
+    RETURN_NULL_IF_NULL(current_board);
 
     for (unsigned i = 0; i < nb_game_actions; i++) {
         if (actions[i].action == GAME_PLACE_BOMB) {

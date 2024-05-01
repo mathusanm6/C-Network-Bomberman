@@ -259,12 +259,14 @@ void *serve_clients_send_mult_sec(void *arg_udp_thread_data) {
     int last_num_sec_message = 1;
     while (!data->finished_flag) {
         sleep(1);
+
         pthread_mutex_lock(&data->lock_game_board);
         board *game_board = get_game_board(data->game_id);
         pthread_mutex_unlock(&data->lock_game_board);
         RETURN_NULL_IF_NULL(game_board);
+
         pthread_mutex_lock(&data->lock_send_udp);
-        send_game_board_for_clients(last_num_sec_message, get_game_board(data->game_id));
+        send_game_board_for_clients(last_num_sec_message, game_board);
         pthread_mutex_unlock(&data->lock_send_udp);
         increment_last_num_message(&last_num_sec_message);
         // TODO manage errors
@@ -272,6 +274,9 @@ void *serve_clients_send_mult_sec(void *arg_udp_thread_data) {
     return NULL;
 }
 
+/** The message is considered as a next message if it is between the last message
+ * and a fairly large part after the latter (half the limit) modulo limit
+ */
 bool is_next_message(int last_num_message, int num_message, int limit) {
     int just_after = (last_num_message + 1) % limit;
     int limit_next_message = (last_num_message + 1 + (limit / 2)) % limit;
@@ -330,6 +335,19 @@ void game_actions_sort(game_action **game_actions, size_t nb_game_actions, int l
     game_action_quick_sort(game_actions, 0, nb_game_actions - 1, last_num_message);
 }
 
+player_action *merge_player_moves_and_place_bomb(player_action *player_moves, unsigned nb_player_moves,
+                                                 player_action *player_place_bomb, unsigned nb_place_bomb,
+                                                 unsigned *nb_player_actions) {
+    player_action *res = malloc(sizeof(player_action) * (nb_player_moves + nb_place_bomb));
+    RETURN_NULL_IF_NULL_PERROR(res, "malloc player_action");
+
+    memcpy(res, player_moves, sizeof(player_action) * nb_player_moves);
+    memcpy(res + sizeof(player_action) * nb_player_moves, player_place_bomb, sizeof(player_action) * nb_place_bomb);
+
+    *nb_player_actions = nb_player_moves + nb_place_bomb;
+    return res;
+}
+
 player_action *get_player_actions(game_action **game_actions, size_t nb_game_actions,
                                   int last_num_received_message[PLAYER_NUM], unsigned *nb_player_actions) {
     player_action *player_moves = malloc(sizeof(player_action) * PLAYER_NUM);
@@ -348,38 +366,44 @@ player_action *get_player_actions(game_action **game_actions, size_t nb_game_act
     }
 
     for (int i = nb_game_actions - 1; i >= 0; i--) {
+        // Other actions were sent before those kept
         if (nb_player_moves == PLAYER_NUM && nb_place_bomb == PLAYER_NUM) {
             break;
-        } else if (!is_next_message(last_num_received_message[i], game_actions[i]->message_number,
-                                    LIMIT_LAST_NUM_MESSAGE_CLIENT)) {
+        }
+        // Message ignored
+        if (!is_next_message(last_num_received_message[i], game_actions[i]->message_number,
+                             LIMIT_LAST_NUM_MESSAGE_CLIENT)) {
             continue;
-        } else if (is_move(game_actions[i]->action) && !already_move[game_actions[i]->id]) {
+        }
+        // Keep the action if its a move and there is no move kept for this player
+        if (is_move(game_actions[i]->action) && !already_move[game_actions[i]->id]) {
             player_moves[nb_player_moves].id = game_actions[i]->id;
             player_moves[nb_player_moves].action = game_actions[i]->action;
             already_move[game_actions[i]->id] = true;
+
+            // To keep the last message number
             if (!already_place_bomb[game_actions[i]->id]) {
                 last_num_received_message[game_actions[i]->id] = game_actions[i]->message_number;
             }
             nb_player_moves++;
-        } else if (game_actions[i]->action == GAME_PLACE_BOMB) {
+            continue;
+        }
+        // Keep the action if its a place bomb and there is no bomb placing move kept for this player
+        if (game_actions[i]->action == GAME_PLACE_BOMB && !already_place_bomb[game_actions[i]->id]) {
             player_place_bomb[nb_place_bomb].id = game_actions[i]->id;
             player_place_bomb[nb_place_bomb].action = game_actions[i]->action;
             already_place_bomb[game_actions[i]->id] = true;
+
+            // To keep the last message number
             if (!already_move[game_actions[i]->id]) {
                 last_num_received_message[game_actions[i]->id] = game_actions[i]->message_number;
             }
             nb_place_bomb++;
         }
     }
-    player_action *res = malloc(sizeof(player_action) * (nb_player_moves + nb_place_bomb));
-    RETURN_NULL_IF_NULL_PERROR(res, "malloc player_action");
 
-    memcpy(res, player_moves, sizeof(player_action) * nb_player_moves);
-    memcpy(res + sizeof(player_action) * nb_player_moves, player_place_bomb, sizeof(player_action) * nb_place_bomb);
-
-    *nb_player_actions = nb_player_moves + nb_place_bomb;
-
-    return res;
+    return merge_player_moves_and_place_bomb(player_moves, nb_player_moves, player_place_bomb, nb_place_bomb,
+                                             nb_player_actions);
 }
 
 game_action **copy_game_actions(game_action **game_actions, size_t nb_game_actions) {
@@ -400,6 +424,7 @@ void *serve_clients_send_mult_freq(void *arg_udp_thread_data) {
     while (!data->finished_flag) {
         usleep(FREQ);
 
+        // Copy game actions
         pthread_mutex_lock(&data->lock_game_actions);
         size_t nb_game_actions = data->nb_game_actions;
         game_action **game_actions = copy_game_actions(data->game_actions, nb_game_actions);
@@ -409,24 +434,30 @@ void *serve_clients_send_mult_freq(void *arg_udp_thread_data) {
 
         game_actions_sort(game_actions, data->nb_game_actions, last_num_received_messages);
 
+        // Get player actions
         unsigned nb_player_actions;
         player_action *player_actions =
             get_player_actions(game_actions, nb_game_actions, last_num_received_messages, &nb_player_actions);
         RETURN_NULL_IF_NULL(player_actions);
+
+        // Update the board with player actions and get the tile differences
         pthread_mutex_lock(&data->lock_game_board);
         unsigned size_tile_diff;
         tile_diff *diffs = update_game_board(data->game_id, player_actions, nb_player_actions, &size_tile_diff);
         RETURN_NULL_IF_NULL(diffs);
         pthread_mutex_unlock(&data->lock_game_board);
 
+        // Send the differences
         unsigned size = 0;
-        if (diffs != NULL) {
-            pthread_mutex_lock(&data->lock_send_udp);
-            send_game_update_for_clients(last_num_freq_message, diffs, size);
-            pthread_mutex_unlock(&data->lock_send_udp);
-        }
+        pthread_mutex_lock(&data->lock_send_udp);
+        send_game_update_for_clients(last_num_freq_message, diffs, size);
+        pthread_mutex_unlock(&data->lock_send_udp);
+
+        // Last free
         free(diffs);
         free_game_actions(game_actions, nb_game_actions);
+
+        // Prepare new message
         increment_last_num_message(&last_num_freq_message);
     }
     return NULL;
