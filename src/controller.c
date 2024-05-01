@@ -1,6 +1,7 @@
 #include "./controller.h"
 
 #include <ncurses.h>
+#include <pthread.h>
 #include <stdlib.h>
 #include <unistd.h>
 
@@ -31,6 +32,9 @@ static void switch_player() {
         current_player = (current_player + 1) % PLAYER_NUM;
     } while (is_player_dead(current_player, TMP_GAME_ID));
 }
+
+board *game_board = NULL;
+pthread_mutex_t game_board_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 void init_controller() {
     intrflush(stdscr, FALSE); /* No need to flush when intr key is pressed */
@@ -212,8 +216,31 @@ int init_game() {
     return init_model(dim, SOLO, TMP_GAME_ID);
 }
 
-int game_loop() {
+board *get_board() {
+    board *b = malloc(sizeof(board));
+    RETURN_NULL_IF_NULL_PERROR(b, "malloc board");
+
+    pthread_mutex_lock(&game_board_mutex);
+    b->dim = game_board->dim;
+    b->grid = malloc(b->dim.height * sizeof(char *));
+    if (b->grid == NULL) {
+        pthread_mutex_unlock(&game_board_mutex);
+        free(b);
+        return NULL;
+    }
+    for (int i = 0; i < b->dim.height * b->dim.width; i++) {
+        b->grid[i] = game_board->grid[i];
+    }
+    pthread_mutex_unlock(&game_board_mutex);
+
+    return b;
+}
+
+/**
+ * Updates the game board based on the server MESSAGE*/
+void *game_board_info_thread_function(void *arg) {
     while (true) {
+<<<<<<< HEAD
         if (is_game_over(TMP_GAME_ID) || control()) {
             break;
         }
@@ -222,9 +249,42 @@ int game_loop() {
         refresh_game(game_board, chat_, current_player);
         free_board(game_board);
         update_bombs(TMP_GAME_ID);
+=======
+        // TODO : communication
+>>>>>>> 508d107 (feat: basic controller threads)
         usleep(30 * 1000);
     }
-    free_model(TMP_GAME_ID);
+
+    return NULL;
+}
+/**
+ * Sends to the server the performed action*/
+void *view_thread_function(void *arg) {
+    while (true) {
+        // TODO : game end
+        if (control()) {
+            break;
+        }
+        board *b = get_board();
+        refresh_game(b, chat_line);
+    }
+
+    return NULL;
+}
+
+int game_loop() {
+    RETURN_FAILURE_IF_NULL_PERROR(game_board, "malloc board_controller");
+
+    pthread_t game_board_info_thread;
+    pthread_create(&game_board_info_thread, NULL, game_board_info_thread_function, NULL);
+
+    pthread_t view_thread;
+    pthread_create(&view_thread, NULL, view_thread_function, NULL);
+
+    pthread_join(view_thread, NULL);
+    pthread_join(game_board_info_thread, NULL);
+
+    free_board(game_board);
     end_view();
 
     return EXIT_SUCCESS;
