@@ -1,9 +1,13 @@
 #include "./model.h"
-#include "utils.h"
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
+
+#include "./utils.h"
+
+#define EMPTY_CHAR '\0'
 
 typedef struct player {
     coord *pos;
@@ -21,13 +25,12 @@ typedef struct bomb_collection {
     int max_capacity;
 } bomb_collection;
 
-line *chat_line = NULL;
-
 typedef struct game {
     board *game_board;
     bomb_collection all_bombs;
     player *players[PLAYER_NUM];
     GAME_MODE game_mode;
+    chat *chat;
 } game;
 
 /* TODO: Make this a real list at some point */
@@ -52,6 +55,8 @@ static game *init_game_struct() {
     }
 
     g->game_mode = SOLO;
+
+    g->chat = NULL;
 
     return g;
 }
@@ -143,19 +148,8 @@ int init_game_board(dimension dim, unsigned int game_id) {
     return EXIT_SUCCESS;
 }
 
-int init_chat_line() {
-    if (chat_line == NULL) {
-        chat_line = malloc(sizeof(line));
-        RETURN_FAILURE_IF_NULL_PERROR(chat_line, "malloc");
-        chat_line->cursor = 0;
-    }
-    return EXIT_SUCCESS;
-}
-
 int init_player_positions(unsigned int game_id) {
-    if (games[game_id] == NULL) {
-        return EXIT_FAILURE;
-    }
+    RETURN_FAILURE_IF_NULL(games[game_id]);
 
     player **players = games[game_id]->players;
     board *game_board = games[game_id]->game_board;
@@ -181,6 +175,26 @@ int init_player_positions(unsigned int game_id) {
     return EXIT_SUCCESS;
 }
 
+int init_chat(unsigned int game_id) {
+    RETURN_FAILURE_IF_NULL(games[game_id]);
+
+    if (games[game_id]->chat == NULL) {
+        games[game_id]->chat = malloc(sizeof(chat));
+        RETURN_FAILURE_IF_NULL_PERROR(games[game_id]->chat, "malloc");
+
+        games[game_id]->chat->history = malloc(sizeof(chat_history));
+        RETURN_FAILURE_IF_NULL_PERROR(games[game_id]->chat->history, "malloc");
+        games[game_id]->chat->history->count = 0;
+
+        games[game_id]->chat->line = malloc(sizeof(chat_line));
+        RETURN_FAILURE_IF_NULL_PERROR(games[game_id]->chat->line, "malloc");
+        games[game_id]->chat->line->cursor = 0;
+        games[game_id]->chat->on_focus = false;
+        games[game_id]->chat->whispering = false;
+    }
+    return EXIT_SUCCESS;
+}
+
 int init_model(dimension dim, GAME_MODE game_mode_, unsigned int game_id) {
     game *g = init_game_struct();
     RETURN_FAILURE_IF_NULL(g);
@@ -190,8 +204,8 @@ int init_model(dimension dim, GAME_MODE game_mode_, unsigned int game_id) {
     games[game_id] = g;
 
     RETURN_FAILURE_IF_ERROR(init_game_board(dim, game_id));
-    RETURN_FAILURE_IF_ERROR(init_chat_line());
     RETURN_FAILURE_IF_ERROR(init_player_positions(game_id));
+    RETURN_FAILURE_IF_ERROR(init_chat(game_id));
 
     return EXIT_SUCCESS;
 }
@@ -215,13 +229,6 @@ void free_game_board(unsigned int game_id) {
     free_board(game_board);
 }
 
-void free_chat_line() {
-    if (chat_line != NULL) {
-        free(chat_line);
-        chat_line = NULL;
-    }
-}
-
 void free_player_positions(unsigned int game_id) {
     if (games[game_id] == NULL) {
         return;
@@ -239,9 +246,67 @@ void free_player_positions(unsigned int game_id) {
     }
 }
 
+void free_chat_node(chat_node *node) {
+    if (node == NULL) {
+        return;
+    }
+
+    free(node);
+}
+
+void free_chat_history(chat_history *history) {
+    if (history == NULL) {
+        return;
+    }
+
+    if (history->head == NULL) {
+        free(history);
+        return;
+    }
+
+    chat_node *current = history->head->next; // Start from the second node
+    chat_node *next;
+
+    while (current != history->head) {
+        next = current->next;
+        free_chat_node(current);
+        current = next;
+    }
+
+    free_chat_node(history->head);
+
+    history->head = NULL;
+    history->count = 0;
+
+    free(history);
+}
+
+void free_chat(unsigned int game_id) {
+    if (games[game_id] == NULL) {
+        return;
+    }
+
+    if (games[game_id]->chat == NULL) {
+        return;
+    }
+
+    if (games[game_id]->chat->history != NULL) {
+        free_chat_history(games[game_id]->chat->history);
+        games[game_id]->chat->history = NULL;
+    }
+
+    if (games[game_id]->chat->line != NULL) {
+        free(games[game_id]->chat->line);
+        games[game_id]->chat->line = NULL;
+    }
+
+    free(games[game_id]->chat);
+    games[game_id]->chat = NULL;
+}
+
 void free_model(unsigned int game_id) {
     free_game_board(game_id);
-    free_chat_line();
+    free_chat(game_id);
     free_player_positions(game_id);
 }
 
@@ -316,9 +381,8 @@ int coord_to_int(int x, int y, unsigned int game_id) {
 }
 
 TILE get_grid(int x, int y, unsigned int game_id) {
-    if (games[game_id] == NULL) {
-        return EXIT_FAILURE;
-    }
+    RETURN_FAILURE_IF_NULL(games[game_id]);
+
     board *game_board = games[game_id]->game_board;
     if (game_board != NULL) {
         return game_board->grid[coord_to_int(x, y, game_id)];
@@ -327,31 +391,11 @@ TILE get_grid(int x, int y, unsigned int game_id) {
 }
 
 void set_grid(int x, int y, TILE v, unsigned int game_id) {
-    if (games[game_id] == NULL) {
-        return;
-    }
+    RETURN_IF_NULL_PTR(games[game_id]);
+
     board *game_board = games[game_id]->game_board;
     if (game_board != NULL) {
         game_board->grid[coord_to_int(x, y, game_id)] = v;
-    }
-}
-
-void decrement_line() {
-    if (chat_line != NULL && chat_line->cursor > 0) {
-        chat_line->cursor--;
-    }
-}
-
-void clear_line() {
-    if (chat_line != NULL) {
-        chat_line->cursor = 0;
-    }
-}
-
-void add_to_line(char c) {
-    if (chat_line != NULL && chat_line->cursor < TEXT_SIZE && c >= ' ' && c <= '~') {
-        chat_line->data[(chat_line->cursor)] = c;
-        (chat_line->cursor)++;
     }
 }
 
@@ -409,9 +453,7 @@ coord get_next_position(GAME_ACTION a, const coord *pos) {
 }
 
 void perform_move(GAME_ACTION a, int player_id, unsigned int game_id) {
-    if (games[game_id] == NULL) {
-        return;
-    }
+    RETURN_IF_NULL_PTR(games[game_id]);
 
     player **players = games[game_id]->players;
 
@@ -435,19 +477,15 @@ void perform_move(GAME_ACTION a, int player_id, unsigned int game_id) {
 }
 void place_bomb(int player_id, unsigned int game_id) {
 
-    if (games[game_id] == NULL) {
-        return;
-    }
+    RETURN_IF_NULL_PTR(games[game_id]);
 
     game *g = games[game_id];
 
     if (g->all_bombs.total_count == g->all_bombs.max_capacity) {
         int new_capacity = (g->all_bombs.max_capacity == 0) ? 4 : g->all_bombs.max_capacity * 2;
         bomb *new_list = realloc(g->all_bombs.arr, new_capacity * sizeof(bomb));
-        if (new_list == NULL) {
-            perror("realloc");
-            return;
-        }
+        RETURN_IF_NULL_PTR_PERROR(new_list, "realloc");
+
         g->all_bombs.arr = new_list;
         g->all_bombs.max_capacity = new_capacity;
     }
@@ -457,7 +495,7 @@ void place_bomb(int player_id, unsigned int game_id) {
     coord current_pos = *players[player_id]->pos;
 
     TILE t = get_grid(current_pos.x, current_pos.y, game_id);
-    if (t == BOMB) { // Shouldn't be able to place a bomp on top of an another
+    if (t == BOMB) { // Shouldn't be able to place a bomb on top of an another
         return;
     }
 
@@ -473,9 +511,7 @@ void place_bomb(int player_id, unsigned int game_id) {
 }
 
 board *get_game_board(unsigned int game_id) {
-    if (games[game_id] == NULL) {
-        return NULL;
-    }
+    RETURN_NULL_IF_NULL(games[game_id]);
 
     board *copy = malloc(sizeof(board));
     RETURN_NULL_IF_NULL_PERROR(copy, "malloc");
@@ -558,9 +594,7 @@ bool apply_explosion_effect(int x, int y, unsigned int game_id) {
 }
 
 void update_explosion(bomb b, unsigned int game_id) {
-    if (games[game_id] == NULL) {
-        return;
-    }
+    RETURN_IF_NULL_PTR(games[game_id]);
 
     player **players = games[game_id]->players;
 
@@ -618,9 +652,7 @@ void update_explosion(bomb b, unsigned int game_id) {
 }
 
 void update_bombs(unsigned int game_id) {
-    if (games[game_id] == NULL) {
-        return;
-    }
+    RETURN_IF_NULL_PTR(games[game_id]);
 
     game *g = games[game_id];
 
@@ -664,4 +696,125 @@ bool is_game_over(unsigned int game_id) {
     bool team2_dead = players[1]->dead && players[2]->dead;
 
     return team1_dead || team2_dead;
+}
+
+void decrement_line(unsigned int game_id) {
+    RETURN_IF_NULL_PTR(games[game_id]);
+
+    if (games[game_id]->chat->line != NULL && games[game_id]->chat->line->cursor > 0) {
+        games[game_id]->chat->line->cursor--;
+        games[game_id]->chat->line->data[games[game_id]->chat->line->cursor] = EMPTY_CHAR;
+    }
+}
+
+void clear_line(unsigned int game_id) {
+    RETURN_IF_NULL_PTR(games[game_id]);
+
+    if (games[game_id]->chat->line != NULL) {
+        memset(games[game_id]->chat->line->data, EMPTY_CHAR, games[game_id]->chat->line->cursor);
+        games[game_id]->chat->line->cursor = 0;
+    }
+}
+
+void add_to_line(char c, unsigned int game_id) {
+    RETURN_IF_NULL_PTR(games[game_id]);
+
+    if (games[game_id]->chat->line != NULL && games[game_id]->chat->line->cursor < TEXT_SIZE && c >= ' ' && c <= '~') {
+        games[game_id]->chat->line->data[(games[game_id]->chat->line->cursor)] = c;
+        (games[game_id]->chat->line->cursor)++;
+    }
+}
+
+chat_node *create_chat_node(int sender, char msg[TEXT_SIZE], bool whispered) {
+    if (sender < 0 || sender >= PLAYER_NUM) {
+        return NULL;
+    }
+
+    RETURN_NULL_IF_NULL(msg);
+
+    if (strlen(msg) == 0) {
+        return NULL;
+    }
+
+    chat_node *new_node = malloc(sizeof(chat_node));
+    if (new_node != NULL) {
+        new_node->sender = sender;
+        strncpy(new_node->message, msg, TEXT_SIZE);
+        // Ensure null terminated string
+        new_node->message[TEXT_SIZE - 1] = '\0';
+        new_node->whispered = whispered;
+        new_node->next = NULL;
+    }
+    return new_node;
+}
+
+int add_message(int sender, unsigned int game_id) {
+    RETURN_FAILURE_IF_NULL(games[game_id]);
+    RETURN_FAILURE_IF_NULL(games[game_id]->chat);
+    RETURN_FAILURE_IF_NULL(games[game_id]->chat->history);
+
+    if (games[game_id]->chat->line->cursor == 0) {
+        return EXIT_FAILURE;
+    }
+
+    chat_node *new_node = create_chat_node(sender, games[game_id]->chat->line->data, games[game_id]->chat->whispering);
+    RETURN_FAILURE_IF_NULL(new_node);
+
+    if (games[game_id]->chat->history->count == MAX_CHAT_HISTORY_LEN) {
+        // If the history is full, replace the oldest message
+        chat_node *temp = games[game_id]->chat->history->head;
+        while (temp->next != games[game_id]->chat->history->head) { // Find the last node before head
+            temp = temp->next;
+        }
+        temp->next = new_node;                                      // Link the new node after the last node
+        new_node->next = games[game_id]->chat->history->head->next; // New node points to second oldest node
+        free(games[game_id]->chat->history->head);
+        games[game_id]->chat->history->head = new_node->next; // New head is the second oldest node
+    } else {
+        // List is not full, add the new node to the end
+        if (games[game_id]->chat->history->head == NULL) {
+            games[game_id]->chat->history->head = new_node;
+            new_node->next = new_node;
+        } else {
+            chat_node *temp = games[game_id]->chat->history->head;
+            while (temp->next != games[game_id]->chat->history->head) {
+                temp = temp->next;
+            }
+            temp->next = new_node;
+            new_node->next = games[game_id]->chat->history->head;
+        }
+        games[game_id]->chat->history->count++;
+    }
+
+    return EXIT_SUCCESS;
+}
+
+chat *get_chat(unsigned int game_id) {
+    RETURN_NULL_IF_NULL(games[game_id]);
+
+    return games[game_id]->chat;
+}
+
+bool is_chat_on_focus(unsigned int game_id) {
+    if (games[game_id] == NULL) {
+        return false;
+    }
+
+    if (games[game_id]->chat == NULL) {
+        return false;
+    }
+
+    return games[game_id]->chat->on_focus;
+}
+
+void set_chat_focus(bool on_focus, unsigned int game_id) {
+    RETURN_IF_NULL_PTR(games[game_id]);
+
+    games[game_id]->chat->on_focus = on_focus;
+}
+
+void toggle_whispering(unsigned int game_id) {
+    RETURN_IF_NULL_PTR(games[game_id]);
+
+    games[game_id]->chat->whispering = !games[game_id]->chat->whispering;
 }

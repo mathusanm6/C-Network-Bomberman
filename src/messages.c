@@ -1,6 +1,6 @@
-#include "messages.h"
-#include "model.h"
-#include "utils.h"
+#include "./messages.h"
+#include "./utils.h"
+
 #include <arpa/inet.h>
 #include <stdint.h>
 #include <stdio.h>

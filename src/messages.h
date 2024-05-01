@@ -1,7 +1,7 @@
 #ifndef MESSAGES_CLIENT_H
 #define MESSAGES_CLIENT_H
 
-#include "model.h"
+#include "./model.h"
 #include <stdint.h>
 
 typedef struct connection_header_raw {
