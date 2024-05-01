@@ -1,7 +1,6 @@
 #include "./model.h"
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
@@ -429,6 +428,11 @@ int get_player_id(TILE t) {
     }
 }
 
+bool is_move(GAME_ACTION action) {
+    return action == GAME_LEFT || action == GAME_RIGHT || action == GAME_UP || action == GAME_DOWN ||
+           action == GAME_NONE;
+}
+
 coord get_next_position(GAME_ACTION a, const coord *pos) {
     coord c;
     c.x = pos->x;
@@ -671,10 +675,10 @@ void update_bombs(unsigned int game_id) {
     }
 }
 
-tile_diff *get_diff_with_board(unsigned game_id, board *different_board, unsigned *size) {
+tile_diff *get_diff_with_board(unsigned game_id, board *different_board, unsigned *size_tile_diff) {
     board *current_board = games[game_id]->game_board;
     if (current_board->dim.height != different_board->dim.height ||
-        current_board->dim.width != different_board->dim.width || size == NULL) {
+        current_board->dim.width != different_board->dim.width || size_tile_diff == NULL) {
         return NULL;
     }
     unsigned cmpt = 0;
@@ -695,8 +699,25 @@ tile_diff *get_diff_with_board(unsigned game_id, board *different_board, unsigne
     tile_diff *res_diffs = malloc(sizeof(tile_diff) * cmpt);
     RETURN_NULL_IF_NULL(res_diffs);
     memmove(res_diffs, diffs, sizeof(tile_diff) * cmpt);
-    *size = cmpt;
+    *size_tile_diff = cmpt;
     return res_diffs;
+}
+
+tile_diff *update_game_board(unsigned game_id, player_action *actions, size_t nb_game_actions,
+                             unsigned *size_tile_diff) {
+    RETURN_NULL_IF_NULL(size_tile_diff);
+
+    board *current_board = get_game_board(game_id);
+
+    for (unsigned i = 0; i < nb_game_actions; i++) {
+        if (actions[i].action == GAME_PLACE_BOMB) {
+            place_bomb(actions[i].id, game_id);
+        } else {
+            perform_move(actions[i].action, actions[i].id, game_id);
+        }
+    }
+    update_bombs(game_id);
+    return get_diff_with_board(game_id, current_board, size_tile_diff);
 }
 
 bool is_game_over(unsigned int game_id) {

@@ -15,6 +15,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 typedef enum GAME_ACTION {
     GAME_UP = 0,
@@ -70,6 +71,11 @@ typedef struct coord {
     int x;
     int y;
 } coord;
+
+typedef struct player_action {
+    int id;
+    GAME_ACTION action;
+} player_action;
 
 typedef struct tile_diff {
     uint8_t x;
@@ -142,6 +148,8 @@ void set_grid(int, int, TILE, unsigned int game_id);
  */
 bool is_outside_board(int x, int y, unsigned int game_id);
 
+bool is_move(GAME_ACTION);
+
 /** Depending on the action, changes the player's position in the table if the argument is a move.
  */
 void perform_move(GAME_ACTION, int player_id, unsigned int game_id);
@@ -166,10 +174,11 @@ bool is_player_dead(int, unsigned int game_id);
  */
 void update_bombs(unsigned int game_id);
 
-/** Returns the tiles of the current board of game_id, which differates with different_board, and change size with the
- * size of the result
+/** Returns the tiles of the board of game_id after actions modication, which differates with current board, and change
+ * size_tile_diff with the size of the result
  */
-tile_diff *get_diff_with_board(unsigned game_id, board *different_board, unsigned *size);
+tile_diff *update_game_board(unsigned game_id, player_action *actions, size_t nb_game_actions,
+                             unsigned *size_tile_diff);
 
 /** Returns true if the game is over
  */

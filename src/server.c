@@ -1,4 +1,5 @@
 #include <pthread.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -23,6 +24,7 @@ typedef struct udp_thread_data {
     bool finished_flag;
     pthread_mutex_t lock_game_actions;
     pthread_mutex_t lock_send_udp;
+    pthread_mutex_t lock_game_board;
 } udp_thread_data;
 
 #define TMP_GAME_ID 0
@@ -43,7 +45,8 @@ pthread_cond_t cond_lock_waiting_the_game_finish = PTHREAD_COND_INITIALIZER;
 static unsigned connected_player_number = 0;
 static unsigned ready_player_number = 0;
 
-#define LIMIT_LAST_NUM_MESSAGE_MULT 65536 // 2^16
+#define LIMIT_LAST_NUM_MESSAGE_MULT ((1 << 15) - 1)   // 2^16
+#define LIMIT_LAST_NUM_MESSAGE_CLIENT ((1 << 12) - 1) // 2^13
 
 void *serve_client_tcp(void *);
 
@@ -101,7 +104,7 @@ int init_tcp_threads_data() {
     return EXIT_SUCCESS;
 }
 
-void lock_mutex(pthread_mutex_t *mutex, pthread_cond_t *cond) {
+void lock_mutex_to_wait(pthread_mutex_t *mutex, pthread_cond_t *cond) {
     pthread_mutex_lock(mutex);
     pthread_cond_wait(cond, mutex);
     pthread_mutex_unlock(mutex);
@@ -126,7 +129,7 @@ void init_connexion_with_client(tcp_thread_data *tcp_data) {
     // TODO separate solo and eq client
     initial_connection_header *head = recv_initial_connection_header_of_client(tcp_data->id);
     free(head);
-    lock_mutex(&lock_waiting_all_players_join, &cond_lock_waiting_all_players_join);
+    lock_mutex_to_wait(&lock_waiting_all_players_join, &cond_lock_waiting_all_players_join);
     // TODO verify well send
     send_connexion_information_of_client(tcp_data->id, 0);
 }
@@ -149,7 +152,7 @@ void *serve_client_tcp(void *arg_tcp_thread_data) {
     wait_all_clients_not_ready();
 
     // TODO end of the game
-    lock_mutex(&lock_waiting_the_game_finish, &cond_lock_waiting_the_game_finish);
+    lock_mutex_to_wait(&lock_waiting_the_game_finish, &cond_lock_waiting_the_game_finish);
 
     printf("Player %d left the game.\n", ready_informations->id);
     free(ready_informations);
@@ -224,11 +227,17 @@ int add_game_action_to_thread_data(udp_thread_data *data, game_action *action) {
 
 int empty_game_actions(udp_thread_data *data) {
     for (unsigned i = 0; i < data->nb_game_actions; i++) {
-        free(data->game_actions[i]);
         data->game_actions[i] = NULL;
     }
     data->nb_game_actions = 0;
     return EXIT_SUCCESS;
+}
+
+void free_game_actions(game_action **game_actions, size_t nb_game_actions) {
+    for (unsigned i = 0; i < nb_game_actions; i++) {
+        free(game_actions[i]);
+    }
+    free(game_actions);
 }
 
 void *serv_client_recv_game_action(void *arg_udp_thread_data) {
@@ -250,6 +259,10 @@ void *serve_clients_send_mult_sec(void *arg_udp_thread_data) {
     int last_num_sec_message = 1;
     while (!data->finished_flag) {
         sleep(1);
+        pthread_mutex_lock(&data->lock_game_board);
+        board *game_board = get_game_board(data->game_id);
+        pthread_mutex_unlock(&data->lock_game_board);
+        RETURN_NULL_IF_NULL(game_board);
         pthread_mutex_lock(&data->lock_send_udp);
         send_game_board_for_clients(last_num_sec_message, get_game_board(data->game_id));
         pthread_mutex_unlock(&data->lock_send_udp);
@@ -259,37 +272,124 @@ void *serve_clients_send_mult_sec(void *arg_udp_thread_data) {
     return NULL;
 }
 
-int manage_game_actions(udp_thread_data *data, int id, int *last_num_received_message) {
-    GAME_ACTION last_move = GAME_NONE;
-    int last_move_num = *last_num_received_message;
-    int last_action_num = *last_num_received_message;
-    bool to_place_bomb = false;
+bool is_next_message(int last_num_message, int num_message, int limit) {
+    int just_after = (last_num_message + 1) % limit;
+    int limit_next_message = (last_num_message + 1 + (limit / 2)) % limit;
 
-    for (unsigned i = 0; i < data->nb_game_actions; i++) {
-        if (data->game_actions[i]->id == id) {
-            GAME_ACTION action = data->game_actions[i]->action;
-            if (action == GAME_PLACE_BOMB) {
-                to_place_bomb = true;
+    if (just_after < limit_next_message) {
+        return num_message >= just_after && num_message < limit_next_message;
+    } else {
+        return (num_message >= just_after && num_message < limit) || (num_message <= limit_next_message);
+    }
+}
+
+void game_action_swap(game_action **game_actions, unsigned i, unsigned j) {
+    game_action *current_action = game_actions[j];
+    game_actions[j] = game_actions[i];
+    game_actions[i] = current_action;
+}
+
+unsigned game_action_partition(game_action **game_actions, unsigned start, unsigned end,
+                               int last_num_message[PLAYER_NUM]) {
+    game_action *pivot = game_actions[end];
+    unsigned j = start;
+
+    for (unsigned i = start; i < end - 1; i++) {
+        if (game_actions[i]->id != pivot->id) {
+            continue;
+        }
+        if (!is_next_message(last_num_message[pivot->id], pivot->message_number, LIMIT_LAST_NUM_MESSAGE_CLIENT) &&
+            is_next_message(last_num_message[game_actions[i]->id], game_actions[i]->message_number,
+                            LIMIT_LAST_NUM_MESSAGE_CLIENT)) {
+            continue;
+        }
+        if (abs(last_num_message[pivot->id] - pivot->message_number) <=
+            abs(last_num_message[game_actions[i]->id] - game_actions[i]->message_number)) {
+            continue;
+        }
+        game_action_swap(game_actions, i, j);
+        j++;
+    }
+    game_action_swap(game_actions, j, end);
+
+    return j;
+}
+
+void game_action_quick_sort(game_action **game_actions, unsigned start, unsigned end,
+                            int last_num_message[PLAYER_NUM]) {
+    if (start >= end) {
+        return;
+    }
+    unsigned pivot = game_action_partition(game_actions, start, end, last_num_message);
+
+    game_action_quick_sort(game_actions, start, pivot - 1, last_num_message);
+    game_action_quick_sort(game_actions, pivot + 1, end, last_num_message);
+}
+
+void game_actions_sort(game_action **game_actions, size_t nb_game_actions, int last_num_message[PLAYER_NUM]) {
+    game_action_quick_sort(game_actions, 0, nb_game_actions - 1, last_num_message);
+}
+
+player_action *get_player_actions(game_action **game_actions, size_t nb_game_actions,
+                                  int last_num_received_message[PLAYER_NUM], unsigned *nb_player_actions) {
+    player_action *player_moves = malloc(sizeof(player_action) * PLAYER_NUM);
+    RETURN_NULL_IF_NULL_PERROR(player_moves, "malloc player_moves");
+    player_action *player_place_bomb = malloc(sizeof(player_action) * PLAYER_NUM);
+    RETURN_NULL_IF_NULL_PERROR(player_place_bomb, "malloc player_place_bomb");
+
+    unsigned nb_player_moves;
+    unsigned nb_place_bomb;
+
+    bool already_move[PLAYER_NUM];
+    bool already_place_bomb[PLAYER_NUM];
+    for (unsigned i = 0; i < PLAYER_NUM; i++) {
+        already_move[i] = false;
+        already_place_bomb[i] = false;
+    }
+
+    for (int i = nb_game_actions - 1; i >= 0; i--) {
+        if (nb_player_moves == PLAYER_NUM && nb_place_bomb == PLAYER_NUM) {
+            break;
+        } else if (!is_next_message(last_num_received_message[i], game_actions[i]->message_number,
+                                    LIMIT_LAST_NUM_MESSAGE_CLIENT)) {
+            continue;
+        } else if (is_move(game_actions[i]->action) && !already_move[game_actions[i]->id]) {
+            player_moves[nb_player_moves].id = game_actions[i]->id;
+            player_moves[nb_player_moves].action = game_actions[i]->action;
+            already_move[game_actions[i]->id] = true;
+            if (!already_place_bomb[game_actions[i]->id]) {
+                last_num_received_message[game_actions[i]->id] = game_actions[i]->message_number;
             }
-            if ((action == GAME_UP || action == GAME_RIGHT || action == GAME_LEFT || action == GAME_DOWN) &&
-                abs(*last_num_received_message - last_move_num) <
-                    abs(*last_num_received_message - data->game_actions[i]->message_number)) {
-                last_move = action;
-                last_move_num = data->game_actions[i]->message_number;
+            nb_player_moves++;
+        } else if (game_actions[i]->action == GAME_PLACE_BOMB) {
+            player_place_bomb[nb_place_bomb].id = game_actions[i]->id;
+            player_place_bomb[nb_place_bomb].action = game_actions[i]->action;
+            already_place_bomb[game_actions[i]->id] = true;
+            if (!already_move[game_actions[i]->id]) {
+                last_num_received_message[game_actions[i]->id] = game_actions[i]->message_number;
             }
-            if (abs(*last_num_received_message - last_action_num) <
-                abs(*last_num_received_message - data->game_actions[i]->message_number)) {
-                last_action_num = data->game_actions[i]->message_number;
-            }
+            nb_place_bomb++;
         }
     }
-    if (to_place_bomb) {
-        place_bomb(id, data->game_id);
+    player_action *res = malloc(sizeof(player_action) * (nb_player_moves + nb_place_bomb));
+    RETURN_NULL_IF_NULL_PERROR(res, "malloc player_action");
+
+    memcpy(res, player_moves, sizeof(player_action) * nb_player_moves);
+    memcpy(res + sizeof(player_action) * nb_player_moves, player_place_bomb, sizeof(player_action) * nb_place_bomb);
+
+    *nb_player_actions = nb_player_moves + nb_place_bomb;
+
+    return res;
+}
+
+game_action **copy_game_actions(game_action **game_actions, size_t nb_game_actions) {
+    game_action **res = malloc(nb_game_actions * (sizeof(game_action *)));
+    RETURN_NULL_IF_NULL(res);
+
+    for (unsigned i = 0; i < nb_game_actions; i++) {
+        memcpy(res + i * (sizeof(game_action *)), (game_actions + i * (sizeof(game_action *))), sizeof(game_action *));
     }
-    if (last_move != GAME_NONE) {
-        perform_move(last_move, id, data->game_id);
-    }
-    return EXIT_SUCCESS;
+    return res;
 }
 
 void *serve_clients_send_mult_freq(void *arg_udp_thread_data) {
@@ -299,24 +399,34 @@ void *serve_clients_send_mult_freq(void *arg_udp_thread_data) {
     int last_num_freq_message = 0;
     while (!data->finished_flag) {
         usleep(FREQ);
-        board *current_board = get_game_board(data->game_id);
 
         pthread_mutex_lock(&data->lock_game_actions);
-        for (unsigned id = 1; id <= PLAYER_NUM; id++) {
-            manage_game_actions(data, id, &last_num_received_messages[id - 1]);
-        }
+        size_t nb_game_actions = data->nb_game_actions;
+        game_action **game_actions = copy_game_actions(data->game_actions, nb_game_actions);
+        RETURN_NULL_IF_NULL(game_actions);
         empty_game_actions(data);
         pthread_mutex_unlock(&data->lock_game_actions);
-        update_bombs(data->game_id);
+
+        game_actions_sort(game_actions, data->nb_game_actions, last_num_received_messages);
+
+        unsigned nb_player_actions;
+        player_action *player_actions =
+            get_player_actions(game_actions, nb_game_actions, last_num_received_messages, &nb_player_actions);
+        RETURN_NULL_IF_NULL(player_actions);
+        pthread_mutex_lock(&data->lock_game_board);
+        unsigned size_tile_diff;
+        tile_diff *diffs = update_game_board(data->game_id, player_actions, nb_player_actions, &size_tile_diff);
+        RETURN_NULL_IF_NULL(diffs);
+        pthread_mutex_unlock(&data->lock_game_board);
 
         unsigned size = 0;
-        tile_diff *diffs = get_diff_with_board(data->game_id, current_board, &size);
         if (diffs != NULL) {
             pthread_mutex_lock(&data->lock_send_udp);
             send_game_update_for_clients(last_num_freq_message, diffs, size);
             pthread_mutex_unlock(&data->lock_send_udp);
         }
         free(diffs);
+        free_game_actions(game_actions, nb_game_actions);
         increment_last_num_message(&last_num_freq_message);
     }
     return NULL;
@@ -335,6 +445,9 @@ int init_game_threads(unsigned id) {
         goto EXIT_FREEING_DATA;
     }
     if (pthread_mutex_init(&udp_thread_data_game->lock_send_udp, NULL) < 0) {
+        goto EXIT_FREEING_DATA;
+    }
+    if (pthread_mutex_init(&udp_thread_data_game->lock_game_board, NULL) < 0) {
         goto EXIT_FREEING_DATA;
     }
     if (pthread_create(&game_threads[0], NULL, serv_client_recv_game_action, udp_thread_data_game) < 0) {
