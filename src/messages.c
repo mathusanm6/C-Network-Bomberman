@@ -547,3 +547,20 @@ game_end *deserialize_game_end(const char *end) {
 
     return game_end_;
 }
+
+message_header *deserialize_message_header(uint16_t header) {
+    message_header *message_header_ = malloc(sizeof(message_header));
+    RETURN_NULL_IF_NULL_PERROR(message_header_, "malloc");
+
+    uint16_t header_ntoh = ntohs(header);
+
+    message_header_->codereq = header_ntoh & BIT_OFFSET_13;
+    message_header_->id = (header_ntoh >> 12) & 0x3; // We only need 2 bits
+    message_header_->eq = (header_ntoh >> 14) & 0x1; // We only need 1 bit
+
+    return message_header_;
+}
+
+uint16_t serialize_message_header(const message_header *header) {
+    return connection_header_value(header->codereq, header->id, header->eq);
+}

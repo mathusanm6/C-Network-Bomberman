@@ -1,9 +1,13 @@
 #include "communication_client.h"
+#include "messages.h"
 #include "utils.h"
 
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/socket.h>
+#include <unistd.h>
 
 int send_connexion_header_raw(int sock, connection_header_raw *serialized_head) {
     char *data = (char *)serialized_head;
@@ -75,4 +79,93 @@ connection_information *recv_connexion_information(int sock) {
     connection_information *deserialized_head = deserialize_connection_information(head);
     free(head);
     return deserialized_head;
+}
+
+message_header *recv_header_multidiff(const udp_information *info) {
+    uint16_t header;
+    int res = recvfrom(info->sock, &header, sizeof(uint16_t), 0, (struct sockaddr *)info->addr, info->addr_len);
+    if (res < 0) {
+        perror("recvfrom header");
+        return NULL;
+    }
+
+    return deserialize_message_header(header);
+}
+
+char *recv_game_board_information(const udp_information *info, message_header *header) {
+    uint16_t message_num;
+    int res = recvfrom(info->sock, &message_num, sizeof(uint16_t), 0, (struct sockaddr *)info->addr, info->addr_len);
+    if (res < 0) {
+        perror("recvfrom message_num");
+        return NULL;
+    }
+
+    uint8_t height;
+    res = recvfrom(info->sock, &height, sizeof(uint8_t), 0, (struct sockaddr *)info->addr, info->addr_len);
+    if (res < 0) {
+        perror("recvfrom height");
+        return NULL;
+    }
+
+    uint8_t width;
+    res = recvfrom(info->sock, &width, sizeof(uint8_t), 0, (struct sockaddr *)info->addr, info->addr_len);
+    if (res < 0) {
+        perror("recvfrom width");
+        return NULL;
+    }
+
+    int message_size = height * width;
+
+    // 2 for the header, 2 for the message_num, 1 for the height, 1 for the width
+    char *message = malloc(message_size + 2 + 2 + 1 + 1);
+    RETURN_NULL_IF_NULL_PERROR(message, "malloc message");
+
+    uint16_t header_serialized = serialize_message_header(header);
+    memcpy(message, &header_serialized, 2);
+    memcpy(message + 2, &message_num, 2);
+    memcpy(message + 4, &height, 1);
+    memcpy(message + 5, &width, 1);
+
+    int received = 0;
+    while (received < message_size) {
+        res = recvfrom(info->sock, message + 6 + received, message_size - received, 0, (struct sockaddr *)info->addr,
+                       info->addr_len);
+        if (res < 0) {
+            perror("recvfrom message");
+            free(message);
+            return NULL;
+        }
+        received += res;
+    }
+
+    return message;
+}
+
+recieved_game_message *recv_game_message(udp_information *info) {
+    message_header *header = recv_header_multidiff(info);
+    RETURN_NULL_IF_NULL(header);
+
+    char *message = NULL;
+    game_message_type type;
+
+    switch (header->codereq) {
+        case 11:
+            message = recv_game_board_information(info, header);
+            free(header);
+            RETURN_NULL_IF_NULL(message);
+
+            type = GAME_BOARD_INFORMATION;
+            break;
+        default:
+            free(header);
+            return NULL;
+    }
+
+    recieved_game_message *recieved = malloc(sizeof(recieved_game_message));
+    RETURN_NULL_IF_NULL_PERROR(recieved, "malloc recieved_game_message");
+
+    recieved->message = message;
+    recieved->type = type;
+
+    return recieved;
 }

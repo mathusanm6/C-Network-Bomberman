@@ -107,4 +107,14 @@ char *serialize_game_end(const game_end *end);
 
 game_end *deserialize_game_end(const char *end);
 
+typedef struct message_header {
+    int codereq;
+    int id;
+    int eq;
+} message_header;
+
+message_header *deserialize_message_header(uint16_t header);
+
+uint16_t serialize_message_header(const message_header *header);
+
 #endif // MESSAGES_CLIENT_H
