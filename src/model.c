@@ -771,22 +771,16 @@ chat_node *create_chat_node(int sender, char msg[TEXT_SIZE], bool whispered) {
 }
 
 int add_message(int sender, unsigned int game_id) {
-    if (games[game_id] == NULL) {
-        return EXIT_FAILURE;
-    }
-
-    if (games[game_id]->chat->history == NULL) {
-        return EXIT_FAILURE;
-    }
+    RETURN_FAILURE_IF_NULL(games[game_id]);
+    RETURN_FAILURE_IF_NULL(games[game_id]->chat);
+    RETURN_FAILURE_IF_NULL(games[game_id]->chat->history);
 
     if (games[game_id]->chat->line->cursor == 0) {
         return EXIT_FAILURE;
     }
 
     chat_node *new_node = create_chat_node(sender, games[game_id]->chat->line->data, games[game_id]->chat->whispering);
-    if (new_node == NULL) {
-        return EXIT_FAILURE;
-    }
+    RETURN_FAILURE_IF_NULL(new_node);
 
     if (games[game_id]->chat->history->count == MAX_CHAT_HISTORY_LEN) {
         // If the history is full, replace the oldest message
