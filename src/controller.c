@@ -2,6 +2,7 @@
 #include "./controller.h"
 #include "./messages.h"
 #include "./model.h"
+#include "./network_client.h"
 #include "./utils.h"
 #include "./view.h"
 
@@ -170,7 +171,7 @@ bool perform_chat_action(int c) {
     return false;
 }
 
-bool perform_game_action(int c, udp_information *info) {
+bool perform_game_action(int c) {
     GAME_ACTION a = key_press_to_game_action(c);
     switch (a) {
         case GAME_UP:
@@ -190,7 +191,7 @@ bool perform_game_action(int c, udp_information *info) {
             message_number = (message_number + 1) % (1 << 13);
             action->action = a;
 
-            send_game_action(info, action);
+            send_game_action(action);
 
             break;
         case GAME_CHAT_MODE_START:
@@ -213,7 +214,7 @@ bool perform_game_action(int c, udp_information *info) {
     return false;
 }
 
-bool control(udp_information *info) {
+bool control() {
     int c = get_pressed_key();
 
     if (is_chat_on_focus(TMP_GAME_ID)) {
@@ -221,7 +222,7 @@ bool control(udp_information *info) {
             return true;
         }
     } else {
-        if (perform_game_action(c, info)) {
+        if (perform_game_action(c)) {
             return true;
         }
     }
@@ -274,11 +275,10 @@ void update_tile_diff(board *b, tile_diff *diff, int size) {
 }
 
 /** Updates the game board based on the server MESSAGE*/
-void *game_board_info_thread_function(void *arg) {
-    udp_information *info = (udp_information *)arg;
+void *game_board_info_thread_function() {
     // TODO : game end
     while (true) {
-        received_game_message *received_message = recv_game_message(info);
+        received_game_message *received_message = recv_game_message();
         if (received_message == NULL) {
             continue;
         }
@@ -312,11 +312,10 @@ void *game_board_info_thread_function(void *arg) {
 }
 
 /** Sends to the server the performed action*/
-void *view_thread_function(void *arg) {
-    udp_information *info = (udp_information *)arg;
+void *view_thread_function() {
     while (true) {
         // TODO: Handle game quit
-        if (control(info)) {
+        if (control()) {
             break;
         }
     }

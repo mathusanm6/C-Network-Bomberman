@@ -14,22 +14,12 @@ connection_information *recv_connexion_information(int sock);
 /* TODO: think about this */
 typedef struct upd_information {
     int sock;
-    struct sockaddr_in *addr;
+    struct sockaddr *addr;
     socklen_t *addr_len;
 } udp_information;
 
-typedef enum game_message_type {
-    GAME_BOARD_INFORMATION,
-    GAME_BOARD_UPDATE,
-} game_message_type;
+message_header *recv_header_multidiff(const udp_information *info);
 
-typedef struct received_game_message {
-    char *message;
-    game_message_type type;
-} received_game_message;
-
-received_game_message *recv_game_message(udp_information *info);
-
-int send_game_action(udp_information *info, game_action *action);
+void recvfrom_full(const udp_information *info, char *buffer, int size);
 
 #endif // SRC_COMMUNICATION_CLIENT_H_
