@@ -96,6 +96,3 @@ void recvfrom_full(const udp_information *info, char *buffer, int size) {
         received += res;
     }
 }
-
-
-
