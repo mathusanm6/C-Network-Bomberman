@@ -164,7 +164,6 @@ int main(int argc, char *argv[]) {
     if (r != EXIT_SUCCESS) {
         return r;
     }
-    pause(); // TODO to remove
 
     close_socket_tcp();
 
