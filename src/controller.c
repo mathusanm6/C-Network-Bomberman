@@ -235,10 +235,7 @@ int init_game() {
 
     init_controller();
 
-    dimension dim;
-    get_computed_board_dimension(&dim);
-
-    return init_model(dim, SOLO, TMP_GAME_ID);
+    return EXIT_SUCCESS;
 }
 
 board *get_board() {

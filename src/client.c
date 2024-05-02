@@ -3,6 +3,7 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "controller.h"
 #include "network_client.h"
 #include "utils.h"
 
@@ -166,9 +167,8 @@ int main(int argc, char *argv[]) {
     pause(); // TODO to remove
 
     close_socket_tcp();
-    // TODO to add
-    /*RETURN_FAILURE_IF_ERROR(init_game());
 
-    return game_loop();*/
-    return EXIT_FAILURE;
+    RETURN_FAILURE_IF_ERROR(init_game());
+
+    return game_loop();
 }
