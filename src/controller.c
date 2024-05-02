@@ -1,11 +1,10 @@
-#include "./communication_client.h"
 #include "./controller.h"
+#include "./communication_client.h"
 #include "./messages.h"
 #include "./model.h"
 #include "./network_client.h"
 #include "./utils.h"
 #include "./view.h"
-
 
 #include <ncurses.h>
 #include <pthread.h>
