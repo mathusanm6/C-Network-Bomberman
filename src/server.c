@@ -244,7 +244,7 @@ void *serv_client_recv_game_action(void *arg_udp_thread_data) {
     udp_thread_data *data = (udp_thread_data *)arg_udp_thread_data;
     while (!data->finished_flag) {
         game_action *action = recv_game_action_of_clients();
-        if (action != NULL) {
+        if (action != NULL && action->game_mode == get_game_mode(data->game_id)) {
             pthread_mutex_lock(&data->lock_game_actions);
             add_game_action_to_thread_data(data, action);
             pthread_mutex_unlock(&data->lock_game_actions);
