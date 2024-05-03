@@ -12,7 +12,7 @@ int send_ready_connexion_information(int sock, GAME_MODE mode, int id, int eq);
 connection_information *recv_connexion_information(int sock);
 
 /* TODO: think about this */
-typedef struct upd_information {
+typedef struct udp_information {
     int sock;
     struct sockaddr *addr;
     socklen_t *addr_len;
