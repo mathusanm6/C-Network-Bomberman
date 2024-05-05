@@ -86,11 +86,14 @@ int send_game_update(int sock, struct sockaddr_in6 *addr_mult, int num, tile_dif
 }
 
 connection_header_raw *recv_connexion_header_raw(int sock) {
+    printf("testdebraw %d\n", sock);
     connection_header_raw *head = malloc(sizeof(connection_header_raw));
+    printf("testaftermalloc %d\n", sock);
     RETURN_NULL_IF_NULL_PERROR(head, "malloc connection_header_raw");
     unsigned received = 0;
     while (received < sizeof(connection_header_raw)) {
         int res = recv(sock, head + received, sizeof(connection_header_raw) - received, 0);
+        printf("testafterrecv %d\n", sock);
 
         if (res < 0) {
             perror("recv connection_header_raw");
@@ -99,6 +102,7 @@ connection_header_raw *recv_connexion_header_raw(int sock) {
         }
         received += res;
     }
+    printf("testfinraw\n");
     return head;
 }
 
@@ -111,7 +115,9 @@ initial_connection_header *recv_initial_connection_header(int sock) {
 }
 
 ready_connection_header *recv_ready_connexion_header(int sock) {
+    printf("testdebready %d\n", sock);
     connection_header_raw *head = recv_connexion_header_raw(sock);
+    printf("testfinready %d\n", sock);
     RETURN_NULL_IF_NULL(head);
     ready_connection_header *deserialized_head = deserialize_ready_connection(head);
     free(head);

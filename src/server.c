@@ -145,6 +145,7 @@ void *serve_client_tcp(void *arg_tcp_thread_data) {
 
     // TODO verify ready_informations
     ready_connection_header *ready_informations = recv_ready_connexion_header_of_client(tcp_data->id);
+
     print_ready_player(ready_informations);
     pthread_mutex_lock(&lock_all_players_ready);
     ready_player_number++;
@@ -506,8 +507,9 @@ int main() {
         goto exit_closing_sockets_and_free_addr_mult;
     }
     sleep(1);                                                    // Wait all clients for the join mutex
-    RETURN_FAILURE_IF_ERROR(init_game_model(SOLO, TMP_GAME_ID)); // TODO Change it to run more than 1 server
     unlock_mutex_for_everyone(&lock_waiting_all_players_join, &cond_lock_waiting_all_players_join);
+    wait_all_clients_not_ready();
+    RETURN_FAILURE_IF_ERROR(init_game_model(SOLO, TMP_GAME_ID)); // TODO Change it to run more than 1 server
 
     send_game_board_for_clients(0, get_game_board(TMP_GAME_ID)); // Initial game_board send
     if (init_game_threads(TMP_GAME_ID) != EXIT_SUCCESS) {
