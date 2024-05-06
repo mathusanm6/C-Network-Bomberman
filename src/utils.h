@@ -17,12 +17,12 @@
         return NULL;                                                                                                   \
     }
 
-#define RETURN_IF_NULL_PTR(ptr)                                                                                        \
+#define RETURN_IF_NULL(ptr)                                                                                            \
     if (ptr == NULL) {                                                                                                 \
         return;                                                                                                        \
     }
 
-#define RETURN_IF_NULL_PTR_PERROR(ptr, msg)                                                                            \
+#define RETURN_IF_NULL_PERROR(ptr, msg)                                                                                \
     if (ptr == NULL) {                                                                                                 \
         perror(msg);                                                                                                   \
         return;                                                                                                        \

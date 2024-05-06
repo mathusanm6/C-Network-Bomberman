@@ -390,7 +390,7 @@ TILE get_grid(int x, int y, unsigned int game_id) {
 }
 
 void set_grid(int x, int y, TILE v, unsigned int game_id) {
-    RETURN_IF_NULL_PTR(games[game_id]);
+    RETURN_IF_NULL(games[game_id]);
 
     board *game_board = games[game_id]->game_board;
     if (game_board != NULL) {
@@ -457,7 +457,7 @@ coord get_next_position(GAME_ACTION a, const coord *pos) {
 }
 
 void perform_move(GAME_ACTION a, int player_id, unsigned int game_id) {
-    RETURN_IF_NULL_PTR(games[game_id]);
+    RETURN_IF_NULL(games[game_id]);
 
     player **players = games[game_id]->players;
 
@@ -481,14 +481,14 @@ void perform_move(GAME_ACTION a, int player_id, unsigned int game_id) {
 }
 void place_bomb(int player_id, unsigned int game_id) {
 
-    RETURN_IF_NULL_PTR(games[game_id]);
+    RETURN_IF_NULL(games[game_id]);
 
     game *g = games[game_id];
 
     if (g->all_bombs.total_count == g->all_bombs.max_capacity) {
         int new_capacity = (g->all_bombs.max_capacity == 0) ? 4 : g->all_bombs.max_capacity * 2;
         bomb *new_list = realloc(g->all_bombs.arr, new_capacity * sizeof(bomb));
-        RETURN_IF_NULL_PTR_PERROR(new_list, "realloc");
+        RETURN_IF_NULL_PERROR(new_list, "realloc");
 
         g->all_bombs.arr = new_list;
         g->all_bombs.max_capacity = new_capacity;
@@ -598,7 +598,7 @@ bool apply_explosion_effect(int x, int y, unsigned int game_id) {
 }
 
 void update_explosion(bomb b, unsigned int game_id) {
-    RETURN_IF_NULL_PTR(games[game_id]);
+    RETURN_IF_NULL(games[game_id]);
 
     player **players = games[game_id]->players;
 
@@ -656,7 +656,7 @@ void update_explosion(bomb b, unsigned int game_id) {
 }
 
 void update_bombs(unsigned int game_id) {
-    RETURN_IF_NULL_PTR(games[game_id]);
+    RETURN_IF_NULL(games[game_id]);
 
     game *g = games[game_id];
 
@@ -749,7 +749,7 @@ bool is_game_over(unsigned int game_id) {
 }
 
 void decrement_line(unsigned int game_id) {
-    RETURN_IF_NULL_PTR(games[game_id]);
+    RETURN_IF_NULL(games[game_id]);
 
     if (games[game_id]->chat->line != NULL && games[game_id]->chat->line->cursor > 0) {
         games[game_id]->chat->line->cursor--;
@@ -758,7 +758,7 @@ void decrement_line(unsigned int game_id) {
 }
 
 void clear_line(unsigned int game_id) {
-    RETURN_IF_NULL_PTR(games[game_id]);
+    RETURN_IF_NULL(games[game_id]);
 
     if (games[game_id]->chat->line != NULL) {
         memset(games[game_id]->chat->line->data, EMPTY_CHAR, games[game_id]->chat->line->cursor);
@@ -767,7 +767,7 @@ void clear_line(unsigned int game_id) {
 }
 
 void add_to_line(char c, unsigned int game_id) {
-    RETURN_IF_NULL_PTR(games[game_id]);
+    RETURN_IF_NULL(games[game_id]);
 
     if (games[game_id]->chat->line != NULL && games[game_id]->chat->line->cursor < TEXT_SIZE && c >= ' ' && c <= '~') {
         games[game_id]->chat->line->data[(games[game_id]->chat->line->cursor)] = c;
@@ -858,13 +858,13 @@ bool is_chat_on_focus(unsigned int game_id) {
 }
 
 void set_chat_focus(bool on_focus, unsigned int game_id) {
-    RETURN_IF_NULL_PTR(games[game_id]);
+    RETURN_IF_NULL(games[game_id]);
 
     games[game_id]->chat->on_focus = on_focus;
 }
 
 void toggle_whispering(unsigned int game_id) {
-    RETURN_IF_NULL_PTR(games[game_id]);
+    RETURN_IF_NULL(games[game_id]);
 
     games[game_id]->chat->whispering = !games[game_id]->chat->whispering;
 }

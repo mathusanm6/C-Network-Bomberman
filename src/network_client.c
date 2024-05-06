@@ -98,17 +98,17 @@ int try_to_connect_tcp() {
 }
 
 void set_server_informations(connection_information *head) {
-    RETURN_IF_NULL_PTR(head);
+    RETURN_IF_NULL(head);
 
     port_udp = head->portudp;
     init_udp_socket();
     addr_udp = prepare_address(port_udp);
-    RETURN_IF_NULL_PTR(addr_udp);
+    RETURN_IF_NULL(addr_udp);
 
     port_diff = head->portmdiff;
     init_diff_socket();
     addr_diff = prepare_address(port_diff);
-    RETURN_IF_NULL_PTR(addr_diff);
+    RETURN_IF_NULL(addr_diff);
 
     id = head->id;
     eq = head->eq;
