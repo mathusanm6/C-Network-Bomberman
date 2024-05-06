@@ -506,7 +506,7 @@ int main() {
         return_value = EXIT_FAILURE;
         goto exit_closing_sockets_and_free_addr_mult;
     }
-    sleep(1);                                                    // Wait all clients for the join mutex
+    sleep(1); // Wait all clients for the join mutex
     unlock_mutex_for_everyone(&lock_waiting_all_players_join, &cond_lock_waiting_all_players_join);
     wait_all_clients_not_ready();
     RETURN_FAILURE_IF_ERROR(init_game_model(SOLO, TMP_GAME_ID)); // TODO Change it to run more than 1 server
