@@ -35,6 +35,7 @@ static void switch_player() {
     } while (is_player_dead(current_player, TMP_GAME_ID));
 }
 
+// TODO: Fix memory leak
 static board *game_board = NULL;
 static pthread_mutex_t game_board_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -48,6 +49,15 @@ void init_controller() {
     intrflush(stdscr, FALSE); /* No need to flush when intr key is pressed */
     keypad(stdscr, TRUE);     /* Required in order to get events from keyboard */
     nodelay(stdscr, TRUE);    /* Make getch non-blocking */
+    game_board = malloc(sizeof(board));
+    RETURN_IF_NULL_PERROR(game_board, "malloc board_controller");
+    // Init the board to an empty 10x10 board
+    game_board->dim = (dimension){10, 10};
+    game_board->grid = malloc(game_board->dim.height * game_board->dim.width * sizeof(char));
+    RETURN_IF_NULL_PERROR(game_board->grid, "malloc board_controller grid");
+    for (int i = 0; i < game_board->dim.height * game_board->dim.width; i++) {
+        game_board->grid[i] = EMPTY;
+    }
 }
 
 GAME_ACTION key_press_to_game_action(int c) {
