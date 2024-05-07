@@ -176,7 +176,6 @@ int init_random_adrmdiff() {
     return EXIT_SUCCESS;
 }
 
-
 void free_addr_mult() {
     if (addr_mult != NULL) {
         free(addr_mult);
