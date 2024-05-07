@@ -718,7 +718,9 @@ tile_diff *update_game_board(unsigned game_id, player_action *actions, size_t nb
         }
     }
     update_bombs(game_id);
-    return get_diff_with_board(game_id, current_board, size_tile_diff);
+    tile_diff *diffs = get_diff_with_board(game_id, current_board, size_tile_diff);
+    free(current_board);
+    return diffs;
 }
 
 bool is_game_over(unsigned int game_id) {
