@@ -176,32 +176,6 @@ int init_random_adrmdiff() {
     return EXIT_SUCCESS;
 }
 
-char *convert_adrmdif_into_string(uint16_t adrmdiff_[8]) {
-    size_t size_addr_string = sizeof(char) * 8 * 5; // : and \0 are counted
-    char *addr_string = malloc(size_addr_string);
-    RETURN_NULL_IF_NULL(addr_string);
-    int n = 0;
-    for (unsigned i = 0; i < 8; i++) {
-        int r = sprintf(addr_string + n, "%04X", adrmdiff_[i]);
-        if (r < 0) {
-            goto exit_freeing_addr_string;
-        }
-        n += r;
-        if (i != 7) {
-            int r = sprintf(addr_string + n, "%c", ':');
-            if (r < 0) {
-                goto exit_freeing_addr_string;
-            }
-            n += r;
-        }
-    }
-    return addr_string;
-
-exit_freeing_addr_string:
-    free(addr_string);
-    perror("sprintf addr_string");
-    return NULL;
-}
 
 void free_addr_mult() {
     if (addr_mult != NULL) {
@@ -264,6 +238,7 @@ int send_connexion_information_of_client(int id, int eq) {
 }
 
 int send_game_board_for_clients(uint16_t num, board *board_) {
+    printf("Sending game board to clients\n");
     return send_game_board(sock_mult, addr_mult, num, board_);
 }
 

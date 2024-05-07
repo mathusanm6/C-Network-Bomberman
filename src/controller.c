@@ -284,6 +284,7 @@ void update_tile_diff(board *b, tile_diff *diff, int size) {
 void *game_board_info_thread_function() {
     // TODO : game end
     while (true) {
+        printf("Waiting for message\n");
         received_game_message *received_message = recv_game_message();
         if (received_message == NULL) {
             continue;

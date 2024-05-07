@@ -2,6 +2,7 @@
 #define SRC_UTILS_H_
 
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdlib.h>
 
 #define INT_STRING_SIZE 12
@@ -88,5 +89,7 @@ int max(int, int);
 /** Returns -1 in case of error, since the minimum is necessarily greater than or equal to 0
  */
 int parse_unsigned_within_bounds(const char *, unsigned, unsigned);
+
+char *convert_adrmdif_into_string(uint16_t adrmdiff_[8]);
 
 #endif // SRC_UTILS_H_
