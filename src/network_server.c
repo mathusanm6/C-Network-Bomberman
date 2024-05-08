@@ -233,7 +233,7 @@ game_action *recv_game_action_of_clients() {
 
 int send_connexion_information_of_client(int id, int eq) {
     // TODO Replace the gamemode
-    return send_connexion_information(sock_clients[id], SOLO, id, eq, port_udp, port_mult, adrmdiff);
+    return send_connexion_information(sock_clients[id], SOLO, id, eq, ntohs(port_udp), ntohs(port_mult), adrmdiff);
 }
 
 int send_game_board_for_clients(uint16_t num, board *board_) {
