@@ -165,8 +165,6 @@ int main(int argc, char *argv[]) {
         return r;
     }
 
-    close_socket_tcp();
-
     RETURN_FAILURE_IF_ERROR(init_game());
 
     return game_loop();

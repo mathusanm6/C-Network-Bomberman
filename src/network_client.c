@@ -1,9 +1,11 @@
 #include "network_client.h"
 #include "communication_client.h"
+#include "messages.h"
 #include "utils.h"
 
 #include <arpa/inet.h>
 #include <net/if.h>
+#include <netinet/in.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -98,47 +100,50 @@ int try_to_connect_tcp() {
     return connect(sock_tcp, (struct sockaddr *)addrsock, sizeof(struct sockaddr_in6));
 }
 
-void set_server_informations(connection_information *head) {
-    RETURN_IF_NULL(head);
-
-    id = head->id;
-    eq = head->eq;
-    for (unsigned i = 0; i < 8; i++) {
-        adrmdiff[i] = head->adrmdiff[i];
-    }
-
-    // TODO: fix this
-    int dif_sock;
-
+int init_diff_info(connection_information *head) {
     /* créer la socket */
-    if ((dif_sock = socket(AF_INET6, SOCK_DGRAM, 0)) < 0) {
+    if ((sock_diff = socket(AF_INET6, SOCK_DGRAM, 0)) < 0) {
         perror("echec de socket");
         exit(1);
-        return;
     }
+
+    printf("Socket: %d\n", sock_diff);
+
+    sock_diff = sock_diff;
 
     /* SO_REUSEADDR permet d'avoir plusieurs instances locales de cette application  */
     /* ecoutant sur le port multicast et recevant chacune les differents paquets       */
     int ok = 1;
-    if (setsockopt(dif_sock, SOL_SOCKET, SO_REUSEADDR, &ok, sizeof(ok)) < 0) {
+    if (setsockopt(sock_diff, SOL_SOCKET, SO_REUSEADDR, &ok, sizeof(ok)) < 0) {
         perror("echec de SO_REUSEADDR");
-        close(dif_sock);
+        close(sock_diff);
         exit(1);
-        return;
     }
 
     /* Initialisation de l'adresse de reception */
-    struct sockaddr_in6 adr;
-    memset(&adr, 0, sizeof(adr));
-    adr.sin6_family = AF_INET6;
-    adr.sin6_addr = in6addr_any;
-    adr.sin6_port = htons(port_udp);
+    addr_diff = malloc(sizeof(struct sockaddr_in6));
+    memset(addr_diff, 0, sizeof(struct sockaddr_in6));
+    RETURN_FAILURE_IF_NULL(addr_diff);
 
-    if (bind(dif_sock, (struct sockaddr *)&adr, sizeof(adr))) {
+    printf("------>\n");
+    printf("Port: %d\n", port_diff);
+    printf("Socket: %d\n", sock_diff);
+    char buffer[1024];
+    inet_ntop(AF_INET6, addr_diff, buffer, 1024);
+    printf("Address: %s\n", buffer);
+
+    port_diff = htons(head->portmdiff);
+
+    printf("Port: %d\n", port_diff);
+
+    addr_diff->sin6_family = AF_INET6;
+    addr_diff->sin6_addr = in6addr_any;
+    addr_diff->sin6_port = port_diff;
+
+    if (bind(sock_diff, (struct sockaddr *)addr_diff, sizeof(struct sockaddr_in6)) < 0) {
         perror("echec de bind");
-        close(dif_sock);
+        close(sock_diff);
         exit(1);
-        return;
     }
 
     /* initialisation de l'interface locale autorisant le multicast IPv6 */
@@ -146,39 +151,48 @@ void set_server_informations(connection_information *head) {
     if (ifindex == 0) {
         perror("if_nametoindex");
         exit(1);
-        return;
     }
 
     /* s'abonner au groupe multicast */
     struct ipv6_mreq group;
     char *addr_string = convert_adrmdif_into_string(adrmdiff);
-    printf("Adresse multicast : %s\n", addr_string);
+    fprintf(stderr, "Adresse multicast : %s\n", addr_string);
     inet_pton(AF_INET6, addr_string, &group.ipv6mr_multiaddr.s6_addr);
     free(addr_string);
     group.ipv6mr_interface = ifindex;
 
-    if (setsockopt(dif_sock, IPPROTO_IPV6, IPV6_JOIN_GROUP, &group, sizeof group) < 0) {
+    if (setsockopt(sock_diff, IPPROTO_IPV6, IPV6_JOIN_GROUP, &group, sizeof group) < 0) {
         perror("echec de abonnement groupe");
-        close(dif_sock);
+        close(sock_diff);
         exit(1);
-        return;
     }
 
-    port_udp = head->portudp;
-    sock_udp = dif_sock;
-    addr_udp = malloc(sizeof(struct sockaddr_in6));
-    addr_udp->sin6_family = adr.sin6_family;
-    addr_udp->sin6_port = adr.sin6_port;
-    addr_udp->sin6_addr = adr.sin6_addr;
+    return EXIT_SUCCESS;
+}
 
-    sock_udp = dif_sock;
+void set_server_informations(connection_information *head) {
+    id = head->id;
+    eq = head->eq;
+    for (unsigned i = 0; i < 8; i++) {
+        adrmdiff[i] = head->adrmdiff[i];
+    }
 
+    int res = init_diff_info(head);
+    RETURN_IF_ERROR(res);
+
+    port_udp = htons(head->portudp);
+    init_udp_socket();
+    addr_udp = prepare_address(port_udp);
     RETURN_IF_NULL(addr_udp);
 
-    port_diff = head->portmdiff;
-    init_diff_socket();
-    addr_diff = prepare_address(port_diff);
-    RETURN_IF_NULL(addr_diff);
+    printf("------>\n");
+    printf("Port: %d\n", port_diff);
+    printf("Socket: %d\n", sock_diff);
+    char buffer[1024];
+    inet_ntop(AF_INET6, addr_diff, buffer, 1024);
+    printf("Address: %s\n", buffer);
+
+    printf("----------------------\n");
 }
 
 int start_initialisation_game(GAME_MODE mode) {
@@ -197,6 +211,7 @@ int send_ready_to_play(GAME_MODE mode) {
 }
 
 char *recv_game_board_information(const udp_information *info, message_header *header) {
+    printf("Recieveing information\n");
     uint16_t message_num;
     int res = recvfrom(info->sock, &message_num, sizeof(uint16_t), 0, (struct sockaddr *)info->addr, info->addr_len);
     RETURN_NULL_IF_NEG_PERROR(res, "recvfrom message_num");
@@ -255,17 +270,22 @@ received_game_message *recv_game_message() {
     udp_information *info = malloc(sizeof(udp_information));
     RETURN_NULL_IF_NULL_PERROR(info, "malloc udp_information");
 
-    info->sock = sock_udp;
-    info->addr = (struct sockaddr *)addr_udp;
+    info->sock = sock_diff;
+    info->addr = (struct sockaddr *)addr_diff;
     info->addr_len = (socklen_t *)sizeof(struct sockaddr_in6);
+
+    printf("================================\n");
 
     printf("Socket: %d\n", info->sock);
     char buffer[1024];
-    inet_ntop(AF_INET6, &info->addr, buffer, 1024);
+    inet_ntop(AF_INET6, info->addr, buffer, 1024);
     printf("Address: %s\n", buffer);
+    printf("Port: %d\n", port_diff);
 
     message_header *header = recv_header_multidiff(info);
     RETURN_NULL_IF_NULL(header);
+
+    printf("Header: %d\n", header->codereq);
 
     char *message = NULL;
     game_message_type type;

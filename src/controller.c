@@ -240,7 +240,8 @@ bool control() {
 }
 
 int init_game() {
-    RETURN_FAILURE_IF_ERROR(init_view());
+    // TODO uncomment
+    // RETURN_FAILURE_IF_ERROR(init_view());
 
     init_controller();
 
@@ -287,6 +288,7 @@ void *game_board_info_thread_function() {
         printf("Waiting for message\n");
         received_game_message *received_message = recv_game_message();
         if (received_message == NULL) {
+            // TODO: Handle error
             continue;
         }
         switch (received_message->type) {
@@ -331,17 +333,14 @@ void *view_thread_function() {
 }
 
 int game_loop() {
-    RETURN_FAILURE_IF_NULL_PERROR(game_board, "malloc board_controller");
-
-    /* TODO: Use the correct udp_information */
-    udp_information *info = NULL;
+    RETURN_FAILURE_IF_NULL(game_board);
 
     /* TODO: Handle possible errors here */
     pthread_t game_board_info_thread;
-    pthread_create(&game_board_info_thread, NULL, game_board_info_thread_function, info);
+    pthread_create(&game_board_info_thread, NULL, game_board_info_thread_function, NULL);
 
     pthread_t view_thread;
-    pthread_create(&view_thread, NULL, view_thread_function, info);
+    pthread_create(&view_thread, NULL, view_thread_function, NULL);
 
     pthread_join(game_board_info_thread, NULL);
 

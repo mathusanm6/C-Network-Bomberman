@@ -207,6 +207,10 @@ int init_addr_mult() {
         perror("if_nametoindex eth0");
         return EXIT_FAILURE;
     }
+
+    printf("ifindex : %d\n", ifindex);
+    printf("Port : %d\n", (addr_mult->sin6_port));
+    printf("Addr : %s\n", convert_adrmdif_into_string(adrmdiff));
     addr_mult->sin6_scope_id = ifindex;
     return EXIT_SUCCESS;
 }
@@ -233,6 +237,10 @@ game_action *recv_game_action_of_clients() {
 
 int send_connexion_information_of_client(int id, int eq) {
     // TODO Replace the gamemode
+    printf("Sending connexion information to client %d\n", id);
+    printf("Port UDP : %d\n", (port_udp));
+    printf("Port Multicast : %d\n", (port_mult));
+    printf("Adrmdiff : %s\n", convert_adrmdif_into_string(adrmdiff));
     return send_connexion_information(sock_clients[id], SOLO, id, eq, ntohs(port_udp), ntohs(port_mult), adrmdiff);
 }
 
