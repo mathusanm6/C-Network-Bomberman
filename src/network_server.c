@@ -54,6 +54,7 @@ void close_socket_client(int id) {
 }
 
 int init_socket(int *sock, bool is_tcp) {
+    printf("Creating socket\n");
     if (is_tcp) {
         *sock = socket(PF_INET6, SOCK_STREAM, 0);
     } else {
@@ -78,6 +79,9 @@ int init_socket(int *sock, bool is_tcp) {
         *sock = -1;
         return EXIT_FAILURE;
     }
+
+    printf("Socket created\n");
+    printf("Socket : %d\n", *sock);
     return EXIT_SUCCESS;
 }
 

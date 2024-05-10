@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-Wall -Wextra -lncurses
+CFLAGS=-Wall -Wextra -lncurses -g
 EXEC_CLIENT=client
 EXEC_SERVER=server
 

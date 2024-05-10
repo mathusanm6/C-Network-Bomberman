@@ -81,7 +81,7 @@ connection_information *recv_connexion_information(int sock) {
 message_header *recv_header_multidiff(const udp_information *info) {
     printf("Receiving header\n");
     uint16_t header;
-    int res = recvfrom(info->sock, &header, sizeof(uint16_t), 0, info->addr, info->addr_len);
+    int res = read(info->sock, &header, sizeof(uint16_t));
     printf("Received %d bytes\n", res);
     RETURN_NULL_IF_NEG_PERROR(res, "recvfrom header");
 
@@ -92,7 +92,7 @@ void recvfrom_full(const udp_information *info, char *buffer, int size) {
     printf("Receiving %d bytes\n", size);
     int received = 0;
     while (received < size) {
-        int res = recvfrom(info->sock, buffer + received, size - received, 0, info->addr, info->addr_len);
+        int res = read(info->sock, buffer + received, size - received);
         RETURN_IF_NEG_PERROR(res, "recvfrom_full");
 
         received += res;

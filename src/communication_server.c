@@ -48,9 +48,14 @@ int send_connexion_information(int sock, GAME_MODE mode, int id, int eq, int por
     return res;
 }
 int send_string_to_clients_multicast(int sock, struct sockaddr_in6 *addr_mult, char *message, size_t message_length) {
-    if (sendto(sock, message, message_length, 0, (struct sockaddr *)addr_mult, sizeof(struct sockaddr_in6)) < 0) {
+    printf("Sending message to multicast\n");
+    printf("Message : %s\n", message);
+    printf("Message length : %ld\n", message_length);
+    int a;
+    if ((a = sendto(sock, message, message_length, 0, (struct sockaddr *)addr_mult, sizeof(struct sockaddr_in6))) < 0) {
         return EXIT_FAILURE;
     }
+    printf("Message sent to multicast, %d\n", a);
     return EXIT_SUCCESS;
 }
 
@@ -63,6 +68,11 @@ int send_game_board(int sock, struct sockaddr_in6 *addr_mult, uint16_t num, boar
     head->height = board_->dim.height;
     head->board = malloc(head->width * head->height * sizeof(TILE));
 
+    printf("Sending board\n");
+    printf("Num : %d\n", head->num);
+    printf("Width : %d\n", head->width);
+    printf("Height : %d\n", head->height);
+
     for (unsigned i = 0; i < head->width * head->height; i++) {
         head->board[i] = board_->grid[i];
     }
@@ -73,6 +83,9 @@ int send_game_board(int sock, struct sockaddr_in6 *addr_mult, uint16_t num, boar
     RETURN_FAILURE_IF_NULL(serialized_head);
 
     size_t len_serialized_head = 6 + board_->dim.width * board_->dim.height;
+
+    printf("Width2 : %d\n", serialized_head[4]);
+    printf("Height2 : %d\n", serialized_head[5]);
 
     return send_string_to_clients_multicast(sock, addr_mult, serialized_head, len_serialized_head);
 }
@@ -88,7 +101,7 @@ int send_game_update(int sock, struct sockaddr_in6 *addr_mult, int num, tile_dif
     char *serialized_head = serialize_game_board_update(head);
     free(head);
     RETURN_FAILURE_IF_NULL(serialized_head);
-    size_t len_serialized_head = 5 + num * 3; 
+    size_t len_serialized_head = 5 + num * 3;
 
     return send_string_to_clients_multicast(sock, addr_mult, serialized_head, len_serialized_head);
 }

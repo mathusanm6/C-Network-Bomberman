@@ -524,6 +524,11 @@ int main() {
     RETURN_FAILURE_IF_ERROR(init_game_model(SOLO, TMP_GAME_ID)); // TODO Change it to run more than 1 server
 
     board *game_board = get_game_board(TMP_GAME_ID);
+
+    for (int i = 0; i < game_board->dim.height * game_board->dim.width; i++) {
+        printf("%d ", game_board->grid[i]);
+    }
+
     send_game_board_for_clients(0, game_board); // Initial game_board send
     free(game_board);
     if (init_game_threads(TMP_GAME_ID) != EXIT_SUCCESS) {
