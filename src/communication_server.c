@@ -72,7 +72,9 @@ int send_game_board(int sock, struct sockaddr_in6 *addr_mult, uint16_t num, boar
     free(head);
     RETURN_FAILURE_IF_NULL(serialized_head);
 
-    return send_string_to_clients_multicast(sock, addr_mult, serialized_head, strlen(serialized_head));
+    size_t len_serialized_head = 6 + board_->dim.width * board_->dim.height;
+
+    return send_string_to_clients_multicast(sock, addr_mult, serialized_head, len_serialized_head);
 }
 
 int send_game_update(int sock, struct sockaddr_in6 *addr_mult, int num, tile_diff *diff, uint8_t nb) {
@@ -86,8 +88,9 @@ int send_game_update(int sock, struct sockaddr_in6 *addr_mult, int num, tile_dif
     char *serialized_head = serialize_game_board_update(head);
     free(head);
     RETURN_FAILURE_IF_NULL(serialized_head);
+    size_t len_serialized_head = 5 + num; 
 
-    return send_string_to_clients_multicast(sock, addr_mult, serialized_head, strlen(serialized_head));
+    return send_string_to_clients_multicast(sock, addr_mult, serialized_head, len_serialized_head);
 }
 
 connection_header_raw *recv_connexion_header_raw(int sock) {
