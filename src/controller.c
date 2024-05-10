@@ -254,7 +254,7 @@ board *get_board() {
 
     pthread_mutex_lock(&game_board_mutex);
     b->dim = game_board->dim;
-    b->grid = malloc(b->dim.height * sizeof(char *));
+    b->grid = malloc(b->dim.height * b->dim.width);
     if (b->grid == NULL) {
         pthread_mutex_unlock(&game_board_mutex);
         free(b);
