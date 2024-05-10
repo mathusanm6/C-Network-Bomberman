@@ -171,6 +171,15 @@ int init_diff_info(connection_information *head) {
     return EXIT_SUCCESS;
 }
 
+int init_udp_info(connection_information *head) {
+    port_udp = htons(head->portudp);
+    init_udp_socket();
+    addr_udp = prepare_address(port_udp);
+    RETURN_FAILURE_IF_NULL(addr_udp);
+
+    return EXIT_SUCCESS;
+}
+
 void set_server_informations(connection_information *head) {
     id = head->id;
     eq = head->eq;
@@ -178,22 +187,11 @@ void set_server_informations(connection_information *head) {
         adrmdiff[i] = head->adrmdiff[i];
     }
 
-    int res = init_diff_info(head);
-    RETURN_IF_ERROR(res);
+    // TODO: Handle error
+    RETURN_IF_ERROR(init_diff_info(head));
 
-    port_udp = htons(head->portudp);
-    init_udp_socket();
-    addr_udp = prepare_address(port_udp);
-    RETURN_IF_NULL(addr_udp);
-
-    printf("------>\n");
-    printf("Port: %d\n", port_diff);
-    printf("Socket: %d\n", sock_diff);
-    char buffer[1024];
-    inet_ntop(AF_INET6, addr_diff, buffer, 1024);
-    printf("Address: %s\n", buffer);
-
-    printf("----------------------\n");
+    // TODO: Handle error
+    RETURN_IF_ERROR(init_diff_info(head));
 }
 
 int start_initialisation_game(GAME_MODE mode) {
@@ -330,7 +328,8 @@ int send_game_action(game_action *action) {
     int sent = 0;
 
     while (sent < 4) { // 4 Bytes
-        int res = sendto(info->sock, serialized + sent, 4 - sent, 0, (struct sockaddr *)&info->addr, sizeof(struct sockaddr_in6));
+        int res = sendto(info->sock, serialized + sent, 4 - sent, 0, (struct sockaddr *)&info->addr,
+                         sizeof(struct sockaddr_in6));
         if (res < 0) {
             perror("sendto action");
             free(serialized);
