@@ -6,6 +6,7 @@
 #include <arpa/inet.h>
 #include <net/if.h>
 #include <netinet/in.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -214,37 +215,24 @@ char *recv_game_board_information(const udp_information *info, message_header *h
     printf("Recieveing information\n");
     socklen_t addr_len = sizeof(info->addr);
     // TODO ensure reads all
-    uint16_t message_num;
-    int res = recvfrom(info->sock, &message_num, sizeof(uint16_t), 0, (struct sockaddr *)&info->addr, &addr_len);
+    uint8_t message_info[6];
+    int res = recvfrom(info->sock, message_info, sizeof(uint8_t) * 6, 0, (struct sockaddr *)&info->addr, &addr_len);
     printf("Received %d bytes\n", res);
     RETURN_NULL_IF_NEG_PERROR(res, "recv message_num");
+    uint16_t message_num;
+    uint8_t width = message_info[5];
+    uint8_t height = message_info[4];
     printf("Message num: %d\n", ntohs(message_num));
+    printf("width: %d\n", ntohs(width));
+    printf("height: %d\n", ntohs(height));
 
-    uint8_t height;
-    res = recvfrom(info->sock, &height, sizeof(uint8_t), 0, (struct sockaddr *)&info->addr, &addr_len);
-    printf("Received %d bytes\n", res);
-    RETURN_NULL_IF_NEG_PERROR(res, "recv height");
-    printf("Height: %d\n", height);
 
-    uint8_t width;
-    res = recvfrom(info->sock, &width, sizeof(uint8_t), 0, (struct sockaddr *)&info->addr, &addr_len);
-    printf("Received %d bytes\n", res);
-    RETURN_NULL_IF_NEG_PERROR(res, "recv width");
-    printf("Width: %d\n", width);
+    int message_size = height * width + 6;
 
-    int message_size = height * width;
-    int non_board_size = 2 + 2 + 1 + 1; // 2 for the header, 2 for the message_num, 1 for the height, 1 for the width
-
-    char *message = malloc(message_size + non_board_size);
+    char *message = malloc(message_size);
     RETURN_NULL_IF_NULL_PERROR(message, "malloc message");
 
-    uint16_t header_serialized = serialize_message_header(header);
-    memcpy(message, &header_serialized, 2);
-    memcpy(message + 2, &message_num, 2);
-    memcpy(message + 4, &height, 1);
-    memcpy(message + 5, &width, 1);
-
-    recvfrom_full(info, message + non_board_size, message_size);
+    recvfrom_full(info, message, message_size);
     printf("Received message\n");
     return message;
 }
@@ -261,9 +249,6 @@ char *recv_game_update(const udp_information *info, message_header *header) {
     res = recvfrom(info->sock, &updated_tiles, sizeof(uint8_t), 0, (struct sockaddr *)&info->addr, &addr_len);
     RETURN_NULL_IF_NEG_PERROR(res, "recv updated_tiles");
     printf("Updated tiles: %d\n", updated_tiles);
-
-    int message_size = updated_tiles * 3;
-    int non_update_size = 2 + 2 + 1; // 2 for the header, 2 for the message_num, 1 for the number of updated tiles
 
     char *message = malloc(1133);
     RETURN_NULL_IF_NULL_PERROR(message, "malloc message");
