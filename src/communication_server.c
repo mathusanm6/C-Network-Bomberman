@@ -61,9 +61,14 @@ int send_game_board(int sock, struct sockaddr_in6 *addr_mult, uint16_t num, boar
     head->num = num;
     head->width = board_->dim.width;
     head->height = board_->dim.height;
-    head->board = (TILE *)board_->grid;
+    head->board = malloc(head->width * head->height * sizeof(TILE));
+
+    for (unsigned i = 0; i < head->width * head->height; i++) {
+        head->board[i] = board_->grid[i];
+    }
 
     char *serialized_head = serialize_game_board(head);
+    free(head->board);
     free(head);
     RETURN_FAILURE_IF_NULL(serialized_head);
 
