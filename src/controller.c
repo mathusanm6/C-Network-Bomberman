@@ -28,6 +28,7 @@
 
 static int current_player = 0;
 
+// TODO: Remove this
 static void switch_player() {
     clear_line(TMP_GAME_ID);
     do {
@@ -51,8 +52,8 @@ void init_controller() {
     nodelay(stdscr, TRUE);    /* Make getch non-blocking */
     game_board = malloc(sizeof(board));
     RETURN_IF_NULL_PERROR(game_board, "malloc board_controller");
-    // Init the board to an empty 10x10 board
-    game_board->dim = (dimension){10, 10};
+    // TODO: wait for first message and init with the correct dimensions
+    game_board->dim = (dimension){49, 23};
     game_board->grid = malloc(game_board->dim.height * game_board->dim.width * sizeof(char));
     RETURN_IF_NULL_PERROR(game_board->grid, "malloc board_controller grid");
     for (int i = 0; i < game_board->dim.height * game_board->dim.width; i++) {
@@ -210,11 +211,8 @@ bool perform_game_action(int c) {
             // TODO: Quit connection
             return true;
         case GAME_SWITCH_PLAYER:
-            switch_player();
             // TODO: Remove this?
-            do {
-                current_player = (current_player + 1) % PLAYER_NUM;
-            } while (is_player_dead(current_player, TMP_GAME_ID));
+            switch_player();
             break;
         case GAME_NONE:
             break;
@@ -241,7 +239,7 @@ bool control() {
 
 int init_game() {
     // TODO: init view
-    // RETURN_FAILURE_IF_ERROR(init_view());
+    RETURN_FAILURE_IF_ERROR(init_view());
 
     // TODO: init the chat
 

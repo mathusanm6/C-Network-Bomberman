@@ -374,9 +374,13 @@ coord int_to_coord(int n, unsigned int game_id) {
     return c;
 }
 
+int coord_to_int_dim(int x, int y, dimension dim) {
+    return y * dim.width + x;
+}
+
 int coord_to_int(int x, int y, unsigned int game_id) {
     board *game_board = games[game_id]->game_board;
-    return y * game_board->dim.width + x;
+    return coord_to_int_dim(x, y, game_board->dim);
 }
 
 TILE get_grid(int x, int y, unsigned int game_id) {

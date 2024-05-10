@@ -1,9 +1,11 @@
 #include "./view.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "./utils.h"
+#include "model.h"
 
 // Define the minimum size of the terminal window
 #define MIN_WINDOW_WIDTH 150
@@ -158,7 +160,6 @@ void get_computed_board_dimension(dimension *dim) {
 void refresh_game(board *b, chat *c, int current_player) {
     // TODO Reimplement chat
     // toggle_focus(c, game_wc, chat_history_wc, chat_input_wc);
-
     print_game(b, game_wc);
     wrefresh(game_wc->win); // Refresh the game window
 
@@ -371,9 +372,8 @@ void print_game(board *b, window_context *game_wc) {
     char hb = tile_to_char(HORIZONTAL_BORDER);
     for (y = 0; y < b->dim.height; y++) {
         for (x = 0; x < b->dim.width; x++) {
-            /* TODO: Implement multiple games. The issue is that this will change as here won't be a real game on the
-             * client side */
-            TILE t = get_grid(x, y, 0);
+            int pos = coord_to_int_dim(x, y, dim);
+            TILE t = b->grid[pos];
             char c = tile_to_char(t);
             activate_color_for_tile(game_wc, t);
             mvwaddch(game_wc->win, y + 1 + pad.top, x + 1 + pad.left, c);
@@ -528,7 +528,6 @@ void print_chat_history(chat *c, window_context *chat_history_wc) {
 }
 
 void print_chat(chat *c, int current_player, window_context *chat_history_wc, window_context *chat_input_wc) {
-
     // Add tag
     int player_tag_len = 0;
     int whispering_tag_len = 0;

@@ -134,6 +134,10 @@ coord int_to_coord(int, unsigned int game_id);
 
 /** Returns the corresponding int of coordinate in flatten list
  */
+int coord_to_int_dim(int, int, dimension);
+
+/** Returns the corresponding int of coordinate in flatten list
+ */
 int coord_to_int(int, int, unsigned int game_id);
 
 /** Returns the tile at the position (x, y) of game_board
