@@ -14,6 +14,8 @@
 
 static const char *IP_SERVER = "::1";
 
+static int message_gameboard_max_size = GAMEBOARD_WIDTH * GAMEBOARD_HEIGHT + 6;
+
 static int sock_tcp = -1;
 static int sock_udp = -1;
 static int sock_diff = -1;
@@ -209,57 +211,6 @@ int send_ready_to_play(GAME_MODE mode) {
     return send_ready_connexion_information(sock_tcp, mode, id, eq);
 }
 
-char *recv_game_board_information(const udp_information *info, message_header *header) {
-    printf("Recieveing information\n");
-    socklen_t addr_len = sizeof(info->addr);
-    // TODO ensure reads all
-    uint8_t message_info[6];
-    int res = recvfrom(info->sock, message_info, sizeof(uint8_t) * 6, 0, (struct sockaddr *)&info->addr, &addr_len);
-    printf("Received %d bytes\n", res);
-    RETURN_NULL_IF_NEG_PERROR(res, "recv message_num");
-    uint16_t message_num;
-    uint8_t width = message_info[5];
-    uint8_t height = message_info[4];
-    printf("Message num: %d\n", ntohs(message_num));
-    printf("width: %d\n", ntohs(width));
-    printf("height: %d\n", ntohs(height));
-
-    int message_size = height * width + 6;
-
-    char *message = malloc(message_size);
-    RETURN_NULL_IF_NULL_PERROR(message, "malloc message");
-
-    recvfrom_full(info, message, message_size);
-    printf("Received message\n");
-    return message;
-}
-
-char *recv_game_update(const udp_information *info, message_header *header) {
-    printf("Recieveing update\n");
-    uint16_t message_num;
-    socklen_t addr_len = sizeof(info->addr);
-    int res = recvfrom(info->sock, &message_num, sizeof(uint16_t), 0, (struct sockaddr *)&info->addr, &addr_len);
-    RETURN_NULL_IF_NEG_PERROR(res, "recv message_num");
-    printf("Message num: %d\n", message_num);
-
-    uint8_t updated_tiles;
-    res = recvfrom(info->sock, &updated_tiles, sizeof(uint8_t), 0, (struct sockaddr *)&info->addr, &addr_len);
-    RETURN_NULL_IF_NEG_PERROR(res, "recv updated_tiles");
-    printf("Updated tiles: %d\n", updated_tiles);
-
-    char *message = malloc(1133);
-    RETURN_NULL_IF_NULL_PERROR(message, "malloc message");
-
-    recvfrom_full(info, message, 1133);
-
-    printf("Received message\n");
-
-    for (int i = 0; i < 1133; i++) {
-        printf("%d ", message[i]);
-    }
-    return message;
-}
-
 received_game_message *recv_game_message() {
     udp_information *info = malloc(sizeof(udp_information));
     RETURN_NULL_IF_NULL_PERROR(info, "malloc udp_information");
@@ -275,41 +226,50 @@ received_game_message *recv_game_message() {
     printf("Address: %s\n", buffer);
     printf("Port: %d\n", port_diff);
 
-    message_header *header = recv_header_multidiff(info);
-    RETURN_NULL_IF_NULL(header);
+    received_game_message *recieved = malloc(sizeof(received_game_message));
+    RETURN_NULL_IF_NULL_PERROR(recieved, "malloc received_game_message");
 
-    printf("Header: %d\n", header->codereq);
+    char *message = malloc(sizeof(char) * message_gameboard_max_size);
+    memset(message, 0, sizeof(char) * message_gameboard_max_size);
+    int res = recvfrom(info->sock, message, message_gameboard_max_size, 0, NULL, 0);
+    if (res < 0) {
+        free(message);
+        free(recieved);
+        return NULL;
+    } else if (res <= 6) {
+        recieved->message = NULL;
+        free(message);
+        return recieved;
+    }
 
-    char *message = NULL;
-    game_message_type type;
+    uint16_t codereq = ntohs(*(uint16_t *)message);
 
-    switch (header->codereq) {
+    switch (codereq) {
         case 11:
-            message = recv_game_board_information(info, header);
-            free(header);
             RETURN_NULL_IF_NULL(message);
+            uint8_t height = message[4];
+            uint8_t width = message[5];
 
-            type = GAME_BOARD_INFORMATION;
+            if (6 + height * width > message_gameboard_max_size) {
+                message_gameboard_max_size = 7 + height * width;
+                recieved->message = NULL;
+                free(message);
+                return recieved;
+            }
+            recieved->type = GAME_BOARD_INFORMATION;
             break;
         case 12:
-            message = recv_game_update(info, header);
-            free(header);
-            RETURN_NULL_IF_NULL(message);
-
-            type = GAME_BOARD_UPDATE;
+            recieved->type = GAME_BOARD_UPDATE;
             break;
         default:
-            free(header);
-            return NULL;
+            recieved->message = NULL;
+            free(message);
+            return recieved;
     }
 
     printf("Message: %s\n", message);
 
-    received_game_message *recieved = malloc(sizeof(received_game_message));
-    RETURN_NULL_IF_NULL_PERROR(recieved, "malloc received_game_message");
-
     recieved->message = message;
-    recieved->type = type;
 
     return recieved;
 }

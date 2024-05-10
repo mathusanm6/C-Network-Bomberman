@@ -18,8 +18,4 @@ typedef struct udp_information {
     struct sockaddr_in6 addr;
 } udp_information;
 
-message_header *recv_header_multidiff(const udp_information *info);
-
-void recvfrom_full(const udp_information *info, char *buffer, int size);
-
 #endif // SRC_COMMUNICATION_CLIENT_H_

@@ -292,7 +292,7 @@ void *game_board_info_thread_function() {
     while (true) {
         printf("Waiting for message\n");
         received_game_message *received_message = recv_game_message();
-        if (received_message == NULL) {
+        if (received_message == NULL && received_message->message == NULL) {
             // TODO: Handle error
             continue;
         }
