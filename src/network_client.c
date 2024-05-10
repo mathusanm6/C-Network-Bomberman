@@ -163,7 +163,11 @@ int init_udp_info(connection_information *head) {
     port_udp = htons(head->portudp);
     init_udp_socket();
     addr_udp = prepare_address(port_udp);
-    RETURN_FAILURE_IF_NULL(addr_udp);
+
+    if (addr_udp == NULL) {
+        // TODO: handle this error
+        exit(1);
+    }
 
     return EXIT_SUCCESS;
 }
@@ -179,7 +183,7 @@ void set_server_informations(connection_information *head) {
     RETURN_IF_ERROR(init_diff_info(head));
 
     // TODO: Handle error
-    RETURN_IF_ERROR(init_diff_info(head));
+    RETURN_IF_ERROR(init_udp_info(head));
 }
 
 int start_initialisation_game(GAME_MODE mode) {
