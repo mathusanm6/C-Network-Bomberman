@@ -327,10 +327,9 @@ void *game_board_info_thread_function() {
                 break;
         }
 
-        // board *b = get_board();
+        board *b = get_board();
         // TODO: Chat
-        // chat *chat_ = get_chat(TMP_GAME_ID);
-        // refresh_game(b, chat_, current_player);
+        refresh_game(b, NULL, current_player);
     }
 
     return NULL;
