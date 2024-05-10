@@ -110,10 +110,6 @@ int init_diff_info(connection_information *head) {
         exit(1);
     }
 
-    printf("Socket: %d\n", sock_diff);
-
-    sock_diff = sock_diff;
-
     /* SO_REUSEADDR permet d'avoir plusieurs instances locales de cette application  */
     /* ecoutant sur le port multicast et recevant chacune les differents paquets       */
     int ok = 1;
@@ -128,16 +124,7 @@ int init_diff_info(connection_information *head) {
     memset(addr_diff, 0, sizeof(struct sockaddr_in6));
     RETURN_FAILURE_IF_NULL(addr_diff);
 
-    printf("------>\n");
-    printf("Port: %d\n", port_diff);
-    printf("Socket: %d\n", sock_diff);
-    char buffer[1024];
-    inet_ntop(AF_INET6, addr_diff, buffer, 1024);
-    printf("Address: %s\n", buffer);
-
     port_diff = htons(head->portmdiff);
-
-    printf("Port: %d\n", port_diff);
 
     addr_diff->sin6_family = AF_INET6;
     addr_diff->sin6_addr = in6addr_any;
@@ -159,7 +146,6 @@ int init_diff_info(connection_information *head) {
     /* s'abonner au groupe multicast */
     struct ipv6_mreq group;
     char *addr_string = convert_adrmdif_into_string(adrmdiff);
-    fprintf(stderr, "Adresse multicast : %s\n", addr_string);
     inet_pton(AF_INET6, addr_string, &group.ipv6mr_multiaddr.s6_addr);
     free(addr_string);
     group.ipv6mr_interface = ifindex;
@@ -218,14 +204,6 @@ received_game_message *recv_game_message() {
     info->sock = sock_diff;
     info->addr = *addr_diff;
 
-    printf("================================\n");
-
-    printf("Socket: %d\n", info->sock);
-    char buffer[1024];
-    inet_ntop(AF_INET6, (struct sockaddr_in6 *)&info->addr, buffer, 1024);
-    printf("Address: %s\n", buffer);
-    printf("Port: %d\n", port_diff);
-
     received_game_message *recieved = malloc(sizeof(received_game_message));
     RETURN_NULL_IF_NULL_PERROR(recieved, "malloc received_game_message");
 
@@ -266,8 +244,6 @@ received_game_message *recv_game_message() {
             free(message);
             return recieved;
     }
-
-    printf("Message: %s\n", message);
 
     recieved->message = message;
 

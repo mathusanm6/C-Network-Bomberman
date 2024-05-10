@@ -269,12 +269,9 @@ board *get_board() {
 }
 
 void update_board(board *b, TILE *grid) {
-    printf("Updating board\n");
     for (int i = 0; i < b->dim.height * b->dim.width; i++) {
         b->grid[i] = grid[i];
-        printf("%d ", grid[i]);
     }
-    printf("\n");
 }
 
 void update_tile_diff(board *b, tile_diff *diff, int size) {
@@ -288,7 +285,6 @@ void update_tile_diff(board *b, tile_diff *diff, int size) {
 void *game_board_info_thread_function() {
     // TODO : game end
     while (true) {
-        printf("Waiting for message\n");
         received_game_message *received_message = recv_game_message();
         if (received_message == NULL && received_message->message == NULL) {
             // TODO: Handle error
@@ -297,22 +293,12 @@ void *game_board_info_thread_function() {
         switch (received_message->type) {
             case GAME_BOARD_INFORMATION:
                 game_board_information *info = deserialize_game_board(received_message->message);
-                printf("Received board\n");
-                printf("Num : %d\n", info->num);
-                printf("Width : %d\n", info->width);
-                printf("Height : %d\n", info->height);
-                for (int i = 0; i < info->width * info->height; i++) {
-                    printf("%d ", info->board[i]);
-                }
-                printf("\n");
                 pthread_mutex_lock(&game_board_mutex);
                 update_board(game_board, info->board);
                 pthread_mutex_unlock(&game_board_mutex);
                 free_game_board_information(info);
                 break;
             case GAME_BOARD_UPDATE:
-                printf("Received board update\n");
-                break;
                 game_board_update *update = deserialize_game_board_update(received_message->message);
                 pthread_mutex_lock(&game_board_mutex);
                 update_tile_diff(game_board, update->diff, update->nb);
