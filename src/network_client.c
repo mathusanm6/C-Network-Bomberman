@@ -218,10 +218,10 @@ received_game_message *recv_game_message() {
         free(message);
         free(recieved);
         return NULL;
-    } else if (res <= 6) {
-        recieved->message = NULL;
+    } else if (res < 5) {
         free(message);
-        return recieved;
+        free(recieved);
+        return NULL;
     }
 
     uint16_t codereq = ntohs(*(uint16_t *)message);
@@ -234,9 +234,8 @@ received_game_message *recv_game_message() {
 
             if (6 + height * width > message_gameboard_max_size) {
                 message_gameboard_max_size = 7 + height * width;
-                recieved->message = NULL;
                 free(message);
-                return recieved;
+                return NULL;
             }
             recieved->type = GAME_BOARD_INFORMATION;
             break;
@@ -244,9 +243,9 @@ received_game_message *recv_game_message() {
             recieved->type = GAME_BOARD_UPDATE;
             break;
         default:
-            recieved->message = NULL;
             free(message);
-            return recieved;
+            free(recieved);
+            return NULL;
     }
 
     recieved->message = message;
