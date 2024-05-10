@@ -88,7 +88,7 @@ int send_game_update(int sock, struct sockaddr_in6 *addr_mult, int num, tile_dif
     char *serialized_head = serialize_game_board_update(head);
     free(head);
     RETURN_FAILURE_IF_NULL(serialized_head);
-    size_t len_serialized_head = 5 + num; 
+    size_t len_serialized_head = 5 + num * 3; 
 
     return send_string_to_clients_multicast(sock, addr_mult, serialized_head, len_serialized_head);
 }
