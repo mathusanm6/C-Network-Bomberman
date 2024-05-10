@@ -224,7 +224,6 @@ char *recv_game_board_information(const udp_information *info, message_header *h
     printf("width: %d\n", ntohs(width));
     printf("height: %d\n", ntohs(height));
 
-
     int message_size = height * width + 6;
 
     char *message = malloc(message_size);
