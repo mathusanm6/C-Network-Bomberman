@@ -55,6 +55,10 @@ int send_string_to_clients_multicast(int sock, struct sockaddr_in6 *addr_mult, c
     if ((a = sendto(sock, message, message_length, 0, (struct sockaddr *)addr_mult, sizeof(struct sockaddr_in6))) < 0) {
         return EXIT_FAILURE;
     }
+
+    for (int i = 0; i < message_length; i++) {
+        printf("%d ", message[i]);
+    }
     printf("Message sent to multicast, %d\n", a);
     return EXIT_SUCCESS;
 }
@@ -85,7 +89,7 @@ int send_game_board(int sock, struct sockaddr_in6 *addr_mult, uint16_t num, boar
     size_t len_serialized_head = 6 + board_->dim.width * board_->dim.height;
 
     printf("Width2 : %d\n", serialized_head[4]);
-    printf("Height2 : %d\n", serialized_head[5]);
+    printf("Height2 : %d\n", serialized_head[6]);
 
     return send_string_to_clients_multicast(sock, addr_mult, serialized_head, len_serialized_head);
 }
@@ -148,7 +152,7 @@ ready_connection_header *recv_ready_connexion_header(int sock) {
 char *recv_string_udp(int sock, size_t size) {
     char *res = malloc(size);
     RETURN_NULL_IF_NULL(res);
-    if (recvfrom(sock, res, size, 0, NULL, NULL) < 0) {
+    if (recvfrom(sock, res, size, 0, NULL, 0) < 0) {
         perror("recvfrom string udp");
         free(res);
         return NULL;

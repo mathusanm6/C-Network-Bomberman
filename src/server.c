@@ -28,7 +28,7 @@ typedef struct udp_thread_data {
 } udp_thread_data;
 
 #define TMP_GAME_ID 0
-#define FREQ 10000 // 100 00 us = 10 ms
+#define FREQ 10000000 // 100 00 us = 10 ms
 #define INITIAL_GAME_ACTIONS_SIZE 4
 
 static tcp_thread_data *tcp_threads_data_players[PLAYER_NUM];
@@ -435,6 +435,7 @@ void *serve_clients_send_mult_freq(void *arg_udp_thread_data) {
     int last_num_freq_message = 0;
     while (!data->finished_flag) {
         usleep(FREQ);
+        printf("-----> Sending freq message %d\n", last_num_freq_message);
 
         // Copy game actions
         pthread_mutex_lock(&data->lock_game_actions);
@@ -524,10 +525,6 @@ int main() {
     RETURN_FAILURE_IF_ERROR(init_game_model(SOLO, TMP_GAME_ID)); // TODO Change it to run more than 1 server
 
     board *game_board = get_game_board(TMP_GAME_ID);
-
-    for (int i = 0; i < game_board->dim.height * game_board->dim.width; i++) {
-        printf("%d ", game_board->grid[i]);
-    }
 
     send_game_board_for_clients(0, game_board); // Initial game_board send
     free(game_board);

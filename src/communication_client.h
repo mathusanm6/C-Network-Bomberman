@@ -2,6 +2,7 @@
 #define SRC_COMMUNICATION_CLIENT_H_
 
 #include <arpa/inet.h>
+#include <netinet/in.h>
 
 #include "./messages.h"
 #include "./model.h"
@@ -14,8 +15,7 @@ connection_information *recv_connexion_information(int sock);
 /* TODO: think about this */
 typedef struct udp_information {
     int sock;
-    struct sockaddr *addr;
-    socklen_t *addr_len;
+    struct sockaddr_in6 addr;
 } udp_information;
 
 message_header *recv_header_multidiff(const udp_information *info);
