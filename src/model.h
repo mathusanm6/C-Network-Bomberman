@@ -188,6 +188,8 @@ tile_diff *update_game_board(unsigned game_id, player_action *actions, size_t nb
  */
 bool is_game_over(unsigned int game_id);
 
+chat *create_chat();
+
 /** Decrements the line cursor
  */
 void decrement_line(unsigned int game_id);

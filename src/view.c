@@ -159,14 +159,14 @@ void get_computed_board_dimension(dimension *dim) {
 
 void refresh_game(board *b, chat *c, int current_player) {
     // TODO Reimplement chat
-    // toggle_focus(c, game_wc, chat_history_wc, chat_input_wc);
+    toggle_focus(c, game_wc, chat_history_wc, chat_input_wc);
     print_game(b, game_wc);
     wrefresh(game_wc->win); // Refresh the game window
 
-    // print_chat(c, current_player, chat_history_wc, chat_input_wc);
-    // wrefresh(chat_input_wc->win);   // Refresh the chat input window (Before chat_win refresh)
-    // wrefresh(chat_history_wc->win); // Refresh the chat history window
-    // wrefresh(chat_wc->win);         // Refresh the chat window
+    print_chat(c, current_player, chat_history_wc, chat_input_wc);
+    wrefresh(chat_input_wc->win);   // Refresh the chat input window (Before chat_win refresh)
+    wrefresh(chat_history_wc->win); // Refresh the chat history window
+    wrefresh(chat_wc->win);         // Refresh the chat window
 
     refresh(); // Apply the changes to the terminal
 }

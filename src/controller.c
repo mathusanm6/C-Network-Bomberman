@@ -4,6 +4,7 @@
 #include "./network_client.h"
 #include "./utils.h"
 #include "./view.h"
+#include "model.h"
 
 #include <ncurses.h>
 #include <pthread.h>
@@ -316,7 +317,7 @@ void *game_board_info_thread_function() {
 
         board *b = get_board();
         // TODO: Chat
-        refresh_game(b, NULL, current_player);
+        refresh_game(b, create_chat(), current_player);
     }
 
     return NULL;

@@ -174,22 +174,36 @@ int init_player_positions(unsigned int game_id) {
     return EXIT_SUCCESS;
 }
 
-int init_chat(unsigned int game_id) {
+chat *create_chat() {
+    chat *chat_ = malloc(sizeof(chat));
+    RETURN_NULL_IF_NULL_PERROR(chat_, "malloc");
+
+    chat_->history = malloc(sizeof(chat_history));
+    if (chat_->history == NULL) {
+        free(chat_);
+        return NULL;
+    }
+    chat_->history->count = 0;
+
+    chat_->line = malloc(sizeof(chat_line));
+    if (chat_->line == NULL) {
+        free(chat_->history);
+        free(chat_);
+        return NULL;
+    }
+    chat_->line->cursor = 0;
+    chat_->on_focus = false;
+    chat_->whispering = false;
+
+    return chat_;
+}
+
+int init_game_chat(unsigned int game_id) {
     RETURN_FAILURE_IF_NULL(games[game_id]);
 
     if (games[game_id]->chat == NULL) {
-        games[game_id]->chat = malloc(sizeof(chat));
-        RETURN_FAILURE_IF_NULL_PERROR(games[game_id]->chat, "malloc");
-
-        games[game_id]->chat->history = malloc(sizeof(chat_history));
-        RETURN_FAILURE_IF_NULL_PERROR(games[game_id]->chat->history, "malloc");
-        games[game_id]->chat->history->count = 0;
-
-        games[game_id]->chat->line = malloc(sizeof(chat_line));
-        RETURN_FAILURE_IF_NULL_PERROR(games[game_id]->chat->line, "malloc");
-        games[game_id]->chat->line->cursor = 0;
-        games[game_id]->chat->on_focus = false;
-        games[game_id]->chat->whispering = false;
+        games[game_id]->chat = create_chat();
+        RETURN_FAILURE_IF_NULL(games[game_id]->chat);
     }
     return EXIT_SUCCESS;
 }
@@ -204,7 +218,7 @@ int init_model(dimension dim, GAME_MODE game_mode_, unsigned int game_id) {
 
     RETURN_FAILURE_IF_ERROR(init_game_board(dim, game_id));
     RETURN_FAILURE_IF_ERROR(init_player_positions(game_id));
-    RETURN_FAILURE_IF_ERROR(init_chat(game_id));
+    RETURN_FAILURE_IF_ERROR(init_game_chat(game_id));
 
     return EXIT_SUCCESS;
 }
