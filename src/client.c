@@ -163,7 +163,7 @@ int main(int argc, char *argv[]) {
         return player_id;
     }
 
-    printf("You are player %d.\n", player_id);
+    printf("You are player %d.\n", player_id + 1);
 
     r = be_ready();
     if (r != EXIT_SUCCESS) {

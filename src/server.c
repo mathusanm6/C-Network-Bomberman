@@ -28,7 +28,7 @@ typedef struct udp_thread_data {
 } udp_thread_data;
 
 #define TMP_GAME_ID 0
-#define FREQ 100000 // 100 00 us = 10 ms
+#define FREQ 50000 // 100 00 us = 10 ms
 #define INITIAL_GAME_ACTIONS_SIZE 4
 
 static tcp_thread_data *tcp_threads_data_players[PLAYER_NUM];
