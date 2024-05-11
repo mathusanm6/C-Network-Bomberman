@@ -228,6 +228,7 @@ int add_game_action_to_thread_data(udp_thread_data *data, game_action *action) {
 
 int empty_game_actions(udp_thread_data *data) {
     for (unsigned i = 0; i < data->nb_game_actions; i++) {
+        free(data->game_actions[i]);
         data->game_actions[i] = NULL;
     }
     data->nb_game_actions = 0;
@@ -263,6 +264,7 @@ void *serve_clients_send_mult_sec(void *arg_udp_thread_data) {
     int last_num_sec_message = 1;
     while (!data->finished_flag) {
         sleep(1);
+        update_bombs(data->game_id);
 
         pthread_mutex_lock(&data->lock_game_board);
         board *game_board = get_game_board(data->game_id);
@@ -381,7 +383,7 @@ player_action *get_player_actions(game_action **game_actions, size_t nb_game_act
             break;
         }
         // Message ignored
-        if (!is_next_message(last_num_received_message[i], game_actions[i]->message_number,
+        if (!is_next_message(last_num_received_message[game_actions[i]->id], game_actions[i]->message_number,
                              LIMIT_LAST_NUM_MESSAGE_CLIENT)) {
             printf("is_not_next_message\n");
             continue;
@@ -445,7 +447,8 @@ game_action **copy_game_actions(game_action **game_actions, size_t nb_game_actio
     RETURN_NULL_IF_NULL(res);
 
     for (unsigned i = 0; i < nb_game_actions; i++) {
-        memcpy(res + i * (sizeof(game_action *)), (game_actions + i * (sizeof(game_action *))), sizeof(game_action *));
+        res[i] = malloc(sizeof(game_action));
+        memcpy(res[i], game_actions[i], sizeof(game_action));
     }
     return res;
 }
