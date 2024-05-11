@@ -187,14 +187,19 @@ void set_server_informations(connection_information *head) {
 }
 
 int start_initialisation_game(GAME_MODE mode) {
-    RETURN_FAILURE_IF_ERROR(send_initial_connexion_information(sock_tcp, mode));
+    if (send_initial_connexion_information(sock_tcp, mode) == EXIT_FAILURE) {
+        return -1;
+    }
     printf("You have to wait for other players.\n");
     connection_information *head = recv_connexion_information(sock_tcp);
-    RETURN_FAILURE_IF_NULL(head);
+    if (head == NULL) {
+        return -1;
+    }
     set_server_informations(head);
+    int id = head->id;
     free(head);
     printf("The server is ready.\n");
-    return EXIT_SUCCESS;
+    return id;
 }
 
 int send_ready_to_play(GAME_MODE mode) {

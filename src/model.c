@@ -713,7 +713,7 @@ tile_diff *update_game_board(unsigned game_id, player_action *actions, size_t nb
     RETURN_NULL_IF_NULL(size_tile_diff);
 
     board *current_board = get_game_board(game_id);
-    if(current_board == NULL){
+    if (current_board == NULL) {
         printf("current_board NULL\n");
     }
     RETURN_NULL_IF_NULL(current_board);

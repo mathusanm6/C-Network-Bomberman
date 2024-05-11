@@ -1,7 +1,6 @@
 #include "./controller.h"
 #include "./communication_client.h"
 #include "./messages.h"
-#include "./model.h"
 #include "./network_client.h"
 #include "./utils.h"
 #include "./view.h"
@@ -170,6 +169,8 @@ bool perform_chat_action(int c) {
             set_chat_focus(false, TMP_GAME_ID);
             break;
         case CHAT_GAME_QUIT:
+            // TODO: this is for testing
+            exit(1);
             return true;
         case CHAT_SWITCH_PLAYER:
             switch_player();
@@ -237,13 +238,15 @@ bool control() {
     return false;
 }
 
-int init_game() {
-    // TODO: init view
+int init_game(int player_nb, GAME_MODE mode) {
     RETURN_FAILURE_IF_ERROR(init_view());
 
     // TODO: init the chat
 
     init_controller();
+
+    player_id = player_nb;
+    game_mode = mode;
 
     return EXIT_SUCCESS;
 }

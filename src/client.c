@@ -158,14 +158,19 @@ int main(int argc, char *argv[]) {
     if (r != EXIT_SUCCESS) {
         return r;
     }
-    RETURN_FAILURE_IF_ERROR(start_initialisation_game(choosen_game_mode));
+    int player_id = (start_initialisation_game(choosen_game_mode));
+    if (player_id < 0) {
+        return player_id;
+    }
+
+    printf("You are player %d.\n", player_id);
 
     r = be_ready();
     if (r != EXIT_SUCCESS) {
         return r;
     }
 
-    RETURN_FAILURE_IF_ERROR(init_game());
+    RETURN_FAILURE_IF_ERROR(init_game(player_id, choosen_game_mode));
 
     return game_loop();
 }

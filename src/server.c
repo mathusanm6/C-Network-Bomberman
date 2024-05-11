@@ -488,12 +488,12 @@ void *serve_clients_send_mult_freq(void *arg_udp_thread_data) {
         unsigned size_tile_diff = 0;
         tile_diff *diffs = update_game_board(data->game_id, player_actions, nb_player_actions, &size_tile_diff);
         printf("nb_diffs : %d\n", size_tile_diff);
-        for(unsigned i = 0; i < size_tile_diff; i++){
+        for (unsigned i = 0; i < size_tile_diff; i++) {
             printf("diff : %d, %d, %d\n", diffs[i].tile, diffs[i].x, diffs[i].y);
         }
         RETURN_NULL_IF_NULL(diffs);
         pthread_mutex_unlock(&data->lock_game_board);
-        if(size_tile_diff == 0){
+        if (size_tile_diff == 0) {
             continue;
         }
         // Send the differences
