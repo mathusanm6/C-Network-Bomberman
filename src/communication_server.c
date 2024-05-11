@@ -56,7 +56,7 @@ int send_string_to_clients_multicast(int sock, struct sockaddr_in6 *addr_mult, c
         return EXIT_FAILURE;
     }
 
-    for (int i = 0; i < message_length; i++) {
+    for (size_t i = 0; i < message_length; i++) {
         printf("%d ", message[i]);
     }
     printf("Message sent to multicast, %d\n", a);
