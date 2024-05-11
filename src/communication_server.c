@@ -88,9 +88,6 @@ int send_game_board(int sock, struct sockaddr_in6 *addr_mult, uint16_t num, boar
 
     size_t len_serialized_head = 6 + board_->dim.width * board_->dim.height;
 
-    printf("Width2 : %d\n", serialized_head[4]);
-    printf("Height2 : %d\n", serialized_head[6]);
-
     return send_string_to_clients_multicast(sock, addr_mult, serialized_head, len_serialized_head);
 }
 
@@ -105,7 +102,7 @@ int send_game_update(int sock, struct sockaddr_in6 *addr_mult, int num, tile_dif
     char *serialized_head = serialize_game_board_update(head);
     free(head);
     RETURN_FAILURE_IF_NULL(serialized_head);
-    size_t len_serialized_head = 5 + num * 3;
+    size_t len_serialized_head = 5 + nb * 3;
 
     return send_string_to_clients_multicast(sock, addr_mult, serialized_head, len_serialized_head);
 }
