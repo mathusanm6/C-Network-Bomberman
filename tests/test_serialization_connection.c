@@ -104,8 +104,8 @@ void test_ready(GAME_MODE game_mode, test_info *info) {
             connection_header_raw *connection = serialize_ready_connection(header);
             ready_connection_header *deserialized = deserialize_ready_connection(connection);
             CINTA_ASSERT(header->game_mode == deserialized->game_mode, info);
-            CINTA_ASSERT(header->eq == deserialized->eq, info);
-            CINTA_ASSERT(header->id == deserialized->id, info);
+            CINTA_ASSERT_INT(header->eq, deserialized->eq, info);
+            CINTA_ASSERT_INT(header->id, deserialized->id, info);
             free(connection);
             free(deserialized);
         }
@@ -183,8 +183,8 @@ void test_ready_connection_ignores_eq(test_info *info) {
     connection_header_raw *connection = serialize_ready_connection(header);
     ready_connection_header *deserialized = deserialize_ready_connection(connection);
     CINTA_ASSERT(header->game_mode == deserialized->game_mode, info);
-    CINTA_ASSERT(header->id == deserialized->id, info);
-    CINTA_ASSERT(deserialized->eq == 1, info);
+    CINTA_ASSERT_INT(header->id, deserialized->id, info);
+    CINTA_ASSERT_INT(deserialized->eq, 1, info);
     free(header);
     free(connection);
     free(deserialized);
@@ -221,12 +221,12 @@ void test_connection_information(GAME_MODE game_mode, test_info *info, int portu
         connection_information_raw *connection = serialize_connection_information(header);
         connection_information *deserialized = deserialize_connection_information(connection);
         CINTA_ASSERT(header->game_mode == deserialized->game_mode, info);
-        CINTA_ASSERT(header->eq == deserialized->eq, info);
-        CINTA_ASSERT(header->id == deserialized->id, info);
-        CINTA_ASSERT(header->portudp == deserialized->portudp, info);
-        CINTA_ASSERT(header->portmdiff == deserialized->portmdiff, info);
+        CINTA_ASSERT_INT(header->eq, deserialized->eq, info);
+        CINTA_ASSERT_INT(header->id, deserialized->id, info);
+        CINTA_ASSERT_INT(header->portudp, deserialized->portudp, info);
+        CINTA_ASSERT_INT(header->portmdiff, deserialized->portmdiff, info);
         for (int i = 0; i < 8; i++) {
-            CINTA_ASSERT(header->adrmdiff[i] == deserialized->adrmdiff[i], info);
+            CINTA_ASSERT_INT(header->adrmdiff[i], deserialized->adrmdiff[i], info);
         }
 
         free(connection);

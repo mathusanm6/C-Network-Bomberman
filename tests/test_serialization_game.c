@@ -87,10 +87,10 @@ void test_game_action(GAME_MODE game_mode, test_info *info, int message_number) 
                 game_action *deserialized = deserialize_game_action(serialized);
 
                 CINTA_ASSERT(action->game_mode == deserialized->game_mode, info);
-                CINTA_ASSERT(action->eq == deserialized->eq, info);
-                CINTA_ASSERT(action->id == deserialized->id, info);
-                CINTA_ASSERT(action->message_number == deserialized->message_number, info);
-                CINTA_ASSERT(action->action == deserialized->action, info);
+                CINTA_ASSERT_INT(action->eq, deserialized->eq, info);
+                CINTA_ASSERT_INT(action->id, deserialized->id, info);
+                CINTA_ASSERT_INT(action->message_number, deserialized->message_number, info);
+                CINTA_ASSERT_INT(action->action, deserialized->action, info);
 
                 free(serialized);
                 free(deserialized);
@@ -117,7 +117,7 @@ void test_invalid_game_action_game_mode(test_info *info) {
     action->action = GAME_UP;
 
     char *serialized = serialize_game_action(action);
-    CINTA_ASSERT(serialized == NULL, info);
+    CINTA_ASSERT_NULL(serialized, info);
 
     free(action);
 }
@@ -131,7 +131,7 @@ void test_invalid_game_action_eq(test_info *info) {
     action->action = GAME_UP;
 
     char *serialized = serialize_game_action(action);
-    CINTA_ASSERT(serialized == NULL, info);
+    CINTA_ASSERT_NULL(serialized, info);
 
     free(action);
 }
@@ -147,9 +147,9 @@ void test_game_action_ignores_eq_on_solo(test_info *info) {
     char *serialized = serialize_game_action(action);
     game_action *deserialized = deserialize_game_action(serialized);
 
-    CINTA_ASSERT(deserialized->eq == 0, info);
-    CINTA_ASSERT(deserialized->game_mode == action->game_mode, info);
-    CINTA_ASSERT(deserialized->id == action->id, info);
+    CINTA_ASSERT_INT(deserialized->eq, 0, info);
+    CINTA_ASSERT_INT(deserialized->game_mode, action->game_mode, info);
+    CINTA_ASSERT_INT(deserialized->id, action->id, info);
 
     free(action);
     free(deserialized);
@@ -165,7 +165,7 @@ void test_invalid_game_action_id(test_info *info) {
     action->action = GAME_UP;
 
     char *serialized = serialize_game_action(action);
-    CINTA_ASSERT(serialized == NULL, info);
+    CINTA_ASSERT_NULL(serialized, info);
 
     free(action);
 }
@@ -179,7 +179,7 @@ void test_invalid_game_action_message_number(test_info *info) {
     action->action = GAME_UP;
 
     char *serialized = serialize_game_action(action);
-    CINTA_ASSERT(serialized == NULL, info);
+    CINTA_ASSERT_NULL(serialized, info);
 
     free(action);
 }
@@ -193,7 +193,7 @@ void test_invalid_game_action_action(test_info *info) {
     action->action = 6;
 
     char *serialized = serialize_game_action(action);
-    CINTA_ASSERT(serialized == NULL, info);
+    CINTA_ASSERT_NULL(serialized, info);
 
     free(action);
 }
@@ -214,12 +214,12 @@ void test_board(int height, int width, test_info *info, int seed, int message_nu
     char *serialized = serialize_game_board(game_info);
     game_board_information *deserialized = deserialize_game_board(serialized);
 
-    CINTA_ASSERT(game_info->num == deserialized->num, info);
-    CINTA_ASSERT(game_info->height == deserialized->height, info);
-    CINTA_ASSERT(game_info->width == deserialized->width, info);
+    CINTA_ASSERT_INT(game_info->num, deserialized->num, info);
+    CINTA_ASSERT_INT(game_info->height, deserialized->height, info);
+    CINTA_ASSERT_INT(game_info->width, deserialized->width, info);
 
     for (int i = 0; i < height * width; i++) {
-        CINTA_ASSERT(game_info->board[i] == deserialized->board[i], info);
+        CINTA_ASSERT_INT(game_info->board[i], deserialized->board[i], info);
     }
 
     free(board);
@@ -248,7 +248,7 @@ void test_invalid_header(test_info *info) {
     }
 
     game_board_information *deserialized = deserialize_game_board(serialized);
-    CINTA_ASSERT(deserialized == NULL, info);
+    CINTA_ASSERT_NULL(deserialized, info);
 
     free(serialized);
 }
@@ -262,7 +262,7 @@ void test_invalid_board(test_info *info) {
     game_info->board[0] = 9;
 
     char *serialized = serialize_game_board(game_info);
-    CINTA_ASSERT(serialized == NULL, info);
+    CINTA_ASSERT_NULL(serialized, info);
 
     free(game_info->board);
     free(game_info);
@@ -285,13 +285,13 @@ void test_update(int nb, test_info *info, int seed, int message_number) {
     char *serialized = serialize_game_board_update(update);
     game_board_update *deserialized = deserialize_game_board_update(serialized);
 
-    CINTA_ASSERT(update->num == deserialized->num, info);
-    CINTA_ASSERT(update->nb == deserialized->nb, info);
+    CINTA_ASSERT_INT(update->num, deserialized->num, info);
+    CINTA_ASSERT_INT(update->nb, deserialized->nb, info);
 
     for (int i = 0; i < nb; i++) {
-        CINTA_ASSERT(update->diff[i].x == deserialized->diff[i].x, info);
-        CINTA_ASSERT(update->diff[i].y == deserialized->diff[i].y, info);
-        CINTA_ASSERT(update->diff[i].tile == deserialized->diff[i].tile, info);
+        CINTA_ASSERT_INT(update->diff[i].x, deserialized->diff[i].x, info);
+        CINTA_ASSERT_INT(update->diff[i].y, deserialized->diff[i].y, info);
+        CINTA_ASSERT_INT(update->diff[i].tile, deserialized->diff[i].tile, info);
     }
 
     free(serialized);
@@ -321,7 +321,7 @@ void test_game_board_update_invalid_header(test_info *info) {
     }
 
     game_board_update *deserialized = deserialize_game_board_update(serialized);
-    CINTA_ASSERT(deserialized == NULL, info);
+    CINTA_ASSERT_NULL(deserialized, info);
 
     free(serialized);
 }
@@ -337,7 +337,7 @@ void test_game_board_update_invalid_diff(test_info *info) {
     update->diff[0].tile = 9;
 
     char *serialized = serialize_game_board_update(update);
-    CINTA_ASSERT(serialized == NULL, info);
+    CINTA_ASSERT_NULL(serialized, info);
 
     free(update->diff);
     free(update);
@@ -357,8 +357,8 @@ void test_game_end(GAME_MODE game_mode, test_info *info) {
             game_end *deserialized = deserialize_game_end(serialized);
 
             CINTA_ASSERT(end->game_mode == deserialized->game_mode, info);
-            CINTA_ASSERT(end->id == deserialized->id, info);
-            CINTA_ASSERT(end->eq == deserialized->eq, info);
+            CINTA_ASSERT_INT(end->id, deserialized->id, info);
+            CINTA_ASSERT_INT(end->eq, deserialized->eq, info);
 
             free(serialized);
             free(deserialized);
@@ -383,7 +383,7 @@ void test_invalid_game_end_game_mode(test_info *info) {
     end->eq = 0;
 
     char *serialized = serialize_game_end(end);
-    CINTA_ASSERT(serialized == NULL, info);
+    CINTA_ASSERT_NULL(serialized, info);
 
     free(end);
 }
@@ -395,7 +395,7 @@ void test_invalid_game_end_id(test_info *info) {
     end->eq = 0;
 
     char *serialized = serialize_game_end(end);
-    CINTA_ASSERT(serialized == NULL, info);
+    CINTA_ASSERT_NULL(serialized, info);
 
     free(end);
 }
@@ -424,7 +424,7 @@ void test_invalid_game_end_eq(test_info *info) {
     end->eq = 2;
 
     char *serialized = serialize_game_end(end);
-    CINTA_ASSERT(serialized == NULL, info);
+    CINTA_ASSERT_NULL(serialized, info);
 
     free(end);
 }

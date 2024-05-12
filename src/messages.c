@@ -7,11 +7,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define BIT_OFFSET_13 ((1 << 12) - 1)
 #define BYTE_SIZE 8
 
 static uint16_t connection_header_value(int codereq, int id, int team_number) {
-    return htons((team_number << 14) + (id << 12) + codereq);
+    return htons(((team_number & 0x1)) | ((id & 0x3) << 1) | (codereq << 3));
 }
 
 connection_header_raw *create_connection_header_raw(int codereq, int id, int team_number) {
@@ -44,7 +43,7 @@ initial_connection_header *deserialize_initial_connection(const connection_heade
 
     uint16_t req = ntohs(header->req);
 
-    switch (req & BIT_OFFSET_13) {
+    switch (req >> 3) {
         case 1:
             initial_connection->game_mode = SOLO;
             break;
@@ -88,7 +87,7 @@ ready_connection_header *deserialize_ready_connection(const connection_header_ra
 
     uint16_t req = ntohs(header->req);
 
-    switch (req & BIT_OFFSET_13) {
+    switch (req >> 3) {
         case 3:
             ready_connection->game_mode = SOLO;
             break;
@@ -100,8 +99,8 @@ ready_connection_header *deserialize_ready_connection(const connection_header_ra
             return NULL;
     }
 
-    ready_connection->id = (req >> 12) & 0x3; // We only need 2 bits
-    ready_connection->eq = (req >> 14) & 0x1; // We only need 1 bit
+    ready_connection->id = (req >> 1) & 0x3; // We only need 2 bits
+    ready_connection->eq = req & 0x1;        // We only need 1 bit
     return ready_connection;
 }
 
@@ -145,7 +144,7 @@ connection_information *deserialize_connection_information(const connection_info
 
     uint16_t header = ntohs(info->header);
 
-    switch (header & BIT_OFFSET_13) {
+    switch (header >> 3) {
         case 9:
             connection_info->game_mode = SOLO;
             break;
@@ -157,8 +156,8 @@ connection_information *deserialize_connection_information(const connection_info
             return NULL;
     }
 
-    connection_info->id = (header >> 12) & 0x3; // We only need 2 bits
-    connection_info->eq = (header >> 14) & 0x1; // We only need 1 bit
+    connection_info->id = (header >> 1) & 0x3; // We only need 2 bits
+    connection_info->eq = header & 0x1;        // We only need 1 bit
 
     connection_info->portudp = ntohs(info->portudp);
     connection_info->portmdiff = ntohs(info->portmdiff);
@@ -170,7 +169,7 @@ connection_information *deserialize_connection_information(const connection_info
 }
 
 uint16_t game_action_value(int message_num, GAME_ACTION action) {
-    return htons(message_num + (action << 12));
+    return htons((message_num << 3) | (action & 0x7));
 }
 
 char *serialize_game_action(const game_action *game_action) {
@@ -234,7 +233,7 @@ game_action *deserialize_game_action(const char *game_action_raw) {
     header = ntohs(header);
     action = ntohs(action);
 
-    switch (header & BIT_OFFSET_13) {
+    switch (header >> 3) {
         case 5:
             game_action_->game_mode = SOLO;
             break;
@@ -246,11 +245,11 @@ game_action *deserialize_game_action(const char *game_action_raw) {
             return NULL;
     }
 
-    game_action_->id = (header >> 12) & 0x3; // We only need 2 bits
-    game_action_->eq = (header >> 14) & 0x1; // We only need 1 bit
+    game_action_->id = (header >> 1) & 0x3; // We only need 2 bits
+    game_action_->eq = header & 0x1;        // We only need 1 bit
 
-    game_action_->message_number = action & BIT_OFFSET_13;
-    game_action_->action = (action >> 12) & 0x7; // We only need 3 bits
+    game_action_->message_number = action >> 3;
+    game_action_->action = action & 0x7; // We only need 3 bits
 
     return game_action_;
 }
@@ -292,17 +291,17 @@ game_board_information *deserialize_game_board(const char *info) {
 
     uint16_t header = ntohs(*(uint16_t *)info);
 
-    if ((header & BIT_OFFSET_13) != 11) {
+    if ((header >> 3) != 11) {
         free(game_board_info);
         return NULL;
     }
 
-    if ((header >> 12) != 0) {
+    if (((header >> 1) & 0x3) != 0) {
         free(game_board_info);
         return NULL;
     }
 
-    if ((header >> 14) != 0) {
+    if ((header & 0x1) != 0) {
         free(game_board_info);
         return NULL;
     }
@@ -364,17 +363,17 @@ game_board_update *deserialize_game_board_update(const char *update) {
 
     uint16_t header = ntohs(*(uint16_t *)update);
 
-    if ((header & BIT_OFFSET_13) != 12) {
+    if ((header >> 3) != 12) {
         free(game_board_update_);
         return NULL;
     }
 
-    if ((header >> 12) != 0) {
+    if (((header >> 1) & 0x1) != 0) {
         free(game_board_update_);
         return NULL;
     }
 
-    if ((header >> 14) != 0) {
+    if ((header & 0x1) != 0) {
         free(game_board_update_);
         return NULL;
     }
@@ -454,17 +453,17 @@ chat_message *deserialize_chat_message(const char *message, int initial_codereq)
 
     uint16_t header = ntohs(*(uint16_t *)message);
 
-    if ((header & BIT_OFFSET_13) == initial_codereq) {
+    if ((header >> 3) == initial_codereq) {
         chat_message_->type = GLOBAL_M;
-    } else if ((header & BIT_OFFSET_13) == initial_codereq + 1) {
+    } else if ((header >> 3) == initial_codereq + 1) {
         chat_message_->type = TEAM_M;
     } else {
         free(chat_message_);
         return NULL;
     }
 
-    chat_message_->id = (header >> 12) & 0x3; // We only need 2 bits
-    chat_message_->eq = (header >> 14) & 0x1; // We only need 1 bit
+    chat_message_->id = (header >> 1) & 0x3; // We only need 2 bits
+    chat_message_->eq = header & 0x1;        // We only need 1 bit
 
     chat_message_->message_length = message[2];
 
@@ -531,7 +530,7 @@ game_end *deserialize_game_end(const char *end) {
 
     uint16_t header = ntohs(*(uint16_t *)end);
 
-    switch (header & BIT_OFFSET_13) {
+    switch (header >> 3) {
         case 15:
             game_end_->game_mode = SOLO;
             break;
@@ -543,8 +542,8 @@ game_end *deserialize_game_end(const char *end) {
             return NULL;
     }
 
-    game_end_->id = (header >> 12) & 0x3; // We only need 2 bits
-    game_end_->eq = (header >> 14) & 0x1; // We only need 1 bit
+    game_end_->id = (header >> 1) & 0x3; // We only need 2 bits
+    game_end_->eq = header & 0x1;        // We only need 1 bit
 
     return game_end_;
 }
