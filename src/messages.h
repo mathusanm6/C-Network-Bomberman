@@ -12,6 +12,8 @@ typedef struct initial_connection_header {
     GAME_MODE game_mode;
 } initial_connection_header;
 
+connection_header_raw *create_connection_header_raw(int codereq, int id, int team_number);
+
 connection_header_raw *serialize_initial_connection(const initial_connection_header *header);
 initial_connection_header *deserialize_initial_connection(const connection_header_raw *header);
 
