@@ -46,6 +46,8 @@ static int player_id = 0;
 
 static int message_number = 0;
 
+static pthread_mutex_t view_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 void init_controller() {
     intrflush(stdscr, FALSE); /* No need to flush when intr key is pressed */
     keypad(stdscr, TRUE);     /* Required in order to get events from keyboard */
@@ -132,13 +134,22 @@ CHAT_ACTION key_press_to_chat_action(int c) {
     return a;
 }
 
+int mutex_getch() {
+    int c;
+    pthread_mutex_lock(&view_mutex);
+    c = getch();
+    pthread_mutex_unlock(&view_mutex);
+    return c;
+}
+
 int get_pressed_key() {
     int c;
     int prev_c = ERR;
-    // We consume all similar consecutive key presses
-    while ((c = getch()) != ERR) { // getch returns the first key press in the queue
+    while ((c = mutex_getch()) != ERR) { // getch returns the first key press in the queue
         if (prev_c != ERR && prev_c != c) {
+            pthread_mutex_lock(&view_mutex);
             ungetch(c); // put 'c' back in the queue
+            pthread_mutex_unlock(&view_mutex);
             break;
         }
         prev_c = c;
@@ -317,7 +328,9 @@ void *game_board_info_thread_function() {
 
         board *b = get_board();
         // TODO: Chat
+        pthread_mutex_lock(&view_mutex);
         refresh_game(b, create_chat(), current_player);
+        pthread_mutex_unlock(&view_mutex);
     }
 
     return NULL;
