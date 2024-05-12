@@ -564,9 +564,9 @@ message_header *deserialize_message_header(uint16_t header) {
 
     uint16_t header_ntoh = ntohs(header);
 
-    message_header_->codereq = header_ntoh & BIT_OFFSET_13;
-    message_header_->id = (header_ntoh >> 12) & 0x3; // We only need 2 bits
-    message_header_->eq = (header_ntoh >> 14) & 0x1; // We only need 1 bit
+    message_header_->codereq = header_ntoh >> 3;
+    message_header_->id = (header_ntoh >> 1) & 0x3; // We only need 2 bits
+    message_header_->eq = header_ntoh & 0x1;        // We only need 1 bit
 
     return message_header_;
 }
