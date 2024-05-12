@@ -48,18 +48,11 @@ int send_connexion_information(int sock, GAME_MODE mode, int id, int eq, int por
     return res;
 }
 int send_string_to_clients_multicast(int sock, struct sockaddr_in6 *addr_mult, char *message, size_t message_length) {
-    printf("Sending message to multicast\n");
-    printf("Message : %s\n", message);
-    printf("Message length : %ld\n", message_length);
     int a;
     if ((a = sendto(sock, message, message_length, 0, (struct sockaddr *)addr_mult, sizeof(struct sockaddr_in6))) < 0) {
         return EXIT_FAILURE;
     }
 
-    for (size_t i = 0; i < message_length; i++) {
-        printf("%d ", message[i]);
-    }
-    printf("Message sent to multicast, %d\n", a);
     return EXIT_SUCCESS;
 }
 
@@ -71,11 +64,6 @@ int send_game_board(int sock, struct sockaddr_in6 *addr_mult, uint16_t num, boar
     head->width = board_->dim.width;
     head->height = board_->dim.height;
     head->board = malloc(head->width * head->height * sizeof(TILE));
-
-    printf("Sending board\n");
-    printf("Num : %d\n", head->num);
-    printf("Width : %d\n", head->width);
-    printf("Height : %d\n", head->height);
 
     for (unsigned i = 0; i < head->width * head->height; i++) {
         head->board[i] = board_->grid[i];
@@ -108,15 +96,11 @@ int send_game_update(int sock, struct sockaddr_in6 *addr_mult, int num, tile_dif
 }
 
 connection_header_raw *recv_connexion_header_raw(int sock) {
-    printf("testdebraw %d\n", sock);
     connection_header_raw *head = malloc(sizeof(connection_header_raw));
-    printf("testaftermalloc %d\n", sock);
     RETURN_NULL_IF_NULL_PERROR(head, "malloc connection_header_raw");
     unsigned received = 0;
     while (received < sizeof(connection_header_raw)) {
         int res = recv(sock, head + received, sizeof(connection_header_raw) - received, 0);
-        printf("testafterrecv %d\n", sock);
-
         if (res < 0) {
             perror("recv connection_header_raw");
             free(head);
@@ -124,7 +108,6 @@ connection_header_raw *recv_connexion_header_raw(int sock) {
         }
         received += res;
     }
-    printf("testfinraw\n");
     return head;
 }
 
@@ -137,9 +120,7 @@ initial_connection_header *recv_initial_connection_header(int sock) {
 }
 
 ready_connection_header *recv_ready_connexion_header(int sock) {
-    printf("testdebready %d\n", sock);
     connection_header_raw *head = recv_connexion_header_raw(sock);
-    printf("testfinready %d\n", sock);
     RETURN_NULL_IF_NULL(head);
     ready_connection_header *deserialized_head = deserialize_ready_connection(head);
     free(head);

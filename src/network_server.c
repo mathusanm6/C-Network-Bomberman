@@ -116,7 +116,6 @@ int try_to_init_socket_of_client(int id) {
     }
     sock_clients[id] = res;
 
-    printf("Player %d is connected with the IP : ", id + 1);
     print_ip_of_client(client_addr);
     return EXIT_SUCCESS;
 }
@@ -212,9 +211,6 @@ int init_addr_mult() {
         return EXIT_FAILURE;
     }
 
-    printf("ifindex : %d\n", ifindex);
-    printf("Port : %d\n", (addr_mult->sin6_port));
-    printf("Addr : %s\n", convert_adrmdif_into_string(adrmdiff));
     addr_mult->sin6_scope_id = ifindex;
     return EXIT_SUCCESS;
 }
@@ -241,15 +237,10 @@ game_action *recv_game_action_of_clients() {
 
 int send_connexion_information_of_client(int id, int eq) {
     // TODO Replace the gamemode
-    printf("Sending connexion information to client %d\n", id);
-    printf("Port UDP : %d\n", (port_udp));
-    printf("Port Multicast : %d\n", (port_mult));
-    printf("Adrmdiff : %s\n", convert_adrmdif_into_string(adrmdiff));
     return send_connexion_information(sock_clients[id], SOLO, id, eq, ntohs(port_udp), ntohs(port_mult), adrmdiff);
 }
 
 int send_game_board_for_clients(uint16_t num, board *board_) {
-    printf("Sending game board to clients\n");
     return send_game_board(sock_mult, addr_mult, num, board_);
 }
 

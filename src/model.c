@@ -723,21 +723,15 @@ tile_diff *get_diff_with_board(unsigned game_id, board *different_board, unsigne
 
 tile_diff *update_game_board(unsigned game_id, player_action *actions, size_t nb_game_actions,
                              unsigned *size_tile_diff) {
-    printf("Update game_board, nb_game_actions = %d\n", (int)nb_game_actions);
     RETURN_NULL_IF_NULL(size_tile_diff);
 
     board *current_board = get_game_board(game_id);
-    if (current_board == NULL) {
-        printf("current_board NULL\n");
-    }
     RETURN_NULL_IF_NULL(current_board);
 
     for (unsigned i = 0; i < nb_game_actions; i++) {
         if (actions[i].action == GAME_PLACE_BOMB) {
-            printf("GAME_PLACE_BOMB\n");
             place_bomb(actions[i].id, game_id);
         } else {
-            printf("perform_move %d %d\n", actions[i].id, actions[i].action);
             perform_move(actions[i].action, actions[i].id, game_id);
         }
     }
