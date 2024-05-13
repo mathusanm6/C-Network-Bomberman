@@ -1,6 +1,6 @@
 #include "network_server.h"
-#include "model.h"
 #include "messages.h"
+#include "model.h"
 #include "utils.h"
 
 #include <arpa/inet.h>
@@ -17,6 +17,8 @@
 
 #define MAX_PORT_TRY 250
 #define START_ADRMDIFF 0xff12
+
+#define ERROR_ADDRINUSE 2
 
 #define LIMIT_LAST_NUM_MESSAGE_MULT ((1 << 15) - 1)   // 2^16
 #define LIMIT_LAST_NUM_MESSAGE_CLIENT ((1 << 12) - 1) // 2^13
@@ -169,6 +171,18 @@ uint16_t get_port_tcp() {
     return ntohs(port_tcp);
 }
 
+int try_to_bind_port_on_socket(int sock, struct sockaddr_in6 adrsock, uint16_t port) {
+    adrsock.sin6_port = port;
+
+    if (bind(sock, (struct sockaddr *)&adrsock, sizeof(adrsock)) < 0) {
+        if (errno != EADDRINUSE) {
+            return EXIT_FAILURE;
+        }
+        return ERROR_ADDRINUSE;
+    }
+    return EXIT_SUCCESS;
+}
+
 int try_to_bind_random_port_on_socket(int sock) {
     struct sockaddr_in6 adrsock;
     memset(&adrsock, 0, sizeof(adrsock));
@@ -177,15 +191,15 @@ int try_to_bind_random_port_on_socket(int sock) {
 
     for (unsigned i = 0; i < MAX_PORT_TRY; i++) {
         uint16_t random_port = get_random_port();
-        adrsock.sin6_port = random_port;
 
-        if (bind(sock, (struct sockaddr *)&adrsock, sizeof(adrsock)) < 0) {
-            if (errno != EADDRINUSE) {
-                break;
-            }
-        } else {
+        int r = try_to_bind_port_on_socket(sock, adrsock, random_port);
+        if (r == ERROR_ADDRINUSE) {
+            continue;
+        }
+        if (r == EXIT_SUCCESS) {
             return random_port;
         }
+        break;
     }
     return EXIT_FAILURE;
 }
@@ -194,6 +208,19 @@ int try_to_bind_random_port_on_socket_tcp() {
     int res = try_to_bind_random_port_on_socket(sock_tcp);
     RETURN_FAILURE_IF_ERROR(res);
     port_tcp = res;
+    return EXIT_SUCCESS;
+}
+
+int try_to_bind_port_on_socket_tcp(uint16_t connexion_port) {
+    struct sockaddr_in6 adrsock;
+    memset(&adrsock, 0, sizeof(adrsock));
+    adrsock.sin6_family = AF_INET6;
+    adrsock.sin6_addr = in6addr_any;
+
+    if (try_to_bind_port_on_socket(sock_tcp, adrsock, connexion_port) != EXIT_SUCCESS) {
+        return EXIT_FAILURE;
+    }
+    port_tcp = connexion_port;
     return EXIT_SUCCESS;
 }
 
@@ -256,12 +283,17 @@ int init_addr_mult() {
     return EXIT_SUCCESS;
 }
 
-int init_server_network() {
+int init_server_network(uint16_t connexion_port) {
     RETURN_FAILURE_IF_ERROR(init_socket_tcp());
     RETURN_FAILURE_IF_ERROR(init_socket_udp());
     RETURN_FAILURE_IF_ERROR(init_socket_mult());
 
-    if (try_to_bind_random_port_on_socket_tcp() != EXIT_SUCCESS) {
+    if (connexion_port >= MIN_PORT && connexion_port <= MAX_PORT) {
+        if (try_to_bind_port_on_socket_tcp(connexion_port) != EXIT_SUCCESS) {
+            fprintf(stderr, "The connexion port not works, try another one.\n");
+            goto exit_closing_sockets;
+        }
+    } else if (try_to_bind_random_port_on_socket_tcp() != EXIT_SUCCESS) {
         goto exit_closing_sockets;
     }
     if (try_to_bind_random_port_on_socket_udp() != EXIT_SUCCESS) {
@@ -778,7 +810,7 @@ EXIT_FREEING_DATA:
     return EXIT_FAILURE;
 }
 
-int game_loop_server(){
+int game_loop_server() {
     int return_value;
     if (connect_player_to_game() != EXIT_SUCCESS) {
         return_value = EXIT_FAILURE;
@@ -788,12 +820,9 @@ int game_loop_server(){
     unlock_mutex_for_everyone(&lock_waiting_all_players_join, &cond_lock_waiting_all_players_join);
     wait_all_clients_not_ready();
     RETURN_FAILURE_IF_ERROR(init_game_model(SOLO, TMP_GAME_ID)); // TODO Change it to run more than 1 server
-    printf("test\n");
-    board *game_board = get_game_board(TMP_GAME_ID);
 
-    printf("test2\n");
+    board *game_board = get_game_board(TMP_GAME_ID);
     send_game_board_for_clients(0, game_board); // Initial game_board send
-    printf("test3\n");
     free(game_board);
     if (init_game_threads(TMP_GAME_ID) != EXIT_SUCCESS) {
         return_value = EXIT_FAILURE;
