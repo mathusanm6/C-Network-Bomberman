@@ -219,6 +219,7 @@ received_game_message *recv_game_message() {
     char *message = malloc(sizeof(char) * message_gameboard_max_size);
     memset(message, 0, sizeof(char) * message_gameboard_max_size);
     int res = recvfrom(info->sock, message, message_gameboard_max_size, 0, NULL, 0);
+
     if (res < 0) {
         free(message);
         free(recieved);
@@ -229,7 +230,7 @@ received_game_message *recv_game_message() {
         return NULL;
     }
 
-    uint16_t codereq = ntohs(*(uint16_t *)message);
+    uint16_t codereq = ntohs(*(uint16_t *)message) >> 3;
 
     switch (codereq) {
         case 11:
@@ -268,17 +269,11 @@ int send_game_action(game_action *action) {
 
     char *serialized = serialize_game_action(action);
 
-    int sent = 0;
-
-    while (sent < 4) { // 4 Bytes
-        int res = sendto(info->sock, serialized + sent, 4 - sent, 0, (struct sockaddr *)&info->addr,
-                         sizeof(struct sockaddr_in6));
-        if (res < 0) {
-            perror("sendto action");
-            free(serialized);
-            return EXIT_FAILURE;
-        }
-        sent += res;
+    int res = sendto(info->sock, serialized, 4, 0, (struct sockaddr *)&info->addr, sizeof(struct sockaddr_in6));
+    if (res < 0) {
+        perror("sendto action");
+        free(serialized);
+        return EXIT_FAILURE;
     }
 
     return EXIT_SUCCESS;
