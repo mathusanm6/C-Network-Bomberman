@@ -43,6 +43,9 @@ To run the server, run the following command:
 ./server
 ```
 
+The server program has a flag :
+- `-p PORT` to create a server with the connexion port `PORT`.
+
 To run the client, run the following command:
 ```bash
 ./client
