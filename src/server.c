@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <sys/poll.h>
+#include <unistd.h>
 
 #include "network_server.h"
 #include "utils.h"
@@ -26,6 +28,7 @@ void parse_client_flags(int argc, char *argv[]) {
             server_flags->connexion_port = argv[i];
         }
     }
+    free(data_thread);
 }
 
 int main(int argc, char *argv[]) {

@@ -4,6 +4,8 @@
 #include "utils.h"
 
 #include <arpa/inet.h>
+#include <poll.h>
+#include <signal.h>
 #include <errno.h>
 #include <net/if.h>
 #include <netinet/in.h>
@@ -23,10 +25,21 @@
 #define LIMIT_LAST_NUM_MESSAGE_MULT ((1 << 15) - 1)   // 2^16
 #define LIMIT_LAST_NUM_MESSAGE_CLIENT ((1 << 12) - 1) // 2^13
 
+#define TMP_GAME_ID 0
+#define FREQ 50000 // 100 00 us = 10 ms
+#define INITIAL_GAME_ACTIONS_SIZE 4
+#define INITIAL_POLL_FD_SIZE 9
+
 typedef struct tcp_thread_data {
     unsigned id;
-    pthread_t thread_id;
-    bool finished_flag;
+    unsigned *ready_player_number;
+    pthread_mutex_t lock_waiting_all_players_join;
+    pthread_mutex_t lock_all_players_ready;
+    pthread_mutex_t lock_waiting_the_game_finish;
+    pthread_cond_t cond_lock_waiting_all_players_join;
+    pthread_cond_t cond_lock_all_players_ready;
+    pthread_cond_t cond_lock_waiting_the_game_finish;
+    bool *finished_flag;
 } tcp_thread_data;
 
 typedef struct udp_thread_data {
@@ -39,10 +52,6 @@ typedef struct udp_thread_data {
     pthread_mutex_t lock_send_udp;
     pthread_mutex_t lock_game_board;
 } udp_thread_data;
-
-#define TMP_GAME_ID 0
-#define FREQ 50000 // 100 00 us = 10 ms
-#define INITIAL_GAME_ACTIONS_SIZE 4
 
 /** Parameter for a server managing a single game, will change in the future to manage multiple game
  */
@@ -60,17 +69,6 @@ static struct sockaddr_in6 *addr_mult = NULL;
 
 static tcp_thread_data *tcp_threads_data_players[PLAYER_NUM];
 static pthread_t game_threads[3];
-
-pthread_mutex_t lock_waiting_all_players_join = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t lock_all_players_ready = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t lock_waiting_the_game_finish = PTHREAD_MUTEX_INITIALIZER;
-
-pthread_cond_t cond_lock_waiting_all_players_join = PTHREAD_COND_INITIALIZER;
-pthread_cond_t cond_lock_all_players_ready = PTHREAD_COND_INITIALIZER;
-pthread_cond_t cond_lock_waiting_the_game_finish = PTHREAD_COND_INITIALIZER;
-
-static unsigned connected_player_number = 0;
-static unsigned ready_player_number = 0;
 
 void close_socket(int sock) {
     if (sock != -1) {
@@ -326,13 +324,32 @@ int listen_players() {
     return EXIT_SUCCESS;
 }
 
-void free_tcp_threads_data() {
-    for (unsigned i = 0; i < connected_player_number; i++) {
-        if (tcp_threads_data_players[i] != NULL) {
-            free(tcp_threads_data_players[i]);
-            tcp_threads_data_players[i] = NULL;
+void free_tcp_threads_data(tcp_thread_data **data_thread, unsigned nb_data) {
+    for (unsigned i = 0; i < nb_data; i++) {
+        if (data_thread[i] == NULL) {
+            free(data_thread[i]);
+            data_thread[i] = NULL;
         }
     }
+    free(data_thread);
+}
+
+tcp_thread_data **init_tcp_threads_data() {
+    tcp_thread_data **data = malloc(sizeof(tcp_thread_data *) * PLAYER_NUM);
+    for (unsigned i = 0; i < PLAYER_NUM; i++) {
+        data[i] = malloc(sizeof(tcp_thread_data));
+
+        if (data[i] == NULL) {
+            perror("malloc tcp_thread_data");
+            for (unsigned j = 0; j < i; j++) {
+                free(data[j]);
+            }
+            free(data);
+            return NULL;
+        }
+        memset(&data[i], 0, sizeof(tcp_thread_data));
+    }
+    return data;
 }
 
 void *serve_client_tcp(void *);
@@ -365,13 +382,69 @@ void unlock_mutex_for_everyone(pthread_mutex_t *mutex, pthread_cond_t *cond) {
     pthread_mutex_unlock(mutex);
 }
 
-void wait_all_clients_not_ready() {
-    if (ready_player_number < PLAYER_NUM) {
-        pthread_cond_wait(&cond_lock_all_players_ready, &lock_all_players_ready);
+void wait_all_clients_not_ready(pthread_mutex_t *lock, pthread_cond_t *cond, bool is_ready) {
+    if (is_ready) {
+        pthread_cond_wait(cond, lock);
     } else {
-        pthread_cond_broadcast(&cond_lock_all_players_ready);
+        pthread_cond_broadcast(cond);
     }
-    pthread_mutex_unlock(&lock_all_players_ready);
+    pthread_mutex_unlock(lock);
+}
+
+void free_polls_connexion(struct pollfd **polls, size_t s) {
+    if (polls == NULL) {
+        return;
+    }
+    for (unsigned i = 0; i < s; i++) {
+        if (polls[i] != NULL) {
+            free(polls[i]);
+        }
+    }
+    free(polls);
+}
+
+struct pollfd **init_polls_connexion(int sock) {
+    struct pollfd **polls = malloc(INITIAL_POLL_FD_SIZE * sizeof(struct pollfd *));
+    RETURN_NULL_IF_NULL_PERROR(polls, "malloc polls");
+    for (unsigned i = 1; i < INITIAL_POLL_FD_SIZE; i++) {
+        polls[i] = NULL;
+    }
+    polls[0] = malloc(sizeof(struct pollfd));
+    if (polls[0] == NULL) {
+        free(polls);
+        return NULL;
+    }
+    polls[0]->events = POLL_IN;
+    return polls;
+}
+
+struct pollfd **add_polls_to_poll(struct pollfd **polls, unsigned *s, int sock) {
+    for (unsigned i = 1; i < *s; i++) {
+        if (polls[i] == NULL) {
+            polls[i] = malloc(sizeof(struct pollfd));
+            RETURN_NULL_IF_NULL_PERROR(polls[i], "add poll");
+            polls[i]->fd = sock;
+            polls[i]->events = POLL_IN;
+            return polls;
+        }
+    }
+    struct pollfd **n = (struct pollfd **)realloc(polls, 4 * (*s) * sizeof(struct pollfd *));
+    n[*s] = malloc(sizeof(struct pollfd));
+    if (n[*s] == NULL) {
+        free_polls_connexion(polls, *s);
+        return NULL;
+    }
+    *s *= 4;
+    return n;
+}
+
+void remove_polls_to_poll(struct pollfd **polls, unsigned s, unsigned i) {
+    if (s <= i || polls[i] == NULL) {
+        return;
+    }
+    for (unsigned j = i + 1; j < s; j++) {
+        polls[j - 1] = polls[j];
+    }
 }
 
 initial_connection_header *recv_initial_connection_header_of_client(int id) {
