@@ -216,11 +216,12 @@ int try_to_bind_port_on_socket_tcp(uint16_t connexion_port) {
     memset(&adrsock, 0, sizeof(adrsock));
     adrsock.sin6_family = AF_INET6;
     adrsock.sin6_addr = in6addr_any;
+    uint16_t network_port = htons(connexion_port);
 
-    if (try_to_bind_port_on_socket(sock_tcp, adrsock, connexion_port) != EXIT_SUCCESS) {
+    if (try_to_bind_port_on_socket(sock_tcp, adrsock, network_port) != EXIT_SUCCESS) {
         return EXIT_FAILURE;
     }
-    port_tcp = connexion_port;
+    port_tcp = network_port;
     return EXIT_SUCCESS;
 }
 
