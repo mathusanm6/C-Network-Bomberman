@@ -65,21 +65,19 @@ typedef struct game_board_information {
     TILE *board;
 } game_board_information;
 
+void free_game_board_information(game_board_information *info);
+
 char *serialize_game_board(const game_board_information *info);
 
 game_board_information *deserialize_game_board(const char *info);
-
-typedef struct tile_diff {
-    uint8_t x;
-    uint8_t y;
-    TILE tile;
-} tile_diff;
 
 typedef struct game_board_update {
     uint16_t num;
     uint8_t nb;
     tile_diff *diff;
 } game_board_update;
+
+void free_game_board_update(game_board_update *update);
 
 char *serialize_game_board_update(const game_board_update *update);
 
@@ -112,5 +110,15 @@ typedef struct game_end {
 char *serialize_game_end(const game_end *end);
 
 game_end *deserialize_game_end(const char *end);
+
+typedef struct message_header {
+    int codereq;
+    int id;
+    int eq;
+} message_header;
+
+message_header *deserialize_message_header(uint16_t header);
+
+uint16_t serialize_message_header(const message_header *header);
 
 #endif // MESSAGES_CLIENT_H

@@ -3,6 +3,7 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "controller.h"
 #include "network_client.h"
 #include "utils.h"
 
@@ -157,18 +158,19 @@ int main(int argc, char *argv[]) {
     if (r != EXIT_SUCCESS) {
         return r;
     }
-    RETURN_FAILURE_IF_ERROR(start_initialisation_game(choosen_game_mode));
+    int player_id = (start_initialisation_game(choosen_game_mode));
+    if (player_id < 0) {
+        return player_id;
+    }
+
+    printf("You are player %d.\n", player_id + 1);
 
     r = be_ready();
     if (r != EXIT_SUCCESS) {
         return r;
     }
-    pause(); // TODO to remove
 
-    close_socket_tcp();
-    // TODO to add
-    /*RETURN_FAILURE_IF_ERROR(init_game());
+    RETURN_FAILURE_IF_ERROR(init_game(player_id, choosen_game_mode));
 
-    return game_loop();*/
-    return EXIT_FAILURE;
+    return game_loop();
 }

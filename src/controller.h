@@ -1,15 +1,12 @@
 #ifndef SRC_CONTROLLER_H_
 #define SRC_CONTROLLER_H_
 
+#include "./model.h"
 #include <stdbool.h>
-
-/** Depending on the pressed key on the keyboard, manage the player's actions and return true if the user wants to quit
- */
-bool control();
 
 /** Initialize view, controller and model to start a game
  */
-int init_game();
+int init_game(int, GAME_MODE);
 
 /** Game loop
  */

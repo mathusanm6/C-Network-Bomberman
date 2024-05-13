@@ -18,10 +18,15 @@ int try_to_init_socket_of_client(int id);
 int try_to_bind_random_port_on_socket_tcp();
 int try_to_bind_random_port_on_socket_udp();
 int init_random_port_on_socket_mult();
+void free_addr_mult();
 int init_random_adrmdiff();
+int init_addr_mult();
 int listen_players();
 initial_connection_header *recv_initial_connection_header_of_client(int id);
 ready_connection_header *recv_ready_connexion_header_of_client(int id);
+game_action *recv_game_action_of_clients();
 int send_connexion_information_of_client(int id, int eq);
+int send_game_board_for_clients(uint16_t num, board *board_);
+int send_game_update_for_clients(uint16_t num, tile_diff *diff, uint8_t nb);
 
 #endif // SRC_NETWORK_SERVER_H__H_

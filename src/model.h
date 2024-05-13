@@ -7,7 +7,6 @@
 #define MIN_GAMEBOARD_HEIGHT 10
 #define GAMEBOARD_WIDTH 52
 #define GAMEBOARD_HEIGHT 25
-
 #define DESTRUCTIBLE_WALL_CHANCE 20
 #define BOMB_LIFETIME 3 // in seconds
 
@@ -15,6 +14,8 @@
 #define MAX_CHAT_HISTORY_LEN 23
 
 #include <stdbool.h>
+#include <stdint.h>
+#include <stdlib.h>
 
 typedef enum GAME_ACTION {
     GAME_UP = 0,
@@ -71,6 +72,17 @@ typedef struct coord {
     int y;
 } coord;
 
+typedef struct player_action {
+    int id;
+    GAME_ACTION action;
+} player_action;
+
+typedef struct tile_diff {
+    uint8_t x;
+    uint8_t y;
+    TILE tile;
+} tile_diff;
+
 typedef struct chat_node {
     int sender;
     char message[TEXT_SIZE];
@@ -122,6 +134,10 @@ coord int_to_coord(int, unsigned int game_id);
 
 /** Returns the corresponding int of coordinate in flatten list
  */
+int coord_to_int_dim(int, int, dimension);
+
+/** Returns the corresponding int of coordinate in flatten list
+ */
 int coord_to_int(int, int, unsigned int game_id);
 
 /** Returns the tile at the position (x, y) of game_board
@@ -135,6 +151,8 @@ void set_grid(int, int, TILE, unsigned int game_id);
 /** Returns true if (x, y) is a coordinate outside the game_board
  */
 bool is_outside_board(int x, int y, unsigned int game_id);
+
+bool is_move(GAME_ACTION);
 
 /** Depending on the action, changes the player's position in the table if the argument is a move.
  */
@@ -160,9 +178,17 @@ bool is_player_dead(int, unsigned int game_id);
  */
 void update_bombs(unsigned int game_id);
 
+/** Returns the tiles of the board of game_id after actions modication, which differates with current board, and change
+ * size_tile_diff with the size of the result
+ */
+tile_diff *update_game_board(unsigned game_id, player_action *actions, size_t nb_game_actions,
+                             unsigned *size_tile_diff);
+
 /** Returns true if the game is over
  */
 bool is_game_over(unsigned int game_id);
+
+chat *create_chat();
 
 /** Decrements the line cursor
  */

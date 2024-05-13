@@ -1,7 +1,6 @@
 #include "./model.h"
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
@@ -175,22 +174,36 @@ int init_player_positions(unsigned int game_id) {
     return EXIT_SUCCESS;
 }
 
-int init_chat(unsigned int game_id) {
+chat *create_chat() {
+    chat *chat_ = malloc(sizeof(chat));
+    RETURN_NULL_IF_NULL_PERROR(chat_, "malloc");
+
+    chat_->history = malloc(sizeof(chat_history));
+    if (chat_->history == NULL) {
+        free(chat_);
+        return NULL;
+    }
+    chat_->history->count = 0;
+
+    chat_->line = malloc(sizeof(chat_line));
+    if (chat_->line == NULL) {
+        free(chat_->history);
+        free(chat_);
+        return NULL;
+    }
+    chat_->line->cursor = 0;
+    chat_->on_focus = false;
+    chat_->whispering = false;
+
+    return chat_;
+}
+
+int init_game_chat(unsigned int game_id) {
     RETURN_FAILURE_IF_NULL(games[game_id]);
 
     if (games[game_id]->chat == NULL) {
-        games[game_id]->chat = malloc(sizeof(chat));
-        RETURN_FAILURE_IF_NULL_PERROR(games[game_id]->chat, "malloc");
-
-        games[game_id]->chat->history = malloc(sizeof(chat_history));
-        RETURN_FAILURE_IF_NULL_PERROR(games[game_id]->chat->history, "malloc");
-        games[game_id]->chat->history->count = 0;
-
-        games[game_id]->chat->line = malloc(sizeof(chat_line));
-        RETURN_FAILURE_IF_NULL_PERROR(games[game_id]->chat->line, "malloc");
-        games[game_id]->chat->line->cursor = 0;
-        games[game_id]->chat->on_focus = false;
-        games[game_id]->chat->whispering = false;
+        games[game_id]->chat = create_chat();
+        RETURN_FAILURE_IF_NULL(games[game_id]->chat);
     }
     return EXIT_SUCCESS;
 }
@@ -205,7 +218,7 @@ int init_model(dimension dim, GAME_MODE game_mode_, unsigned int game_id) {
 
     RETURN_FAILURE_IF_ERROR(init_game_board(dim, game_id));
     RETURN_FAILURE_IF_ERROR(init_player_positions(game_id));
-    RETURN_FAILURE_IF_ERROR(init_chat(game_id));
+    RETURN_FAILURE_IF_ERROR(init_game_chat(game_id));
 
     return EXIT_SUCCESS;
 }
@@ -375,9 +388,13 @@ coord int_to_coord(int n, unsigned int game_id) {
     return c;
 }
 
+int coord_to_int_dim(int x, int y, dimension dim) {
+    return y * dim.width + x;
+}
+
 int coord_to_int(int x, int y, unsigned int game_id) {
     board *game_board = games[game_id]->game_board;
-    return y * game_board->dim.width + x;
+    return coord_to_int_dim(x, y, game_board->dim);
 }
 
 TILE get_grid(int x, int y, unsigned int game_id) {
@@ -391,7 +408,7 @@ TILE get_grid(int x, int y, unsigned int game_id) {
 }
 
 void set_grid(int x, int y, TILE v, unsigned int game_id) {
-    RETURN_IF_NULL_PTR(games[game_id]);
+    RETURN_IF_NULL(games[game_id]);
 
     board *game_board = games[game_id]->game_board;
     if (game_board != NULL) {
@@ -429,6 +446,11 @@ int get_player_id(TILE t) {
     }
 }
 
+bool is_move(GAME_ACTION action) {
+    return action == GAME_LEFT || action == GAME_RIGHT || action == GAME_UP || action == GAME_DOWN ||
+           action == GAME_NONE;
+}
+
 coord get_next_position(GAME_ACTION a, const coord *pos) {
     coord c;
     c.x = pos->x;
@@ -453,7 +475,7 @@ coord get_next_position(GAME_ACTION a, const coord *pos) {
 }
 
 void perform_move(GAME_ACTION a, int player_id, unsigned int game_id) {
-    RETURN_IF_NULL_PTR(games[game_id]);
+    RETURN_IF_NULL(games[game_id]);
 
     player **players = games[game_id]->players;
 
@@ -477,14 +499,14 @@ void perform_move(GAME_ACTION a, int player_id, unsigned int game_id) {
 }
 void place_bomb(int player_id, unsigned int game_id) {
 
-    RETURN_IF_NULL_PTR(games[game_id]);
+    RETURN_IF_NULL(games[game_id]);
 
     game *g = games[game_id];
 
     if (g->all_bombs.total_count == g->all_bombs.max_capacity) {
         int new_capacity = (g->all_bombs.max_capacity == 0) ? 4 : g->all_bombs.max_capacity * 2;
         bomb *new_list = realloc(g->all_bombs.arr, new_capacity * sizeof(bomb));
-        RETURN_IF_NULL_PTR_PERROR(new_list, "realloc");
+        RETURN_IF_NULL_PERROR(new_list, "realloc");
 
         g->all_bombs.arr = new_list;
         g->all_bombs.max_capacity = new_capacity;
@@ -594,7 +616,7 @@ bool apply_explosion_effect(int x, int y, unsigned int game_id) {
 }
 
 void update_explosion(bomb b, unsigned int game_id) {
-    RETURN_IF_NULL_PTR(games[game_id]);
+    RETURN_IF_NULL(games[game_id]);
 
     player **players = games[game_id]->players;
 
@@ -652,7 +674,7 @@ void update_explosion(bomb b, unsigned int game_id) {
 }
 
 void update_bombs(unsigned int game_id) {
-    RETURN_IF_NULL_PTR(games[game_id]);
+    RETURN_IF_NULL(games[game_id]);
 
     game *g = games[game_id];
 
@@ -669,6 +691,54 @@ void update_bombs(unsigned int game_id) {
             g->all_bombs.arr[i] = g->all_bombs.arr[g->all_bombs.total_count]; // no need to free memory
         }
     }
+}
+
+tile_diff *get_diff_with_board(unsigned game_id, board *different_board, unsigned *size_tile_diff) {
+    board *current_board = games[game_id]->game_board;
+    if (current_board->dim.height != different_board->dim.height ||
+        current_board->dim.width != different_board->dim.width || size_tile_diff == NULL) {
+        return NULL;
+    }
+    unsigned cmpt = 0;
+    tile_diff diffs[current_board->dim.width * current_board->dim.height];
+    for (int i = 0; i < current_board->dim.height * current_board->dim.width; i++) {
+        if (current_board->grid[i] != different_board->grid[i]) {
+            coord c = int_to_coord(i, game_id);
+
+            tile_diff diff;
+            diff.x = c.x;
+            diff.y = c.y;
+            diff.tile = current_board->grid[i];
+
+            diffs[cmpt] = diff;
+            cmpt++;
+        }
+    }
+    tile_diff *res_diffs = malloc(sizeof(tile_diff) * cmpt);
+    RETURN_NULL_IF_NULL(res_diffs);
+    memmove(res_diffs, diffs, sizeof(tile_diff) * cmpt);
+    *size_tile_diff = cmpt;
+    return res_diffs;
+}
+
+tile_diff *update_game_board(unsigned game_id, player_action *actions, size_t nb_game_actions,
+                             unsigned *size_tile_diff) {
+    RETURN_NULL_IF_NULL(size_tile_diff);
+
+    board *current_board = get_game_board(game_id);
+    RETURN_NULL_IF_NULL(current_board);
+
+    for (unsigned i = 0; i < nb_game_actions; i++) {
+        if (actions[i].action == GAME_PLACE_BOMB) {
+            place_bomb(actions[i].id, game_id);
+        } else {
+            perform_move(actions[i].action, actions[i].id, game_id);
+        }
+    }
+    update_bombs(game_id);
+    tile_diff *diffs = get_diff_with_board(game_id, current_board, size_tile_diff);
+    free(current_board);
+    return diffs;
 }
 
 bool is_game_over(unsigned int game_id) {
@@ -699,7 +769,7 @@ bool is_game_over(unsigned int game_id) {
 }
 
 void decrement_line(unsigned int game_id) {
-    RETURN_IF_NULL_PTR(games[game_id]);
+    RETURN_IF_NULL(games[game_id]);
 
     if (games[game_id]->chat->line != NULL && games[game_id]->chat->line->cursor > 0) {
         games[game_id]->chat->line->cursor--;
@@ -708,7 +778,7 @@ void decrement_line(unsigned int game_id) {
 }
 
 void clear_line(unsigned int game_id) {
-    RETURN_IF_NULL_PTR(games[game_id]);
+    RETURN_IF_NULL(games[game_id]);
 
     if (games[game_id]->chat->line != NULL) {
         memset(games[game_id]->chat->line->data, EMPTY_CHAR, games[game_id]->chat->line->cursor);
@@ -717,7 +787,7 @@ void clear_line(unsigned int game_id) {
 }
 
 void add_to_line(char c, unsigned int game_id) {
-    RETURN_IF_NULL_PTR(games[game_id]);
+    RETURN_IF_NULL(games[game_id]);
 
     if (games[game_id]->chat->line != NULL && games[game_id]->chat->line->cursor < TEXT_SIZE && c >= ' ' && c <= '~') {
         games[game_id]->chat->line->data[(games[game_id]->chat->line->cursor)] = c;
@@ -808,13 +878,13 @@ bool is_chat_on_focus(unsigned int game_id) {
 }
 
 void set_chat_focus(bool on_focus, unsigned int game_id) {
-    RETURN_IF_NULL_PTR(games[game_id]);
+    RETURN_IF_NULL(games[game_id]);
 
     games[game_id]->chat->on_focus = on_focus;
 }
 
 void toggle_whispering(unsigned int game_id) {
-    RETURN_IF_NULL_PTR(games[game_id]);
+    RETURN_IF_NULL(games[game_id]);
 
     games[game_id]->chat->whispering = !games[game_id]->chat->whispering;
 }

@@ -2,6 +2,7 @@
 #define SRC_UTILS_H_
 
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdlib.h>
 
 #define INT_STRING_SIZE 12
@@ -17,12 +18,12 @@
         return NULL;                                                                                                   \
     }
 
-#define RETURN_IF_NULL_PTR(ptr)                                                                                        \
+#define RETURN_IF_NULL(ptr)                                                                                            \
     if (ptr == NULL) {                                                                                                 \
         return;                                                                                                        \
     }
 
-#define RETURN_IF_NULL_PTR_PERROR(ptr, msg)                                                                            \
+#define RETURN_IF_NULL_PERROR(ptr, msg)                                                                                \
     if (ptr == NULL) {                                                                                                 \
         perror(msg);                                                                                                   \
         return;                                                                                                        \
@@ -49,11 +50,46 @@
         return;                                                                                                        \
     }
 
+#define RETURN_FAILURE_IF_NEG(expr)                                                                                    \
+    if (expr < 0) {                                                                                                    \
+        return EXIT_FAILURE;                                                                                           \
+    }
+
+#define RETURN_FAILURE_IF_NEG_PERROR(expr, msg)                                                                        \
+    if (expr < 0) {                                                                                                    \
+        perror(msg);                                                                                                   \
+        return EXIT_FAILURE;                                                                                           \
+    }
+
+#define RETURN_IF_NEG(expr)                                                                                            \
+    if (expr < 0) {                                                                                                    \
+        return;                                                                                                        \
+    }
+
+#define RETURN_IF_NEG_PERROR(expr, msg)                                                                                \
+    if (expr < 0) {                                                                                                    \
+        perror(msg);                                                                                                   \
+        return;                                                                                                        \
+    }
+
+#define RETURN_NULL_IF_NEG(expr)                                                                                       \
+    if (expr < 0) {                                                                                                    \
+        return NULL;                                                                                                   \
+    }
+
+#define RETURN_NULL_IF_NEG_PERROR(expr, msg)                                                                           \
+    if (expr < 0) {                                                                                                    \
+        perror(msg);                                                                                                   \
+        return NULL;                                                                                                   \
+    }
+
 int min(int, int);
 int max(int, int);
 
 /** Returns -1 in case of error, since the minimum is necessarily greater than or equal to 0
  */
 int parse_unsigned_within_bounds(const char *, unsigned, unsigned);
+
+char *convert_adrmdif_into_string(uint16_t adrmdiff_[8]);
 
 #endif // SRC_UTILS_H_

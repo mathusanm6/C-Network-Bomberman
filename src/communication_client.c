@@ -1,20 +1,21 @@
 #include "communication_client.h"
+#include "messages.h"
 #include "utils.h"
 
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/socket.h>
+#include <unistd.h>
 
 int send_connexion_header_raw(int sock, connection_header_raw *serialized_head) {
     char *data = (char *)serialized_head;
     unsigned sent = 0;
     while (sent < sizeof(connection_header_raw)) {
         int res = send(sock, data + sent, sizeof(connection_header_raw) - sent, 0);
+        RETURN_FAILURE_IF_NEG_PERROR(res, "send connection_header_raw");
 
-        if (res < 0) {
-            perror("send connection_header_information");
-            return EXIT_FAILURE;
-        }
         sent += res;
     }
     return EXIT_SUCCESS;

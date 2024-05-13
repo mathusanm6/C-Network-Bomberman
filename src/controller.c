@@ -1,12 +1,15 @@
 #include "./controller.h"
-
-#include <ncurses.h>
-#include <stdlib.h>
-#include <unistd.h>
-
-#include "./model.h"
+#include "./communication_client.h"
+#include "./messages.h"
+#include "./network_client.h"
 #include "./utils.h"
 #include "./view.h"
+#include "model.h"
+
+#include <ncurses.h>
+#include <pthread.h>
+#include <stdlib.h>
+#include <unistd.h>
 
 #define KEY_BACKSPACE_1 0407
 #define KEY_BACKSPACE_2 127
@@ -25,6 +28,7 @@
 
 static int current_player = 0;
 
+// TODO: Remove this
 static void switch_player() {
     clear_line(TMP_GAME_ID);
     do {
@@ -32,10 +36,31 @@ static void switch_player() {
     } while (is_player_dead(current_player, TMP_GAME_ID));
 }
 
+// TODO: Fix memory leak
+static board *game_board = NULL;
+static pthread_mutex_t game_board_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+// TODO
+static GAME_MODE game_mode = SOLO;
+static int player_id = 0;
+
+static int message_number = 0;
+
+static pthread_mutex_t view_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 void init_controller() {
     intrflush(stdscr, FALSE); /* No need to flush when intr key is pressed */
     keypad(stdscr, TRUE);     /* Required in order to get events from keyboard */
     nodelay(stdscr, TRUE);    /* Make getch non-blocking */
+    game_board = malloc(sizeof(board));
+    RETURN_IF_NULL_PERROR(game_board, "malloc board_controller");
+    // TODO: wait for first message and init with the correct dimensions
+    game_board->dim = (dimension){49, 23};
+    game_board->grid = malloc(game_board->dim.height * game_board->dim.width * sizeof(char));
+    RETURN_IF_NULL_PERROR(game_board->grid, "malloc board_controller grid");
+    for (int i = 0; i < game_board->dim.height * game_board->dim.width; i++) {
+        game_board->grid[i] = EMPTY;
+    }
 }
 
 GAME_ACTION key_press_to_game_action(int c) {
@@ -109,13 +134,22 @@ CHAT_ACTION key_press_to_chat_action(int c) {
     return a;
 }
 
+int mutex_getch() {
+    int c;
+    pthread_mutex_lock(&view_mutex);
+    c = getch();
+    pthread_mutex_unlock(&view_mutex);
+    return c;
+}
+
 int get_pressed_key() {
     int c;
     int prev_c = ERR;
-    // We consume all similar consecutive key presses
-    while ((c = getch()) != ERR) { // getch returns the first key press in the queue
+    while ((c = mutex_getch()) != ERR) { // getch returns the first key press in the queue
         if (prev_c != ERR && prev_c != c) {
+            pthread_mutex_lock(&view_mutex);
             ungetch(c); // put 'c' back in the queue
+            pthread_mutex_unlock(&view_mutex);
             break;
         }
         prev_c = c;
@@ -147,6 +181,8 @@ bool perform_chat_action(int c) {
             set_chat_focus(false, TMP_GAME_ID);
             break;
         case CHAT_GAME_QUIT:
+            // TODO: this is for testing
+            exit(1);
             return true;
         case CHAT_SWITCH_PLAYER:
             switch_player();
@@ -165,17 +201,30 @@ bool perform_game_action(int c) {
         case GAME_RIGHT:
         case GAME_DOWN:
         case GAME_LEFT:
-            perform_move(a, current_player, TMP_GAME_ID);
-            break;
         case GAME_PLACE_BOMB:
-            place_bomb(current_player, TMP_GAME_ID);
+            game_action *action = malloc(sizeof(game_action));
+            if (action == NULL) {
+                return false;
+            }
+
+            action->game_mode = game_mode;
+            action->id = player_id;
+            action->eq = 0; // TODO
+            action->message_number = message_number;
+            message_number = (message_number + 1) % (1 << 13);
+            action->action = a;
+
+            send_game_action(action);
+
             break;
         case GAME_CHAT_MODE_START:
             set_chat_focus(true, TMP_GAME_ID);
             break;
         case GAME_QUIT:
+            // TODO: Quit connection
             return true;
         case GAME_SWITCH_PLAYER:
+            // TODO: Remove this?
             switch_player();
             break;
         case GAME_NONE:
@@ -201,30 +250,117 @@ bool control() {
     return false;
 }
 
-int init_game() {
+int init_game(int player_nb, GAME_MODE mode) {
     RETURN_FAILURE_IF_ERROR(init_view());
+
+    // TODO: init the chat
 
     init_controller();
 
-    dimension dim;
-    get_computed_board_dimension(&dim);
+    player_id = player_nb;
+    game_mode = mode;
 
-    return init_model(dim, SOLO, TMP_GAME_ID);
+    return EXIT_SUCCESS;
+}
+
+board *get_board() {
+    board *b = malloc(sizeof(board));
+    RETURN_NULL_IF_NULL_PERROR(b, "malloc board");
+
+    pthread_mutex_lock(&game_board_mutex);
+    b->dim = game_board->dim;
+    b->grid = malloc(b->dim.height * b->dim.width);
+    if (b->grid == NULL) {
+        pthread_mutex_unlock(&game_board_mutex);
+        free(b);
+        return NULL;
+    }
+    for (int i = 0; i < b->dim.height * b->dim.width; i++) {
+        b->grid[i] = game_board->grid[i];
+    }
+    pthread_mutex_unlock(&game_board_mutex);
+
+    return b;
+}
+
+void update_board(board *b, TILE *grid) {
+    for (int i = 0; i < b->dim.height * b->dim.width; i++) {
+        b->grid[i] = grid[i];
+    }
+}
+
+void update_tile_diff(board *b, tile_diff *diff, int size) {
+    for (int i = 0; i < size; i++) {
+        int pos = diff[i].y * b->dim.width + diff[i].x;
+        b->grid[pos] = diff[i].tile;
+    }
+}
+
+/** Updates the game board based on the server MESSAGE*/
+void *game_board_info_thread_function() {
+    // TODO : game end
+    while (true) {
+        received_game_message *received_message = recv_game_message();
+        if (received_message == NULL || received_message->message == NULL) {
+            // TODO: Handle error
+            continue;
+        }
+        switch (received_message->type) {
+            case GAME_BOARD_INFORMATION:
+                game_board_information *info = deserialize_game_board(received_message->message);
+                pthread_mutex_lock(&game_board_mutex);
+                update_board(game_board, info->board);
+                pthread_mutex_unlock(&game_board_mutex);
+                free_game_board_information(info);
+                break;
+            case GAME_BOARD_UPDATE:
+                game_board_update *update = deserialize_game_board_update(received_message->message);
+                pthread_mutex_lock(&game_board_mutex);
+                update_tile_diff(game_board, update->diff, update->nb);
+                pthread_mutex_unlock(&game_board_mutex);
+                free_game_board_update(update);
+                break;
+            default:
+                printf("Unknown message type\n");
+                /* TODO: Handle error */
+                break;
+        }
+
+        board *b = get_board();
+        // TODO: Chat
+        pthread_mutex_lock(&view_mutex);
+        refresh_game(b, create_chat(), current_player);
+        pthread_mutex_unlock(&view_mutex);
+    }
+
+    return NULL;
+}
+
+/** Sends to the server the performed action*/
+void *view_thread_function() {
+    while (true) {
+        // TODO: Handle game quit
+        if (control()) {
+            break;
+        }
+    }
+
+    return NULL;
 }
 
 int game_loop() {
-    while (true) {
-        if (is_game_over(TMP_GAME_ID) || control()) {
-            break;
-        }
-        board *game_board = get_game_board(TMP_GAME_ID);
-        chat *chat_ = get_chat(TMP_GAME_ID);
-        refresh_game(game_board, chat_, current_player);
-        free_board(game_board);
-        update_bombs(TMP_GAME_ID);
-        usleep(30 * 1000);
-    }
-    free_model(TMP_GAME_ID);
+    RETURN_FAILURE_IF_NULL(game_board);
+
+    /* TODO: Handle possible errors here */
+    pthread_t game_board_info_thread;
+    pthread_create(&game_board_info_thread, NULL, game_board_info_thread_function, NULL);
+
+    pthread_t view_thread;
+    pthread_create(&view_thread, NULL, view_thread_function, NULL);
+
+    pthread_join(game_board_info_thread, NULL);
+
+    free_board(game_board);
     end_view();
 
     return EXIT_SUCCESS;

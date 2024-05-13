@@ -4,6 +4,9 @@
 
 #include <arpa/inet.h>
 #include <errno.h>
+#include <net/if.h>
+#include <netinet/in.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -24,6 +27,7 @@ static uint16_t port_udp = 0;
 static uint16_t port_mult = 0;
 
 static uint16_t adrmdiff[8]; // Multicast address
+static struct sockaddr_in6 *addr_mult = NULL;
 
 void close_socket(int sock) {
     if (sock != -1) {
@@ -50,6 +54,7 @@ void close_socket_client(int id) {
 }
 
 int init_socket(int *sock, bool is_tcp) {
+    printf("Creating socket\n");
     if (is_tcp) {
         *sock = socket(PF_INET6, SOCK_STREAM, 0);
     } else {
@@ -74,6 +79,9 @@ int init_socket(int *sock, bool is_tcp) {
         *sock = -1;
         return EXIT_FAILURE;
     }
+
+    printf("Socket created\n");
+    printf("Socket : %d\n", *sock);
     return EXIT_SUCCESS;
 }
 
@@ -108,7 +116,6 @@ int try_to_init_socket_of_client(int id) {
     }
     sock_clients[id] = res;
 
-    printf("Player %d is connected with the IP : ", id + 1);
     print_ip_of_client(client_addr);
     return EXIT_SUCCESS;
 }
@@ -172,6 +179,42 @@ int init_random_adrmdiff() {
     return EXIT_SUCCESS;
 }
 
+void free_addr_mult() {
+    if (addr_mult != NULL) {
+        free(addr_mult);
+        addr_mult = NULL;
+    }
+}
+
+int init_addr_mult() {
+    addr_mult = malloc(sizeof(struct sockaddr_in6));
+    RETURN_FAILURE_IF_NULL_PERROR(addr_mult, "malloc addr_mult");
+
+    memset(addr_mult, 0, sizeof(struct sockaddr_in6));
+    addr_mult->sin6_family = AF_INET6;
+    addr_mult->sin6_port = port_mult;
+
+    char *addr_string = convert_adrmdif_into_string(adrmdiff);
+    int res = inet_pton(AF_INET6, addr_string, &addr_mult->sin6_addr);
+    free(addr_string);
+
+    if (res < 0) {
+        free_addr_mult();
+        perror("inet_pton addr_mult");
+        return EXIT_FAILURE;
+    }
+
+    int ifindex = if_nametoindex("eth0");
+    if (ifindex < 0) {
+        free_addr_mult();
+        perror("if_nametoindex eth0");
+        return EXIT_FAILURE;
+    }
+
+    addr_mult->sin6_scope_id = ifindex;
+    return EXIT_SUCCESS;
+}
+
 int listen_players() {
     if (listen(sock_tcp, 0) < 0) {
         perror("listen sock_tcp");
@@ -188,7 +231,19 @@ ready_connection_header *recv_ready_connexion_header_of_client(int id) {
     return recv_ready_connexion_header(sock_clients[id]);
 }
 
+game_action *recv_game_action_of_clients() {
+    return recv_game_action(sock_udp);
+}
+
 int send_connexion_information_of_client(int id, int eq) {
     // TODO Replace the gamemode
-    return send_connexion_information(sock_clients[id], SOLO, id, eq, port_udp, port_mult, adrmdiff);
+    return send_connexion_information(sock_clients[id], SOLO, id, eq, ntohs(port_udp), ntohs(port_mult), adrmdiff);
+}
+
+int send_game_board_for_clients(uint16_t num, board *board_) {
+    return send_game_board(sock_mult, addr_mult, num, board_);
+}
+
+int send_game_update_for_clients(uint16_t num, tile_diff *diff, uint8_t nb) {
+    return send_game_update(sock_mult, addr_mult, num, diff, nb);
 }
