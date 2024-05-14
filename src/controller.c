@@ -9,6 +9,7 @@
 #include <ncurses.h>
 #include <pthread.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 #define KEY_BACKSPACE_1 0407
@@ -168,7 +169,15 @@ bool perform_chat_action(int c) {
             decrement_line(TMP_GAME_ID);
             break;
         case CHAT_SEND:
-            if (add_message(current_player, TMP_GAME_ID) == EXIT_SUCCESS) {
+            char *message = NULL;
+            bool whispering = false;
+            if (add_message(current_player, TMP_GAME_ID, &message, &whispering) == EXIT_SUCCESS) {
+                // Send message to server
+                if (whispering) {
+                    send_chat_message_to_server(TEAM_M, strlen(message), message);
+                } else {
+                    send_chat_message_to_server(GLOBAL_M, strlen(message), message);
+                }
                 clear_line(TMP_GAME_ID);
             }
             break;
@@ -330,9 +339,16 @@ void *game_board_info_thread_function() {
         }
 
         board *b = get_board();
-        // TODO: Chat
+        // TODO: Check if working all right
+        chat_message *chat_msg = recv_chat_message_from_server();
+        if (chat_msg != NULL) {
+            add_message(chat_msg->id, TMP_GAME_ID, chat_msg->message, (bool)chat_msg->type == TEAM_M);
+            free(chat_msg->message);
+            free(chat_msg);
+        }
+        chat *c = get_chat(TMP_GAME_ID);
         pthread_mutex_lock(&view_mutex);
-        refresh_game(b, create_chat(), current_player);
+        refresh_game(b, c, current_player);
         pthread_mutex_unlock(&view_mutex);
     }
 

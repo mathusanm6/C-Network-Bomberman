@@ -907,7 +907,7 @@ chat_node *create_chat_node(int sender, char msg[TEXT_SIZE], bool whispered) {
     return new_node;
 }
 
-int add_message(int sender, unsigned int game_id) {
+int add_message(int sender, unsigned int game_id, char **message, bool *whispered) {
     RETURN_FAILURE_IF_NULL(games[game_id]);
     RETURN_FAILURE_IF_NULL(games[game_id]->chat);
     RETURN_FAILURE_IF_NULL(games[game_id]->chat->history);
@@ -918,6 +918,15 @@ int add_message(int sender, unsigned int game_id) {
 
     chat_node *new_node = create_chat_node(sender, games[game_id]->chat->line->data, games[game_id]->chat->whispering);
     RETURN_FAILURE_IF_NULL(new_node);
+
+    // Pass the message outside when adding to history
+    *message = malloc(sizeof(char) * (games[game_id]->chat->line->cursor + 1)); // +1 for null terminator
+    RETURN_FAILURE_IF_NULL(*message);
+    strncpy(*message, games[game_id]->chat->line->data, games[game_id]->chat->line->cursor);
+    (*message)[games[game_id]->chat->line->cursor] = '\0'; // Null-terminate the string
+
+    // Pass the whispering status outside
+    *whispering = games[game_id]->chat->whispering;
 
     if (games[game_id]->chat->history->count == MAX_CHAT_HISTORY_LEN) {
         // If the history is full, replace the oldest message

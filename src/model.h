@@ -209,7 +209,7 @@ void add_to_line(char, unsigned int game_id);
 
 /** Adds a message to the chat history with the sender and the message content and sets the whispered flag
  */
-int add_message(int sender, unsigned int game_id);
+int add_message(int sender, unsigned int game_id, char **message, bool *whispered);
 
 /** Returns the chat information from the game
  */

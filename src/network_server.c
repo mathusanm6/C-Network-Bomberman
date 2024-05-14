@@ -485,7 +485,45 @@ game_action *recv_game_action_of_clients(server_information *server) {
     return recv_game_action(server->sock_udp);
 }
 
-int send_connexion_information_of_client(server_information *server, int id, int eq) {
+game_action *recv_game_action_of_clients() {
+    return recv_game_action(sock_udp);
+}
+
+chat_message *recv_chat_message_of_client(int id) {
+    // TODO: CHECK if its working
+    return recv_chat_message(sock_clients[id]);
+}
+
+int send_chat_message_to_client(int id, chat_message_type type, int eq, uint8_t message_length, char *message);
+
+void handle_chat_message(int sender_id, chat_message *msg) {
+    for (int i = 0; i < PLAYER_NUM; i++) {
+        if (i == sender_id)
+            continue; // Don't send the message to the sender
+
+        if (send_chat_message_to_client(i, msg->type, msg->eq, msg->message_length, msg->message) != 0) {
+            perror("send_chat_message_to_client");
+        }
+    }
+}
+
+void *recv_chat_messages(void *arg) {
+    // TODO: CHECK if its working
+    int client_id = *(int *)arg;
+    while (true) {
+        chat_message *message = recv_chat_message_of_client(client_id);
+        if (message == NULL) {
+            perror("recv_chat_message_of_client");
+            continue;
+        }
+
+        handle_chat_message(client_id, message);
+        free(message);
+    }
+    return NULL;
+}
+
+int send_connexion_information_of_client(int id, int eq) {
     // TODO Replace the gamemode
     return send_connexion_information(server->sock_clients[id], SOLO, id, eq, ntohs(server->port_udp),
                                       ntohs(server->port_mult), server->adrmdiff);
@@ -527,16 +565,63 @@ void remove_polls_to_poll(struct pollfd *polls, unsigned *nb, unsigned i) {
     }
     polls[i].fd = polls[0].fd;
     *nb -= 1;
+int send_chat_message_to_client(int id, chat_message_type type, int eq, uint8_t message_length, char *message) {
+    return send_chat_message(sock_clients[id], type, id, eq, message_length, message);
+}
+
+void init_connexion_with_client(tcp_thread_data *tcp_data) {
+    // TODO separate solo and eq client
+    initial_connection_header *head = recv_initial_connection_header_of_client(tcp_data->id);
+    free(head);
+    lock_mutex_to_wait(&lock_waiting_all_players_join, &cond_lock_waiting_all_players_join);
+    // TODO verify well send
+    send_connexion_information_of_client(tcp_data->id, 0);
 }
 
 void print_ready_player(ready_connection_header *ready_informations) {
     printf("Player with Id : %d, eq : %d is ready.\n", ready_informations->id, ready_informations->eq);
 }
 
-int try_to_init_socket_of_client() {
-    struct sockaddr_in6 client_addr;
-    int client_addr_len = sizeof(client_addr);
-    int res = accept(sock_tcp, (struct sockaddr *)&client_addr, (socklen_t *)&client_addr_len);
+void *serve_client_tcp(void *arg_tcp_thread_data) {
+    tcp_thread_data *tcp_data = (tcp_thread_data *)arg_tcp_thread_data;
+
+    init_connexion_with_client(tcp_data);
+
+    // TODO verify ready_informations
+    ready_connection_header *ready_informations = recv_ready_connexion_header_of_client(tcp_data->id);
+
+    print_ready_player(ready_informations);
+    pthread_mutex_lock(&lock_all_players_ready);
+    ready_player_number++;
+
+    wait_all_clients_not_ready();
+
+    while (!tcp_date->finished_flag) {
+        // Receive and handle chat messages
+        chat_message *msg = recv_chat_message_of_client(tcp_data->id);
+        if (msg != NULL) {
+            handle_chat_message(tcp_data->id, msg);
+            free(msg->message) free(msg);
+        }
+    }
+
+    // TODO end of the game
+    lock_mutex_to_wait(&lock_waiting_the_game_finish, &cond_lock_waiting_the_game_finish);
+
+    printf("Player %d left the game.\n", ready_informations->id);
+    free(ready_informations);
+    close_socket_client(tcp_data->id);
+    // TODO keep free(tcp_data) if we don't use join
+    // TO CONTINUE
+    return NULL;
+}
+
+int connect_one_player_to_game(int id) {
+    tcp_threads_data_players[id] = malloc(sizeof(tcp_threads_data_players));
+    tcp_threads_data_players[id]->id = id;
+
+    int res = try_to_init_socket_of_client(id);
+
     if (res < 0) {
         perror("client acceptance");
         return EXIT_FAILURE;

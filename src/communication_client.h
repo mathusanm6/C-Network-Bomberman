@@ -9,6 +9,7 @@
 
 int send_initial_connexion_information(int sock, GAME_MODE mode);
 int send_ready_connexion_information(int sock, GAME_MODE mode, int id, int eq);
+int send_chat_message(int sock, chat_message_type type, int id, int eq, uint8_t message_length, char *message);
 
 connection_information *recv_connexion_information(int sock);
 
@@ -17,5 +18,7 @@ typedef struct udp_information {
     int sock;
     struct sockaddr_in6 addr;
 } udp_information;
+
+chat_message *recv_chat_message(int sock);
 
 #endif // SRC_COMMUNICATION_CLIENT_H_
