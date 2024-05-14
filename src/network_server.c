@@ -596,12 +596,13 @@ void *serve_client_tcp(void *arg_tcp_thread_data) {
 
     wait_all_clients_not_ready();
 
-    while (!tcp_date->finished_flag) {
+    while (!tcp_data->finished_flag) {
         // Receive and handle chat messages
         chat_message *msg = recv_chat_message_of_client(tcp_data->id);
         if (msg != NULL) {
             handle_chat_message(tcp_data->id, msg);
-            free(msg->message) free(msg);
+            free(msg->message);
+            free(msg);
         }
     }
 

@@ -926,7 +926,7 @@ int add_message(int sender, unsigned int game_id, char **message, bool *whispere
     (*message)[games[game_id]->chat->line->cursor] = '\0'; // Null-terminate the string
 
     // Pass the whispering status outside
-    *whispering = games[game_id]->chat->whispering;
+    *whispered = games[game_id]->chat->whispering;
 
     if (games[game_id]->chat->history->count == MAX_CHAT_HISTORY_LEN) {
         // If the history is full, replace the oldest message

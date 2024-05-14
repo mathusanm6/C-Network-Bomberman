@@ -155,10 +155,10 @@ bool perform_chat_action(int c) {
             break;
         case CHAT_SEND:
             char *message = NULL;
-            bool whispering = false;
-            if (add_message(current_player, TMP_GAME_ID, &message, &whispering) == EXIT_SUCCESS) {
+            bool whispered = false;
+            if (add_message(current_player, TMP_GAME_ID, &message, &whispered) == EXIT_SUCCESS) {
                 // Send message to server
-                if (whispering) {
+                if (whispered) {
                     send_chat_message_to_server(TEAM_M, strlen(message), message);
                 } else {
                     send_chat_message_to_server(GLOBAL_M, strlen(message), message);
@@ -320,7 +320,7 @@ void *game_board_info_thread_function() {
         // TODO: Check if working all right
         chat_message *chat_msg = recv_chat_message_from_server();
         if (chat_msg != NULL) {
-            add_message(chat_msg->id, TMP_GAME_ID, chat_msg->message, (bool)chat_msg->type == TEAM_M);
+            add_message(chat_msg->id, TMP_GAME_ID, &chat_msg->message, (bool)(chat_msg->type == TEAM_M));
             free(chat_msg->message);
             free(chat_msg);
         }
