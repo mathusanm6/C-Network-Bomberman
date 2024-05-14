@@ -386,7 +386,6 @@ void unlock_mutex_for_everyone(pthread_mutex_t *mutex, pthread_cond_t *cond) {
     pthread_mutex_unlock(mutex);
 }
 
-
 initial_connection_header *recv_initial_connection_header_of_client(int id) {
     return recv_initial_connection_header(sock_clients[id]);
 }
@@ -801,8 +800,8 @@ EXIT_FREEING_DATA:
     return EXIT_FAILURE;
 }
 
-
-void wait_all_clients_connected(pthread_mutex_t *lock, pthread_cond_t *cond, bool is_everyone_connected, unsigned *nb_connected) {
+void wait_all_clients_connected(pthread_mutex_t *lock, pthread_cond_t *cond, bool is_everyone_connected,
+                                unsigned *nb_connected) {
     if (!is_everyone_connected) {
         pthread_cond_wait(cond, lock);
     } else {
@@ -828,12 +827,13 @@ void wait_all_clients_not_ready(pthread_mutex_t *lock, pthread_cond_t *cond, boo
 
 void *serve_client_tcp(void *arg_tcp_thread_data) {
     tcp_thread_data *tcp_data = (tcp_thread_data *)arg_tcp_thread_data;
-    
+
     pthread_mutex_lock(tcp_data->lock_waiting_all_players_join);
     *(tcp_data->connected_players) += 1;
     printf("%d\n", *tcp_data->connected_players);
     bool is_everyone_connected = *tcp_data->connected_players == PLAYER_NUM;
-    wait_all_clients_connected(tcp_data->lock_waiting_all_players_join, tcp_data->cond_lock_waiting_all_players_join, is_everyone_connected, tcp_data->connected_players);
+    wait_all_clients_connected(tcp_data->lock_waiting_all_players_join, tcp_data->cond_lock_waiting_all_players_join,
+                               is_everyone_connected, tcp_data->connected_players);
     printf("%d send\n", tcp_data->id);
     send_connexion_information_of_client(tcp_data->id, 0);
     printf("%d after send\n", tcp_data->id);
@@ -844,7 +844,7 @@ void *serve_client_tcp(void *arg_tcp_thread_data) {
     print_ready_player(ready_informations);
     pthread_mutex_lock(tcp_data->lock_all_players_ready);
     *(tcp_data->ready_player_number) += 1;
-    
+
     bool is_ready = *tcp_data->ready_player_number == PLAYER_NUM;
     wait_all_clients_not_ready(tcp_data->lock_all_players_ready, tcp_data->cond_lock_all_players_ready, is_ready,
                                tcp_data->ready_player_number);
