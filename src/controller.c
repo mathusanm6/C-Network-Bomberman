@@ -4,6 +4,7 @@
 #include "./network_client.h"
 #include "./utils.h"
 #include "./view.h"
+#include "chat_model.h"
 #include "model.h"
 
 #include <ncurses.h>
@@ -32,6 +33,9 @@ static int current_player = 0;
 static board *game_board = NULL;
 static pthread_mutex_t game_board_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+static chat *client_chat = NULL;
+static pthread_mutex_t chat_mutex = PTHREAD_INITIALIZER;
+
 // TODO
 static GAME_MODE game_mode = SOLO;
 static int player_id = 0;
@@ -54,6 +58,8 @@ void init_controller() {
     for (int i = 0; i < game_board->dim.height * game_board->dim.width; i++) {
         game_board->grid[i] = EMPTY;
     }
+    client_chat = create_chat();
+    RETURN_IF_NULL_PERROR(client_chat, "create_chat");
 }
 
 GAME_ACTION key_press_to_game_action(int c) {
@@ -156,7 +162,7 @@ bool perform_chat_action(int c) {
         case CHAT_SEND:
             char *message = NULL;
             bool whispered = false;
-            if (add_message_from_client(TMP_GAME_ID, player_id, &message, &whispered) == EXIT_SUCCESS) {
+            if (add_message_from_client(client_chat, player_id, &message, &whispered) == EXIT_SUCCESS) {
                 // Send message to server
                 if (whispered) {
                     send_chat_message_to_server(TEAM_M, strlen(message), message);
@@ -325,12 +331,11 @@ void *game_board_info_thread_function() {
 
     return NULL;
 }
-
-void *chat_message_thread_function() {
+TMP_GAME_ID, void *chat_message_thread_function() {
     while (true) {
         chat_message *chat_msg = recv_chat_message_from_server();
         if (chat_msg != NULL) {
-            add_message_from_server(TMP_GAME_ID, chat_msg->id, chat_msg->message, (bool)(chat_msg->type == TEAM_M));
+            add_message_from_server(client_chat, chat_msg->id, chat_msg->message, (bool)(chat_msg->type == TEAM_M));
             free(chat_msg->message);
             free(chat_msg);
         }

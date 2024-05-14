@@ -13,6 +13,8 @@
 #define TEXT_SIZE 60
 #define MAX_CHAT_HISTORY_LEN 23
 
+#include "chat_model.h"
+
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -80,30 +82,6 @@ typedef struct tile_diff {
     uint8_t y;
     TILE tile;
 } tile_diff;
-
-typedef struct chat_node {
-    int sender;
-    char message[TEXT_SIZE];
-    bool whispered;
-    struct chat_node *next;
-} chat_node;
-
-typedef struct chat_history {
-    chat_node *head;
-    int count;
-} chat_history;
-
-typedef struct chat_line {
-    char data[TEXT_SIZE];
-    int cursor;
-} chat_line;
-
-typedef struct chat {
-    chat_history *history;
-    chat_line *line;
-    bool on_focus;
-    bool whispering;
-} chat;
 
 /** Initializes - The game board with the width and the height
  *              - The chat line
@@ -191,38 +169,8 @@ tile_diff *update_game_board(unsigned game_id, player_action *actions, size_t nb
  */
 bool is_game_over(unsigned int game_id);
 
-chat *create_chat();
-
-/** Decrements the line cursor
- */
-void decrement_line(unsigned int game_id);
-
-/** Nullifies the line cursor
- */
-void clear_line(unsigned int game_id);
-
-/** Adds the character at the end of chat_line if it does not exceed TEXT_SIZE and increment the cursor
- */
-void add_to_line(char, unsigned int game_id);
-
-/** Adds a message to the client's chat history sent by the server
- */
-int add_message_from_server(unsigned int game_id, int sender, char *message, bool whispered);
-
-/** Adds a message to the client's chat history sent by the client
- */
-int add_message_from_client(unsigned int game_id, int client_id, char **message, bool *whispered);
-
 /** Returns the chat information from the game
  */
 chat *get_chat(unsigned int game_id);
-
-bool is_chat_on_focus(unsigned int game_id);
-
-void set_chat_focus(bool on_focus, unsigned int game_id);
-
-/** Toggles the whispering flag in the chat
- */
-void toggle_whispering(unsigned int game_id);
 
 #endif // SRC_MODEL_H_
