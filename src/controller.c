@@ -27,8 +27,6 @@
 /* TODO: fixme once multiple games are supported */
 #define TMP_GAME_ID 0
 
-static int current_player = 0;
-
 // TODO: Fix memory leak
 static board *game_board = NULL;
 static pthread_mutex_t game_board_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -323,7 +321,7 @@ void *game_board_info_thread_function() {
 
         board *b = get_board();
         pthread_mutex_lock(&view_mutex);
-        refresh_game(b, client_chat, current_player);
+        refresh_game(b, client_chat, player_id);
         pthread_mutex_unlock(&view_mutex);
     }
 
@@ -343,7 +341,7 @@ void *chat_message_thread_function() {
 
         board *b = get_board();
         pthread_mutex_lock(&view_mutex);
-        refresh_game(b, client_chat, current_player);
+        refresh_game(b, client_chat, player_id);
         pthread_mutex_unlock(&view_mutex);
     }
 

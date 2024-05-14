@@ -598,7 +598,11 @@ void *serve_client_tcp(void *arg_tcp_thread_data) {
 
     // Receive and handle chat messages
     chat_message *msg = recv_chat_message_of_client(tcp_data->id);
+    printf("Player %d sent a message.\n", ready_informations->id);
+    printf("Message : %s\n", msg->message);
     if (msg != NULL) {
+        printf("Player %d sent a message.\n", ready_informations->id);
+        printf("Message : %s\n", msg->message);
         handle_chat_message(tcp_data->id, msg);
         free(msg->message);
         free(msg);

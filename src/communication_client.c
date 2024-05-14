@@ -159,7 +159,7 @@ chat_message *recv_chat_message(int sock) {
     }
     message[length] = '\0'; // Ensure the message is null-terminated
 
-    char *total_received = malloc(sizeof(uint16_t) + sizeof(uint8_t) + length);
+    char *total_received = malloc(sizeof(uint16_t) + sizeof(uint8_t) + length * sizeof(char));
     if (total_received == NULL) {
         perror("malloc chat_message total_received");
         free(message);
@@ -167,7 +167,7 @@ chat_message *recv_chat_message(int sock) {
     }
     memcpy(total_received, &header, sizeof(uint16_t));
     memcpy(total_received + sizeof(uint16_t), &length, sizeof(uint8_t));
-    memcpy(total_received + sizeof(uint16_t) + sizeof(uint8_t), message, length);
+    memcpy(total_received + sizeof(uint16_t) + sizeof(uint8_t), message, length * sizeof(char));
 
     chat_message *msg = client_deserialize_chat_message(total_received);
     free(total_received);

@@ -157,13 +157,13 @@ void get_computed_board_dimension(dimension *dim) {
     }
 }
 
-void refresh_game(board *b, chat *c, int current_player) {
+void refresh_game(board *b, chat *c, int player_id) {
     // TODO Reimplement chat
     toggle_focus(c, game_wc, chat_history_wc, chat_input_wc);
     print_game(b, game_wc);
     wrefresh(game_wc->win); // Refresh the game window
 
-    print_chat(c, current_player, chat_history_wc, chat_input_wc);
+    print_chat(c, player_id, chat_history_wc, chat_input_wc);
     wrefresh(chat_input_wc->win);   // Refresh the chat input window (Before chat_win refresh)
     wrefresh(chat_history_wc->win); // Refresh the chat history window
     wrefresh(chat_wc->win);         // Refresh the chat window
@@ -396,8 +396,8 @@ void print_game(board *b, window_context *game_wc) {
     deactivate_color_for_tile(game_wc, VERTICAL_BORDER);
 }
 
-void activate_color_for_player(window_context *wc, int current_player) {
-    switch (current_player) {
+void activate_color_for_player(window_context *wc, int player_id) {
+    switch (player_id) {
         case 1:
             wattron(wc->win, COLOR_PAIR(4));
             break;
@@ -415,8 +415,8 @@ void activate_color_for_player(window_context *wc, int current_player) {
     }
 }
 
-void deactivate_color_for_player(window_context *wc, int current_player) {
-    switch (current_player) {
+void deactivate_color_for_player(window_context *wc, int player_id) {
+    switch (player_id) {
         case 1:
             wattroff(wc->win, COLOR_PAIR(4));
             break;
@@ -527,11 +527,11 @@ void print_chat_history(chat *c, window_context *chat_history_wc) {
     wattroff(chat_history_wc->win, COLOR_PAIR(3)); // Disable custom color 3
 }
 
-void print_chat(chat *c, int current_player, window_context *chat_history_wc, window_context *chat_input_wc) {
+void print_chat(chat *c, int player_id, window_context *chat_history_wc, window_context *chat_input_wc) {
     // Add tag
     int player_tag_len = 0;
     int whispering_tag_len = 0;
-    print_tag_chat(&player_tag_len, &whispering_tag_len, current_player, c->whispering, chat_input_wc, 0);
+    print_tag_chat(&player_tag_len, &whispering_tag_len, player_id, c->whispering, chat_input_wc, 0);
 
     // Update chat text
     print_chat_input(c, player_tag_len, whispering_tag_len, chat_input_wc);

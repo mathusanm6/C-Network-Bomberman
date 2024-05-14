@@ -194,13 +194,12 @@ game_action *recv_game_action(int sock) {
 int recv_tcp(int sock, void *buffer, int size) {
     int received = 0;
     while (received < size) {
-        int res = recv(sock, buffer + received, size - received, 0);
+        int res = recv(sock, (char *)buffer + received, size - received, 0);
         if (res < 0) {
             perror("recv tcp");
             return EXIT_FAILURE;
         }
         if (res == 0) {
-            // TODO: handle connection closed
             perror("recv tcp: connection closed");
             return EXIT_FAILURE;
         }
@@ -213,10 +212,12 @@ chat_message *recv_chat_message(int sock) {
     uint16_t header;
     int res = recv_tcp(sock, &header, sizeof(uint16_t));
     RETURN_NULL_IF_NEG_PERROR(res, "recv chat_message header");
+    printf("header: %d\n", header); // TODO: remove
 
     uint8_t length;
     res = recv_tcp(sock, &length, sizeof(uint8_t));
     RETURN_NULL_IF_NEG_PERROR(res, "recv chat_message length");
+    printf("length: %d\n", length); // TODO: remove
 
     char *message = malloc(length + 1);
     RETURN_NULL_IF_NULL_PERROR(message, "malloc chat_message message");
@@ -226,19 +227,42 @@ chat_message *recv_chat_message(int sock) {
         free(message);
         return NULL;
     }
-    message[length] = '\0'; // Ensure the message is null-terminated
 
-    char *total_received = malloc(sizeof(uint16_t) + sizeof(uint8_t) + length);
+    message[length] = '\0';           // Ensure the message is null-terminated
+    printf("message: %s\n", message); // TODO: remove
+
+    // Allocate memory for the combined received data
+    size_t total_length = sizeof(uint16_t) + sizeof(uint8_t) + length * sizeof(char);
+    char *total_received = malloc(total_length);
     if (total_received == NULL) {
         perror("malloc chat_message total_received");
         free(message);
         return NULL;
     }
+
+    // Copy the header, length, and message into the total_received buffer
     memcpy(total_received, &header, sizeof(uint16_t));
     memcpy(total_received + sizeof(uint16_t), &length, sizeof(uint8_t));
-    memcpy(total_received + sizeof(uint16_t) + sizeof(uint8_t), message, length);
+    memcpy(total_received + sizeof(uint16_t) + sizeof(uint8_t), message, length * sizeof(char));
 
+    // Print the total_received data byte by byte
+    printf("total_received: ");
+    for (size_t i = 0; i < total_length; i++) {
+        printf("%02x ", (unsigned char)total_received[i]);
+    }
+    printf("\n");
+
+    // Deserialize the chat message
     chat_message *msg = server_deserialize_chat_message(total_received);
+    if (msg == NULL) {
+        perror("server_deserialize_chat_message");
+        free(total_received);
+        free(message);
+        return NULL;
+    }
+
+    printf("msg->message: %s\n", msg->message); // TODO: remove
+
     free(total_received);
     free(message);
 
