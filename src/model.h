@@ -205,9 +205,13 @@ void clear_line(unsigned int game_id);
  */
 void add_to_line(char, unsigned int game_id);
 
-/** Adds a message to the chat history with the sender and the message content and sets the whispered flag
+/** Adds a message to the client's chat history sent by the server
  */
-int add_message(int sender, unsigned int game_id, char **message, bool *whispered);
+int add_message_from_server(unsigned int game_id, int sender, char *message, bool whispered);
+
+/** Adds a message to the client's chat history sent by the client
+ */
+int add_message_from_client(unsigned int game_id, int client_id, char **message, bool *whispered);
 
 /** Returns the chat information from the game
  */

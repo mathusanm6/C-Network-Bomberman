@@ -907,7 +907,44 @@ chat_node *create_chat_node(int sender, char msg[TEXT_SIZE], bool whispered) {
     return new_node;
 }
 
-int add_message(int sender, unsigned int game_id, char **message, bool *whispered) {
+int add_message_from_server(unsigned int game_id, int sender, char *message, bool whispered) {
+    RETURN_FAILURE_IF_NULL(games[game_id]);
+    RETURN_FAILURE_IF_NULL(games[game_id]->chat);
+    RETURN_FAILURE_IF_NULL(games[game_id]->chat->history);
+
+    chat_node *new_node = create_chat_node(sender, message, whispered);
+    RETURN_FAILURE_IF_NULL(new_node);
+
+    if (games[game_id]->chat->history->count == MAX_CHAT_HISTORY_LEN) {
+        // If the history is full, replace the oldest message
+        chat_node *temp = games[game_id]->chat->history->head;
+        while (temp->next != games[game_id]->chat->history->head) { // Find the last node before head
+            temp = temp->next;
+        }
+        temp->next = new_node;                                      // Link the new node after the last node
+        new_node->next = games[game_id]->chat->history->head->next; // New node points to second oldest node
+        free(games[game_id]->chat->history->head);
+        games[game_id]->chat->history->head = new_node->next; // New head is the second oldest node
+    } else {
+        // List is not full, add the new node to the end
+        if (games[game_id]->chat->history->head == NULL) {
+            games[game_id]->chat->history->head = new_node;
+            new_node->next = new_node;
+        } else {
+            chat_node *temp = games[game_id]->chat->history->head;
+            while (temp->next != games[game_id]->chat->history->head) {
+                temp = temp->next;
+            }
+            temp->next = new_node;
+            new_node->next = games[game_id]->chat->history->head;
+        }
+        games[game_id]->chat->history->count++;
+    }
+
+    return EXIT_SUCCESS;
+}
+
+int add_message_from_client(unsigned int game_id, int client_id, char **message, bool *whispered) {
     RETURN_FAILURE_IF_NULL(games[game_id]);
     RETURN_FAILURE_IF_NULL(games[game_id]->chat);
     RETURN_FAILURE_IF_NULL(games[game_id]->chat->history);
@@ -916,7 +953,8 @@ int add_message(int sender, unsigned int game_id, char **message, bool *whispere
         return EXIT_FAILURE;
     }
 
-    chat_node *new_node = create_chat_node(sender, games[game_id]->chat->line->data, games[game_id]->chat->whispering);
+    chat_node *new_node =
+        create_chat_node(client_id, games[game_id]->chat->line->data, games[game_id]->chat->whispering);
     RETURN_FAILURE_IF_NULL(new_node);
 
     // Pass the message outside when adding to history
