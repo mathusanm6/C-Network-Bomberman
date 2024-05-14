@@ -34,7 +34,7 @@ static board *game_board = NULL;
 static pthread_mutex_t game_board_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static chat *client_chat = NULL;
-static pthread_mutex_t chat_mutex = PTHREAD_INITIALIZER;
+static pthread_mutex_t chat_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 // TODO
 static GAME_MODE game_mode = SOLO;
@@ -154,10 +154,10 @@ bool perform_chat_action(int c) {
     CHAT_ACTION a = key_press_to_chat_action(c);
     switch (a) {
         case CHAT_WRITE:
-            add_to_line(c, TMP_GAME_ID);
+            add_to_line(client_chat, c);
             break;
         case CHAT_ERASE:
-            decrement_line(TMP_GAME_ID);
+            decrement_line(client_chat);
             break;
         case CHAT_SEND:
             char *message = NULL;
@@ -169,17 +169,17 @@ bool perform_chat_action(int c) {
                 } else {
                     send_chat_message_to_server(GLOBAL_M, strlen(message), message);
                 }
-                clear_line(TMP_GAME_ID);
+                clear_line(client_chat);
             }
             break;
         case CHAT_TOGGLE_WHISPER:
-            toggle_whispering(TMP_GAME_ID);
+            toggle_whispering(client_chat);
             break;
         case CHAT_CLEAR:
-            clear_line(TMP_GAME_ID);
+            clear_line(client_chat);
             break;
         case CHAT_MODE_QUIT:
-            set_chat_focus(false, TMP_GAME_ID);
+            set_chat_focus(client_chat, false);
             break;
         case CHAT_GAME_QUIT:
             // TODO: this is for testing
@@ -216,7 +216,7 @@ bool perform_game_action(int c) {
 
             break;
         case GAME_CHAT_MODE_START:
-            set_chat_focus(true, TMP_GAME_ID);
+            set_chat_focus(client_chat, true);
             break;
         case GAME_QUIT:
             // TODO: Quit connection
@@ -230,9 +230,8 @@ bool perform_game_action(int c) {
 
 bool control() {
     int c = get_pressed_key();
-    // TODO : Make chat work
-    // if (is_chat_on_focus(TMP_GAME_ID)) {
-    if (false) {
+
+    if (is_chat_on_focus(client_chat)) {
         if (perform_chat_action(c)) {
             return true;
         }
@@ -323,27 +322,28 @@ void *game_board_info_thread_function() {
         }
 
         board *b = get_board();
-        chat *c = get_chat(TMP_GAME_ID);
         pthread_mutex_lock(&view_mutex);
-        refresh_game(b, c, current_player);
+        refresh_game(b, client_chat, current_player);
         pthread_mutex_unlock(&view_mutex);
     }
 
     return NULL;
 }
-TMP_GAME_ID, void *chat_message_thread_function() {
+
+void *chat_message_thread_function() {
     while (true) {
         chat_message *chat_msg = recv_chat_message_from_server();
         if (chat_msg != NULL) {
+            pthread_mutex_lock(&chat_mutex);
             add_message_from_server(client_chat, chat_msg->id, chat_msg->message, (bool)(chat_msg->type == TEAM_M));
+            pthread_mutex_unlock(&chat_mutex);
             free(chat_msg->message);
             free(chat_msg);
         }
 
         board *b = get_board();
-        chat *c = get_chat(TMP_GAME_ID);
         pthread_mutex_lock(&view_mutex);
-        refresh_game(b, c, current_player);
+        refresh_game(b, client_chat, current_player);
         pthread_mutex_unlock(&view_mutex);
     }
 

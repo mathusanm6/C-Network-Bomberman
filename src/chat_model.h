@@ -1,6 +1,12 @@
 #ifndef CHAT_MODEL_H
 #define CHAT_MODEL_H
 
+#include "constants.h"
+
+#include <stdbool.h>
+#include <stdio.h>
+#include <string.h>
+
 typedef struct chat_node {
     int sender;
     char message[TEXT_SIZE];
@@ -39,7 +45,7 @@ void clear_line(chat *c);
 
 /** Adds the character at the end of chat_line if it does not exceed TEXT_SIZE and increment the cursor
  */
-void add_to_line(chat *c, char c);
+void add_to_line(chat *chat, char c);
 
 /** Adds a message to the chat history sent by the server
  */

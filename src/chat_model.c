@@ -98,12 +98,12 @@ void clear_line(chat *c) {
     }
 }
 
-void add_to_line(chat *c, char c) {
-    RETURN_IF_NULL(c);
+void add_to_line(chat *chat, char c) {
+    RETURN_IF_NULL(chat);
 
-    if (c->line != NULL && c->line->cursor < TEXT_SIZE && c >= ' ' && c <= '~') {
-        c->line->data[(c->line->cursor)] = c;
-        (c->line->cursor)++;
+    if (chat->line != NULL && chat->line->cursor < TEXT_SIZE && c >= ' ' && c <= '~') {
+        chat->line->data[(chat->line->cursor)] = c;
+        (chat->line->cursor)++;
     }
 }
 
@@ -130,7 +130,7 @@ chat_node *create_chat_node(int sender, char msg[TEXT_SIZE], bool whispered) {
     return new_node;
 }
 
-int add_message_from_server(char *c, int sender, char *message, bool whispered) {
+int add_message_from_server(chat *c, int sender, char *message, bool whispered) {
     RETURN_FAILURE_IF_NULL(c);
     RETURN_FAILURE_IF_NULL(c->history);
 

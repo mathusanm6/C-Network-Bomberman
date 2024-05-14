@@ -1,19 +1,8 @@
 #ifndef SRC_MODEL_H_
 #define SRC_MODEL_H_
 
-#define PLAYER_NUM 4
-
-#define MIN_GAMEBOARD_WIDTH 10
-#define MIN_GAMEBOARD_HEIGHT 10
-#define GAMEBOARD_WIDTH 52
-#define GAMEBOARD_HEIGHT 25
-#define DESTRUCTIBLE_WALL_CHANCE 20
-#define BOMB_LIFETIME 3 // in seconds
-
-#define TEXT_SIZE 60
-#define MAX_CHAT_HISTORY_LEN 23
-
 #include "chat_model.h"
+#include "constants.h"
 
 #include <stdbool.h>
 #include <stdint.h>

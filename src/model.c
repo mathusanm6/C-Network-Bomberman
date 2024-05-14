@@ -322,7 +322,8 @@ void free_player_positions(unsigned int game_id) {
 
 void free_model(unsigned int game_id) {
     free_game_board(game_id);
-    free_chat(game_id);
+    free_chat(games[game_id]->chat);
+    games[game_id]->chat = NULL;
     free_player_positions(game_id);
     free(games[game_id]);
 }
