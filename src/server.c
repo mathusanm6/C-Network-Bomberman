@@ -28,7 +28,6 @@ void parse_client_flags(int argc, char *argv[]) {
             server_flags->connexion_port = argv[i];
         }
     }
-    free(data_thread);
 }
 
 int main(int argc, char *argv[]) {
