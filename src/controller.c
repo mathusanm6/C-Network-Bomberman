@@ -317,13 +317,25 @@ void *game_board_info_thread_function() {
         }
 
         board *b = get_board();
-        // TODO: Check if working all right
+        chat *c = get_chat(TMP_GAME_ID);
+        pthread_mutex_lock(&view_mutex);
+        refresh_game(b, c, current_player);
+        pthread_mutex_unlock(&view_mutex);
+    }
+
+    return NULL;
+}
+
+void *chat_message_thread_function() {
+    while (true) {
         chat_message *chat_msg = recv_chat_message_from_server();
         if (chat_msg != NULL) {
             add_message_from_server(TMP_GAME_ID, chat_msg->id, chat_msg->message, (bool)(chat_msg->type == TEAM_M));
             free(chat_msg->message);
             free(chat_msg);
         }
+
+        board *b = get_board();
         chat *c = get_chat(TMP_GAME_ID);
         pthread_mutex_lock(&view_mutex);
         refresh_game(b, c, current_player);
@@ -352,10 +364,14 @@ int game_loop() {
     pthread_t game_board_info_thread;
     pthread_create(&game_board_info_thread, NULL, game_board_info_thread_function, NULL);
 
+    pthread_t chat_message_thread;
+    pthread_create(&chat_message_thread, NULL, chat_message_thread_function, NULL);
+
     pthread_t view_thread;
     pthread_create(&view_thread, NULL, view_thread_function, NULL);
 
     pthread_join(game_board_info_thread, NULL);
+    pthread_join(chat_message_thread, NULL);
 
     free_board(game_board);
     end_view();
