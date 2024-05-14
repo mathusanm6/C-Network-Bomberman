@@ -19,7 +19,6 @@
 #define KEY_BACKSLASH '\\'
 #define KEY_SPACE ' '
 #define KEY_TILDA '~'
-#define KEY_VERTICAL_BAR '|'
 #define KEY_CONTROL_D 4
 #define KEY_TAB_1 KEY_STAB
 #define KEY_TAB_2 '\t'
@@ -28,14 +27,6 @@
 #define TMP_GAME_ID 0
 
 static int current_player = 0;
-
-// TODO: Remove this
-static void switch_player() {
-    clear_line(TMP_GAME_ID);
-    do {
-        current_player = (current_player + 1) % PLAYER_NUM;
-    } while (is_player_dead(current_player, TMP_GAME_ID));
-}
 
 // TODO: Fix memory leak
 static board *game_board = NULL;
@@ -91,9 +82,6 @@ GAME_ACTION key_press_to_game_action(int c) {
         case KEY_TILDA:
             a = GAME_QUIT;
             break;
-        case KEY_VERTICAL_BAR:
-            a = GAME_SWITCH_PLAYER;
-            break;
     }
 
     return a;
@@ -124,9 +112,6 @@ CHAT_ACTION key_press_to_chat_action(int c) {
             break;
         case KEY_TILDA:
             a = CHAT_GAME_QUIT;
-            break;
-        case KEY_VERTICAL_BAR:
-            a = CHAT_SWITCH_PLAYER;
             break;
         default:
             a = CHAT_WRITE;
@@ -194,9 +179,6 @@ bool perform_chat_action(int c) {
             // TODO: this is for testing
             exit(1);
             return true;
-        case CHAT_SWITCH_PLAYER:
-            switch_player();
-            break;
         case CHAT_NONE:
             break;
     }
@@ -233,10 +215,6 @@ bool perform_game_action(int c) {
         case GAME_QUIT:
             // TODO: Quit connection
             return true;
-        case GAME_SWITCH_PLAYER:
-            // TODO: Remove this?
-            switch_player();
-            break;
         case GAME_NONE:
             break;
     }

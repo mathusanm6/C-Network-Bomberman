@@ -37,8 +37,7 @@ typedef enum CHAT_ACTION {
     CHAT_CLEAR = 4,
     CHAT_MODE_QUIT = 5,
     CHAT_GAME_QUIT = 6,
-    CHAT_SWITCH_PLAYER = 7,
-    CHAT_NONE = 8
+    CHAT_NONE = 7
 } CHAT_ACTION;
 
 typedef enum TILE {
