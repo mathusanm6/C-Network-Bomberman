@@ -494,33 +494,27 @@ chat_message *recv_chat_message_of_client(int id) {
     return recv_chat_message(sock_clients[id]);
 }
 
-int send_chat_message_to_client(int id, chat_message_type type, int eq, uint8_t message_length, char *message);
+int send_chat_message_to_client(int id, chat_message_type type, int sender_id, int eq, uint8_t message_length,
+                                char *message);
 
 void handle_chat_message(int sender_id, chat_message *msg) {
-    for (int i = 0; i < PLAYER_NUM; i++) {
-        if (i == sender_id)
-            continue; // Don't send the message to the sender
-
-        if (send_chat_message_to_client(i, msg->type, msg->eq, msg->message_length, msg->message) != 0) {
-            perror("send_chat_message_to_client");
+    if (msg->type == GLOBAL_M) {
+        for (int i = 0; i < PLAYER_NUM; i++) {
+            if (i == sender_id)
+                continue; // Don't send the message to the sender
+            if (send_chat_message_to_client(i, msg->type, sender_id, msg->eq, msg->message_length, msg->message) < 0) {
+                perror("send_chat_message_to_client");
+            }
+        }
+    } else if (msg->type == TEAM_M) {
+        for (int i = 0; i < PLAYER_NUM; i++) {
+            if (i == sender_id || i % 2 != msg->eq)
+                continue; // Don't send the message to the sender or to the other team
+            if (send_chat_message_to_client(i, msg->type, sender_id, msg->eq, msg->message_length, msg->message) < 0) {
+                perror("send_chat_message_to_client");
+            }
         }
     }
-}
-
-void *recv_chat_messages(void *arg) {
-    // TODO: CHECK if its working
-    int client_id = *(int *)arg;
-    while (true) {
-        chat_message *message = recv_chat_message_of_client(client_id);
-        if (message == NULL) {
-            perror("recv_chat_message_of_client");
-            continue;
-        }
-
-        handle_chat_message(client_id, message);
-        free(message);
-    }
-    return NULL;
 }
 
 int send_connexion_information_of_client(int id, int eq) {
@@ -565,6 +559,8 @@ void remove_polls_to_poll(struct pollfd *polls, unsigned *nb, unsigned i) {
     }
     polls[i].fd = polls[0].fd;
     *nb -= 1;
+}
+
 int send_chat_message_to_client(int id, chat_message_type type, int eq, uint8_t message_length, char *message) {
     return send_chat_message(sock_clients[id], type, id, eq, message_length, message);
 }
@@ -597,17 +593,17 @@ void *serve_client_tcp(void *arg_tcp_thread_data) {
     wait_all_clients_not_ready();
 
     // Receive and handle chat messages
-    chat_message *msg = recv_chat_message_of_client(tcp_data->id);
-    printf("Player %d sent a message.\n", ready_informations->id);
-    printf("Message : %s\n", msg->message);
-    if (msg != NULL) {
-        printf("Player %d sent a message.\n", ready_informations->id);
-        printf("Message : %s\n", msg->message);
-        handle_chat_message(tcp_data->id, msg);
-        free(msg->message);
-        free(msg);
+    while (true) {
+        // TODO : end of the game - stop the loop
+        chat_message *msg = recv_chat_message_of_client(tcp_data->id);
+        if (msg != NULL) {
+            handle_chat_message(tcp_data->id, msg);
+            free(msg->message);
+            free(msg);
+        }
     }
 
+    printf("Sorti de la boucle\n");
     // TODO end of the game
     lock_mutex_to_wait(&lock_waiting_the_game_finish, &cond_lock_waiting_the_game_finish);
 

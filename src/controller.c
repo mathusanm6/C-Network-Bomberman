@@ -333,7 +333,11 @@ void *chat_message_thread_function() {
         chat_message *chat_msg = recv_chat_message_from_server();
         if (chat_msg != NULL) {
             pthread_mutex_lock(&chat_mutex);
-            add_message_from_server(client_chat, chat_msg->id, chat_msg->message, (bool)(chat_msg->type == TEAM_M));
+            if (chat_msg->type == GLOBAL_M) {
+                add_message_from_server(client_chat, chat_msg->id, chat_msg->message, false);
+            } else if (chat_msg->type == TEAM_M){
+                add_message_from_server(client_chat, chat_msg->id, chat_msg->message, true);
+            }
             pthread_mutex_unlock(&chat_mutex);
             free(chat_msg->message);
             free(chat_msg);

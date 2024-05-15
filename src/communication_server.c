@@ -98,13 +98,12 @@ int send_game_update(int sock, struct sockaddr_in6 *addr_mult, int num, tile_dif
 int send_tcp(int sock, const void *buffer, uint8_t size) {
     unsigned sent = 0;
     while (sent < size) {
-        int res = send(sock, buffer + sent, size - sent, 0);
+        int res = send(sock, (char *)buffer + sent, size - sent, 0);
         if (res < 0) {
             perror("send tcp");
             return EXIT_FAILURE;
         }
         if (res == 0) {
-            // TODO: handle connection closed
             perror("send tcp: connection closed");
             return EXIT_FAILURE;
         }
@@ -120,21 +119,24 @@ int send_chat_message(int sock, chat_message_type type, int id, int eq, uint8_t 
     msg->id = id;
     msg->eq = eq;
     msg->message_length = message_length;
-    msg->message = malloc(message_length + 1);
+    msg->message = malloc(message_length);
     if (msg->message == NULL) {
         free(msg);
         perror("malloc chat_message message");
         return EXIT_FAILURE;
     }
     strncpy(msg->message, message, message_length);
-    msg->message[message_length] = '\0'; // Ensure the message is null-terminated
 
     char *serialized_msg = server_serialize_chat_message(msg);
+    if (serialized_msg == NULL) {
+        free(msg->message);
+        free(msg);
+        return EXIT_FAILURE;
+    }
+
+    int res = send_tcp(sock, serialized_msg, 3 + message_length);
     free(msg->message);
     free(msg);
-    RETURN_FAILURE_IF_NULL(serialized_msg);
-
-    int res = send_tcp(sock, serialized_msg, sizeof(chat_message) + message_length);
     free(serialized_msg);
     return res;
 }
@@ -212,56 +214,41 @@ chat_message *recv_chat_message(int sock) {
     uint16_t header;
     int res = recv_tcp(sock, &header, sizeof(uint16_t));
     RETURN_NULL_IF_NEG_PERROR(res, "recv chat_message header");
-    printf("header: %d\n", header); // TODO: remove
 
     uint8_t length;
     res = recv_tcp(sock, &length, sizeof(uint8_t));
     RETURN_NULL_IF_NEG_PERROR(res, "recv chat_message length");
-    printf("length: %d\n", length); // TODO: remove
 
-    char *message = malloc(length + 1);
+    char *message = malloc(length);
     RETURN_NULL_IF_NULL_PERROR(message, "malloc chat_message message");
-    res = recv_tcp(sock, message, length);
+    res = recv_tcp(sock, message, length * sizeof(char));
     if (res < 0) {
         perror("recv chat_message message");
         free(message);
         return NULL;
     }
 
-    message[length] = '\0';           // Ensure the message is null-terminated
-    printf("message: %s\n", message); // TODO: remove
-
-    // Allocate memory for the combined received data
-    size_t total_length = sizeof(uint16_t) + sizeof(uint8_t) + length * sizeof(char);
-    char *total_received = malloc(total_length);
+    // Allocate memory for the total received message
+    char *total_received = malloc(3 + length);
     if (total_received == NULL) {
         perror("malloc chat_message total_received");
         free(message);
         return NULL;
     }
 
-    // Copy the header, length, and message into the total_received buffer
-    memcpy(total_received, &header, sizeof(uint16_t));
-    memcpy(total_received + sizeof(uint16_t), &length, sizeof(uint8_t));
-    memcpy(total_received + sizeof(uint16_t) + sizeof(uint8_t), message, length * sizeof(char));
-
-    // Print the total_received data byte by byte
-    printf("total_received: ");
-    for (size_t i = 0; i < total_length; i++) {
-        printf("%02x ", (unsigned char)total_received[i]);
-    }
-    printf("\n");
+    // Copy the header, length and message into the total received message
+    memcpy(total_received, &header, 2);
+    memcpy(total_received + 2, &length, 1);
+    memcpy(total_received + 3, message, length);
 
     // Deserialize the chat message
-    chat_message *msg = server_deserialize_chat_message(total_received);
+    chat_message *msg = client_deserialize_chat_message(total_received);
     if (msg == NULL) {
-        perror("server_deserialize_chat_message");
+        fprintf(stderr, "msg recu nulle");
         free(total_received);
         free(message);
         return NULL;
     }
-
-    printf("msg->message: %s\n", msg->message); // TODO: remove
 
     free(total_received);
     free(message);
