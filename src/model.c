@@ -33,9 +33,83 @@ typedef struct game {
 } game;
 
 /* TODO: Make this a real list at some point */
-static game *games[1] = {NULL};
+static game **games = NULL;
+size_t games_size = 0;
+size_t games_capacity = 10;
+#define GROWTH_FACTOR 2
 
 TILE get_player(int);
+
+int add_game(game *g) {
+    if (games == NULL) {
+        games = malloc(games_capacity * sizeof(game *));
+        if (games == NULL) {
+            perror("malloc");
+            return -1;
+        }
+        for (size_t i = 0; i < games_capacity; i++) {
+            games[i] = NULL;
+        }
+    }
+
+    if (games_size == games_capacity) {
+        size_t new_capacity = games_capacity * GROWTH_FACTOR;
+        game **new_games = realloc(games, new_capacity * sizeof(game *));
+        if (new_games == NULL) {
+            perror("realloc");
+            return -1;
+        }
+        games = new_games;
+        games_capacity = new_capacity;
+
+        for (size_t i = games_size; i < games_capacity; i++) {
+            games[i] = NULL;
+        }
+    }
+
+    if (games[games_size] == NULL) {
+        games[games_size] = g;
+        games_size++;
+        return games_size - 1;
+    }
+
+    for (size_t i = 0; i < games_capacity; i++) {
+        if (games[i] == NULL) {
+            games[i] = g;
+            games_size++;
+            return i;
+        }
+    }
+
+    return -1;
+}
+
+game *get_game(unsigned int game_id) {
+    if (game_id >= games_size) {
+        return NULL;
+    }
+    return games[game_id];
+}
+
+void remove_game(unsigned int game_id) {
+    if (game_id >= games_capacity || games[game_id] == NULL) {
+        return;
+    }
+
+    free_model(game_id);
+    games[game_id] = NULL;
+    games_size--;
+    return;
+}
+
+void reset_games() {
+    for (size_t i = 0; i < games_capacity; i++) {
+        remove_game(i);
+    }
+
+    free(games);
+    games = NULL;
+}
 
 static game *init_game_struct() {
     game *g = malloc(sizeof(game));
@@ -194,6 +268,7 @@ chat *create_chat() {
     chat_->line->cursor = 0;
     chat_->on_focus = false;
     chat_->whispering = false;
+    chat_->history->head = NULL;
 
     return chat_;
 }
@@ -205,22 +280,36 @@ int init_game_chat(unsigned int game_id) {
         games[game_id]->chat = create_chat();
         RETURN_FAILURE_IF_NULL(games[game_id]->chat);
     }
+
     return EXIT_SUCCESS;
 }
 
-int init_model(dimension dim, GAME_MODE game_mode_, unsigned int game_id) {
+int init_model(dimension dim, GAME_MODE game_mode_) {
     game *g = init_game_struct();
-    RETURN_FAILURE_IF_NULL(g);
+    if (g == NULL) {
+        return -1;
+    }
 
     g->game_mode = game_mode_;
 
-    games[game_id] = g;
+    int game_id = add_game(g);
 
-    RETURN_FAILURE_IF_ERROR(init_game_board(dim, game_id));
-    RETURN_FAILURE_IF_ERROR(init_player_positions(game_id));
-    RETURN_FAILURE_IF_ERROR(init_game_chat(game_id));
+    if (game_id == -1) {
+        return -1;
+    }
 
-    return EXIT_SUCCESS;
+    if (init_game_board(dim, game_id) == EXIT_FAILURE) {
+        return -1;
+    }
+
+    if (init_player_positions(game_id) == EXIT_FAILURE) {
+        return -1;
+    }
+    if (init_game_chat(game_id) == EXIT_FAILURE) {
+        return -1;
+    }
+
+    return game_id;
 }
 
 void free_board(board *game_board) {
@@ -246,15 +335,14 @@ void free_player_positions(unsigned int game_id) {
     if (games[game_id] == NULL) {
         return;
     }
-    player **players = games[game_id]->players;
-    for (int i = 0; i < 4; i++) {
-        if (players[i] != NULL) {
-            if (players[i]->pos != NULL) {
-                free(players[i]->pos);
-                players[i]->pos = NULL;
+    for (int i = 0; i < PLAYER_NUM; i++) {
+        if (games[game_id]->players[i] != NULL) {
+            if (games[game_id]->players[i]->pos != NULL) {
+                free(games[game_id]->players[i]->pos);
+                games[game_id]->players[i]->pos = NULL;
             }
-            free(players[i]);
-            players[i] = NULL;
+            free(games[game_id]->players[i]);
+            games[game_id]->players[i] = NULL;
         }
     }
 }
@@ -321,6 +409,7 @@ void free_model(unsigned int game_id) {
     free_game_board(game_id);
     free_chat(game_id);
     free_player_positions(game_id);
+    free(games[game_id]);
 }
 
 char tile_to_char(TILE t) {

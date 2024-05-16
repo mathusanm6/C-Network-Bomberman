@@ -544,12 +544,12 @@ int try_to_init_socket_of_client() {
     return res;
 }
 
-int init_game_model(GAME_MODE mode, unsigned id) {
+int init_game_model(GAME_MODE mode) {
     dimension dim;
     dim.width = GAMEBOARD_WIDTH;
     dim.height = GAMEBOARD_HEIGHT;
 
-    return init_model(dim, mode, id);
+    return init_model(dim, mode);
 }
 
 int add_game_action_to_thread_data(udp_thread_data *data, game_action *action) {
@@ -955,7 +955,7 @@ int connect_one_player_to_game(int sock) {
     if (head->game_mode == SOLO) {
         // TODO INIT SOLO GAME
         if (connected_solo_players == 0) {
-            RETURN_FAILURE_IF_ERROR(init_game_model(SOLO, TMP_GAME_ID)); // TODO Change it to run more than 1 server
+            RETURN_FAILURE_IF_ERROR(init_game_model(SOLO)); // TODO Change it to run more than 1 server
             solo_waiting_server = init_server_network(connection_port);
             RETURN_FAILURE_IF_NULL(solo_waiting_server);
             // TODO Add 2 tcp thread data
@@ -975,7 +975,7 @@ int connect_one_player_to_game(int sock) {
     } else if (head->game_mode == TEAM && connected_team_players == 0) {
         // TODO INIT TEAM GAME
         if (connected_team_players == 0) {
-            RETURN_FAILURE_IF_ERROR(init_game_model(TEAM, TMP_GAME_ID)); // TODO Change it to run more than 1 server
+            RETURN_FAILURE_IF_ERROR(init_game_model(TEAM)); // TODO Change it to run more than 1 server
             team_waiting_server = init_server_network(connection_port);
             RETURN_FAILURE_IF_NULL(team_waiting_server);
             // TODO Add 2 tcp thread data
