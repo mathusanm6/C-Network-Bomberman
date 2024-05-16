@@ -952,9 +952,6 @@ int connect_one_player_to_game(int sock) {
     // TODO change recv not tcp_data
     initial_connection_header *head = recv_initial_connection_header_of_client(sock);
 
-    connected_solo_players = connected_solo_players % (PLAYER_NUM + 1);
-    connected_team_players = connected_team_players % (PLAYER_NUM + 1);
-
     if (head->game_mode == SOLO) {
         // TODO INIT SOLO GAME
         if (connected_solo_players == 0) {
@@ -996,6 +993,9 @@ int connect_one_player_to_game(int sock) {
         }
     }
     free(head);
+
+    connected_solo_players %= PLAYER_NUM;
+    connected_team_players %= PLAYER_NUM;
 
     return EXIT_SUCCESS;
 }
