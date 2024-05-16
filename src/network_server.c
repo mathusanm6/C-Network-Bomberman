@@ -67,14 +67,6 @@ typedef struct udp_thread_data {
 static int sock_tcp = -1;
 static uint16_t port_tcp = -1;
 
-pthread_mutex_t lock_waiting_all_players_join = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t lock_all_players_ready = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t lock_waiting_the_game_finish = PTHREAD_MUTEX_INITIALIZER;
-
-pthread_cond_t cond_lock_waiting_all_players_join = PTHREAD_COND_INITIALIZER;
-pthread_cond_t cond_lock_all_players_ready = PTHREAD_COND_INITIALIZER;
-pthread_cond_t cond_lock_waiting_the_game_finish = PTHREAD_COND_INITIALIZER;
-
 static tcp_thread_data *tcp_threads_data_players[PLAYER_NUM];
 static pthread_t game_threads[3];
 
