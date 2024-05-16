@@ -155,32 +155,6 @@ int init_socket(int *sock, bool is_tcp) {
     return EXIT_SUCCESS;
 }
 
-int init_socket_tcp() {
-    return init_socket(&sock_tcp, true);
-}
-
-int init_socket_udp(server_information *server) {
-    return init_socket(&server->sock_udp, false);
-}
-
-int init_socket_mult(server_information *server) {
-    return init_socket(&server->sock_mult, false);
-}
-
-void print_ip_of_client(struct sockaddr_in6 client_addr) {
-    char client_ip[INET6_ADDRSTRLEN];
-    inet_ntop(AF_INET6, &(client_addr.sin6_addr), client_ip, INET6_ADDRSTRLEN);
-    printf("%s\n", client_ip);
-}
-
-uint16_t get_random_port() {
-    return htons(MIN_PORT + (random() % (MAX_PORT - MIN_PORT)));
-}
-
-uint16_t get_port_tcp() {
-    return ntohs(port_tcp);
-}
-
 int try_to_bind_port_on_socket(int sock, struct sockaddr_in6 adrsock, uint16_t port) {
     adrsock.sin6_port = port;
 
@@ -191,6 +165,10 @@ int try_to_bind_port_on_socket(int sock, struct sockaddr_in6 adrsock, uint16_t p
         return ERROR_ADDRINUSE;
     }
     return EXIT_SUCCESS;
+}
+
+uint16_t get_random_port() {
+    return htons(MIN_PORT + (random() % (MAX_PORT - MIN_PORT)));
 }
 
 int try_to_bind_random_port_on_socket(int sock) {
@@ -219,6 +197,35 @@ int try_to_bind_random_port_on_socket_tcp() {
     RETURN_FAILURE_IF_ERROR(res);
     port_tcp = res;
     return EXIT_SUCCESS;
+}
+
+int init_socket_tcp() {
+    RETURN_FAILURE_IF_ERROR(init_socket(&sock_tcp, true));
+
+    if (try_to_bind_random_port_on_socket_tcp() != EXIT_SUCCESS) {
+        close_socket_tcp();
+        return EXIT_FAILURE;
+    }
+
+    return EXIT_SUCCESS;
+}
+
+int init_socket_udp(server_information *server) {
+    return init_socket(&server->sock_udp, false);
+}
+
+int init_socket_mult(server_information *server) {
+    return init_socket(&server->sock_mult, false);
+}
+
+void print_ip_of_client(struct sockaddr_in6 client_addr) {
+    char client_ip[INET6_ADDRSTRLEN];
+    inet_ntop(AF_INET6, &(client_addr.sin6_addr), client_ip, INET6_ADDRSTRLEN);
+    printf("%s\n", client_ip);
+}
+
+uint16_t get_port_tcp() {
+    return ntohs(port_tcp);
 }
 
 int try_to_bind_port_on_socket_tcp(uint16_t connexion_port) {
@@ -306,9 +313,8 @@ server_information *init_server_network(uint16_t connexion_port) {
             goto exit_closing_sockets;
         }
         // TODO: Move this elsewhere
-    } else if (try_to_bind_random_port_on_socket_tcp() != EXIT_SUCCESS) {
-        goto exit_closing_sockets;
     }
+
     if (try_to_bind_random_port_on_socket_udp(server) != EXIT_SUCCESS) {
         goto exit_closing_sockets;
     }
