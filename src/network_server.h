@@ -21,7 +21,7 @@ typedef struct server_information {
 } server_information;
 
 int init_socket_tcp();
-server_information *init_server_network(uint16_t connexion_port);
-int game_loop_server(server_information *server);
+void init_state(uint16_t connexion_port);
+int game_loop_server();
 
 #endif // SRC_NETWORK_SERVER_H__H_
