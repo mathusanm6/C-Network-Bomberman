@@ -23,6 +23,11 @@
         return;                                                                                                        \
     }
 
+#define RETURN_NULL_IF_ERROR(expr)                                                                                     \
+    if (expr == EXIT_FAILURE) {                                                                                        \
+        return NULL;                                                                                                   \
+    }
+
 #define RETURN_IF_NULL_PERROR(ptr, msg)                                                                                \
     if (ptr == NULL) {                                                                                                 \
         perror(msg);                                                                                                   \

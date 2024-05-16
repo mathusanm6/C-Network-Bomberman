@@ -46,6 +46,11 @@ int main(int argc, char *argv[]) {
         }
     }
     free(server_flags);
-    RETURN_FAILURE_IF_ERROR(init_server_network(connexion_port));
-    RETURN_FAILURE_IF_ERROR(game_loop_server());
+
+
+    RETURN_FAILURE_IF_ERROR(init_socket_tcp());
+
+    server_information *server_info = init_server_network(connexion_port);
+    RETURN_FAILURE_IF_NULL(server_info);
+    RETURN_FAILURE_IF_ERROR(game_loop_server(server_info));
 }

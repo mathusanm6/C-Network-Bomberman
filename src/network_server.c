@@ -35,13 +35,18 @@ typedef struct tcp_thread_data {
     unsigned id;
     unsigned *ready_player_number;
     unsigned *connected_players;
+
     pthread_mutex_t *lock_waiting_all_players_join;
     pthread_mutex_t *lock_all_players_ready;
     pthread_mutex_t *lock_waiting_the_game_finish;
+
     pthread_cond_t *cond_lock_waiting_all_players_join;
     pthread_cond_t *cond_lock_all_players_ready;
     pthread_cond_t *cond_lock_waiting_the_game_finish;
+
     bool *finished_flag;
+
+    server_information *server;
 } tcp_thread_data;
 
 typedef struct udp_thread_data {
@@ -49,28 +54,50 @@ typedef struct udp_thread_data {
     game_action **game_actions;
     unsigned nb_game_actions;
     unsigned size_game_actions;
+
     bool finished_flag;
+
     pthread_mutex_t lock_game_actions;
     pthread_mutex_t lock_send_udp;
     pthread_mutex_t lock_game_board;
+
+    server_information *server;
 } udp_thread_data;
 
-/** Parameter for a server managing a single game, will change in the future to manage multiple game
- */
 static int sock_tcp = -1;
-static int sock_udp = -1;
-static int sock_mult = -1;
-static int sock_clients[PLAYER_NUM]; // socket TCP to send game informations
+static uint16_t port_tcp = -1;
 
-static uint16_t port_tcp = 0;
-static uint16_t port_udp = 0;
-static uint16_t port_mult = 0;
+pthread_mutex_t lock_waiting_all_players_join = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t lock_all_players_ready = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t lock_waiting_the_game_finish = PTHREAD_MUTEX_INITIALIZER;
 
-static uint16_t adrmdiff[8]; // Multicast address
-static struct sockaddr_in6 *addr_mult = NULL;
+pthread_cond_t cond_lock_waiting_all_players_join = PTHREAD_COND_INITIALIZER;
+pthread_cond_t cond_lock_all_players_ready = PTHREAD_COND_INITIALIZER;
+pthread_cond_t cond_lock_waiting_the_game_finish = PTHREAD_COND_INITIALIZER;
 
 static tcp_thread_data *tcp_threads_data_players[PLAYER_NUM];
 static pthread_t game_threads[3];
+
+server_information *create_server_information() {
+    server_information *server = malloc(sizeof(server_information));
+    if (server == NULL) {
+        perror("malloc server_information");
+        return NULL;
+    }
+
+    server->sock_udp = -1;
+    server->sock_mult = -1;
+    for (int i = 0; i < PLAYER_NUM; i++) {
+        server->sock_clients[i] = -1;
+    }
+
+    server->port_udp = 0;
+    server->port_mult = 0;
+
+    server->addr_mult = NULL;
+
+    return server;
+}
 
 void close_socket(int sock) {
     if (sock != -1) {
@@ -82,17 +109,17 @@ void close_socket_tcp() {
     return close_socket(sock_tcp);
 }
 
-void close_socket_udp() {
-    return close_socket(sock_udp);
+void close_socket_udp(server_information *server) {
+    return close_socket(server->sock_udp);
 }
 
-void close_socket_mult() {
-    return close_socket(sock_mult);
+void close_socket_mult(server_information *server) {
+    return close_socket(server->sock_mult);
 }
 
-void close_socket_client(int id) {
+void close_socket_client(server_information *server, int id) {
     if (id >= 0 && id < PLAYER_NUM) {
-        return close_socket(sock_clients[id]);
+        return close_socket(server->sock_clients[id]);
     }
 }
 
@@ -132,12 +159,12 @@ int init_socket_tcp() {
     return init_socket(&sock_tcp, true);
 }
 
-int init_socket_udp() {
-    return init_socket(&sock_udp, false);
+int init_socket_udp(server_information *server) {
+    return init_socket(&server->sock_udp, false);
 }
 
-int init_socket_mult() {
-    return init_socket(&sock_mult, false);
+int init_socket_mult(server_information *server) {
+    return init_socket(&server->sock_mult, false);
 }
 
 void print_ip_of_client(struct sockaddr_in6 client_addr) {
@@ -208,97 +235,100 @@ int try_to_bind_port_on_socket_tcp(uint16_t connexion_port) {
     return EXIT_SUCCESS;
 }
 
-int try_to_bind_random_port_on_socket_udp() {
-    int res = try_to_bind_random_port_on_socket(sock_udp);
+int try_to_bind_random_port_on_socket_udp(server_information *server) {
+    int res = try_to_bind_random_port_on_socket(server->sock_udp);
     RETURN_FAILURE_IF_ERROR(res);
-    port_udp = res;
+    server->port_udp = res;
     return EXIT_SUCCESS;
 }
 
-int init_random_port_on_socket_mult() {
-    port_mult = get_random_port();
+int init_random_port_on_socket_mult(server_information *server) {
+    server->port_mult = get_random_port();
     return EXIT_SUCCESS;
 }
 
-int init_random_adrmdiff() {
-    adrmdiff[0] = START_ADRMDIFF;
+int init_random_adrmdiff(server_information *server) {
+    server->adrmdiff[0] = START_ADRMDIFF;
 
     unsigned size_2_bytes = 65536;
     for (unsigned i = 1; i < 8; i++) {
-        adrmdiff[i] = random() % size_2_bytes;
+        server->adrmdiff[i] = random() % size_2_bytes;
     }
 
     return EXIT_SUCCESS;
 }
 
-void free_addr_mult() {
-    if (addr_mult != NULL) {
-        free(addr_mult);
-        addr_mult = NULL;
+void free_addr_mult(server_information *server) {
+    if (server->addr_mult != NULL) {
+        free(server->addr_mult);
+        server->addr_mult = NULL;
     }
 }
 
-int init_addr_mult() {
-    addr_mult = malloc(sizeof(struct sockaddr_in6));
-    RETURN_FAILURE_IF_NULL_PERROR(addr_mult, "malloc addr_mult");
+int init_addr_mult(server_information *server) {
+    server->addr_mult = malloc(sizeof(struct sockaddr_in6));
+    RETURN_FAILURE_IF_NULL_PERROR(server->addr_mult, "malloc addr_mult");
 
-    memset(addr_mult, 0, sizeof(struct sockaddr_in6));
-    addr_mult->sin6_family = AF_INET6;
-    addr_mult->sin6_port = port_mult;
+    memset(server->addr_mult, 0, sizeof(struct sockaddr_in6));
+    server->addr_mult->sin6_family = AF_INET6;
+    server->addr_mult->sin6_port = server->port_mult;
 
-    char *addr_string = convert_adrmdif_into_string(adrmdiff);
-    int res = inet_pton(AF_INET6, addr_string, &addr_mult->sin6_addr);
+    char *addr_string = convert_adrmdif_into_string(server->adrmdiff);
+    int res = inet_pton(AF_INET6, addr_string, &server->addr_mult->sin6_addr);
     free(addr_string);
 
     if (res < 0) {
-        free_addr_mult();
+        free_addr_mult(server);
         perror("inet_pton addr_mult");
         return EXIT_FAILURE;
     }
 
     int ifindex = if_nametoindex("eth0");
     if (ifindex < 0) {
-        free_addr_mult();
+        free_addr_mult(server);
         perror("if_nametoindex eth0");
         return EXIT_FAILURE;
     }
 
-    addr_mult->sin6_scope_id = ifindex;
+    server->addr_mult->sin6_scope_id = ifindex;
     return EXIT_SUCCESS;
 }
 
-int init_server_network(uint16_t connexion_port) {
-    RETURN_FAILURE_IF_ERROR(init_socket_tcp());
-    RETURN_FAILURE_IF_ERROR(init_socket_udp());
-    RETURN_FAILURE_IF_ERROR(init_socket_mult());
+server_information *init_server_network(uint16_t connexion_port) {
+    server_information *server = create_server_information();
+    RETURN_NULL_IF_NULL(server);
+    RETURN_NULL_IF_ERROR(init_socket_udp(server));
+    RETURN_NULL_IF_ERROR(init_socket_mult(server));
 
     if (connexion_port >= MIN_PORT && connexion_port <= MAX_PORT) {
         if (try_to_bind_port_on_socket_tcp(connexion_port) != EXIT_SUCCESS) {
             fprintf(stderr, "The connexion port not works, try another one.\n");
             goto exit_closing_sockets;
         }
+        // TODO: Move this elsewhere
     } else if (try_to_bind_random_port_on_socket_tcp() != EXIT_SUCCESS) {
         goto exit_closing_sockets;
     }
-    if (try_to_bind_random_port_on_socket_udp() != EXIT_SUCCESS) {
+    if (try_to_bind_random_port_on_socket_udp(server) != EXIT_SUCCESS) {
         goto exit_closing_sockets;
     }
-    if (init_random_port_on_socket_mult() != EXIT_SUCCESS) {
+    if (init_random_port_on_socket_mult(server) != EXIT_SUCCESS) {
         goto exit_closing_sockets;
     }
-    if (init_random_adrmdiff() == EXIT_FAILURE) {
+    if (init_random_adrmdiff(server) == EXIT_FAILURE) {
         goto exit_closing_sockets;
     }
-    if (init_addr_mult() == EXIT_FAILURE) {
+    if (init_addr_mult(server) == EXIT_FAILURE) {
         goto exit_closing_sockets;
     }
-    return EXIT_SUCCESS;
+    return server;
 
 exit_closing_sockets:
     close_socket_tcp();
-    close_socket_udp();
-    close_socket_mult();
-    return EXIT_FAILURE;
+    close_socket_udp(server);
+    close_socket_mult(server);
+    free(server);
+    return NULL;
 }
 
 int listen_players() {
@@ -319,7 +349,7 @@ void free_tcp_threads_data(tcp_thread_data **data_thread, unsigned nb_data) {
     free(data_thread);
 }
 
-int init_tcp_threads_data() {
+int init_tcp_threads_data(server_information *server) {
     // TODO CHANGE FOR MULTIGAME
     unsigned *ready_player_number = malloc(sizeof(unsigned));
     *ready_player_number = 0;
@@ -369,6 +399,11 @@ int init_tcp_threads_data() {
         tcp_threads_data_players[i]->cond_lock_all_players_ready = cond_lock_all_players_ready;
         tcp_threads_data_players[i]->cond_lock_waiting_the_game_finish = cond_lock_waiting_the_game_finish;
     }
+
+    for (unsigned i = 0; i < PLAYER_NUM; i++) {
+        tcp_threads_data_players[i]->server = server;
+    }
+
     return EXIT_SUCCESS;
 }
 
@@ -386,29 +421,30 @@ void unlock_mutex_for_everyone(pthread_mutex_t *mutex, pthread_cond_t *cond) {
     pthread_mutex_unlock(mutex);
 }
 
-initial_connection_header *recv_initial_connection_header_of_client(int id) {
-    return recv_initial_connection_header(sock_clients[id]);
+initial_connection_header *recv_initial_connection_header_of_client(server_information *server, int id) {
+    return recv_initial_connection_header(server->sock_clients[id]);
 }
 
-ready_connection_header *recv_ready_connexion_header_of_client(int id) {
-    return recv_ready_connexion_header(sock_clients[id]);
+ready_connection_header *recv_ready_connexion_header_of_client(server_information *server, int id) {
+    return recv_ready_connexion_header(server->sock_clients[id]);
 }
 
-game_action *recv_game_action_of_clients() {
-    return recv_game_action(sock_udp);
+game_action *recv_game_action_of_clients(server_information *server) {
+    return recv_game_action(server->sock_udp);
 }
 
-int send_connexion_information_of_client(int id, int eq) {
+int send_connexion_information_of_client(server_information *server, int id, int eq) {
     // TODO Replace the gamemode
-    return send_connexion_information(sock_clients[id], SOLO, id, eq, ntohs(port_udp), ntohs(port_mult), adrmdiff);
+    return send_connexion_information(server->sock_clients[id], SOLO, id, eq, ntohs(server->port_udp),
+                                      ntohs(server->port_mult), server->adrmdiff);
 }
 
-int send_game_board_for_clients(uint16_t num, board *board_) {
-    return send_game_board(sock_mult, addr_mult, num, board_);
+int send_game_board_for_clients(server_information *server, uint16_t num, board *board_) {
+    return send_game_board(server->sock_mult, server->addr_mult, num, board_);
 }
 
-int send_game_update_for_clients(uint16_t num, tile_diff *diff, uint8_t nb) {
-    return send_game_update(sock_mult, addr_mult, num, diff, nb);
+int send_game_update_for_clients(server_information *server, uint16_t num, tile_diff *diff, uint8_t nb) {
+    return send_game_update(server->sock_mult, server->addr_mult, num, diff, nb);
 }
 
 struct pollfd *init_polls_connexion(int sock) {
@@ -445,7 +481,7 @@ void print_ready_player(ready_connection_header *ready_informations) {
     printf("Player with Id : %d, eq : %d is ready.\n", ready_informations->id, ready_informations->eq);
 }
 
-int try_to_init_socket_of_client(int id) {
+int try_to_init_socket_of_client(server_information *server, int id) {
     if (id < 0 || id >= PLAYER_NUM) {
         return EXIT_FAILURE;
     }
@@ -456,7 +492,7 @@ int try_to_init_socket_of_client(int id) {
         perror("client acceptance");
         return EXIT_FAILURE;
     }
-    sock_clients[id] = res;
+    server->sock_clients[id] = res;
 
     print_ip_of_client(client_addr);
     return EXIT_SUCCESS;
@@ -504,7 +540,7 @@ void free_game_actions(game_action **game_actions, size_t nb_game_actions) {
 void *serv_client_recv_game_action(void *arg_udp_thread_data) {
     udp_thread_data *data = (udp_thread_data *)arg_udp_thread_data;
     while (!data->finished_flag) {
-        game_action *action = recv_game_action_of_clients();
+        game_action *action = recv_game_action_of_clients(data->server);
         if (action != NULL && action->game_mode == get_game_mode(data->game_id)) {
             pthread_mutex_lock(&data->lock_game_actions);
             add_game_action_to_thread_data(data, action);
@@ -532,7 +568,7 @@ void *serve_clients_send_mult_sec(void *arg_udp_thread_data) {
         RETURN_NULL_IF_NULL(game_board);
 
         pthread_mutex_lock(&data->lock_send_udp);
-        send_game_board_for_clients(last_num_sec_message, game_board);
+        send_game_board_for_clients(data->server, last_num_sec_message, game_board);
         pthread_mutex_unlock(&data->lock_send_udp);
         increment_last_num_message(&last_num_sec_message);
         free(game_board);
@@ -753,7 +789,7 @@ void *serve_clients_send_mult_freq(void *arg_udp_thread_data) {
         }
         // Send the differences
         pthread_mutex_lock(&data->lock_send_udp);
-        send_game_update_for_clients(last_num_freq_message, diffs, size_tile_diff);
+        send_game_update_for_clients(data->server, last_num_freq_message, diffs, size_tile_diff);
         pthread_mutex_unlock(&data->lock_send_udp);
 
         // Last free
@@ -766,7 +802,7 @@ void *serve_clients_send_mult_freq(void *arg_udp_thread_data) {
     return NULL;
 }
 
-int init_game_threads(unsigned id) {
+int init_game_threads(server_information *server, unsigned id) {
     udp_thread_data *udp_thread_data_game = malloc(sizeof(udp_thread_data));
     RETURN_FAILURE_IF_NULL(udp_thread_data_game);
     udp_thread_data_game->finished_flag = false;
@@ -774,6 +810,8 @@ int init_game_threads(unsigned id) {
     udp_thread_data_game->game_actions = NULL;
     udp_thread_data_game->size_game_actions = 0;
     udp_thread_data_game->nb_game_actions = 0;
+
+    udp_thread_data_game->server = server;
 
     if (pthread_mutex_init(&udp_thread_data_game->lock_game_actions, NULL) < 0) {
         goto EXIT_FREEING_DATA;
@@ -793,6 +831,7 @@ int init_game_threads(unsigned id) {
     if (pthread_create(&game_threads[2], NULL, serve_clients_send_mult_freq, udp_thread_data_game) < 0) {
         goto EXIT_FREEING_DATA;
     }
+
     return EXIT_SUCCESS;
 
 EXIT_FREEING_DATA:
@@ -811,14 +850,15 @@ void wait_all_clients_connected(pthread_mutex_t *lock, pthread_cond_t *cond, boo
     pthread_mutex_unlock(lock);
 }
 
-void wait_all_clients_not_ready(pthread_mutex_t *lock, pthread_cond_t *cond, bool is_ready, unsigned *nb_ready) {
+void wait_all_clients_not_ready(server_information *server, pthread_mutex_t *lock, pthread_cond_t *cond, bool is_ready,
+                                unsigned *nb_ready) {
     if (!is_ready) {
         pthread_cond_wait(cond, lock);
     } else {
         board *game_board = get_game_board(TMP_GAME_ID);
-        send_game_board_for_clients(0, game_board); // Initial game_board send
+        send_game_board_for_clients(server, 0, game_board); // Initial game_board send
         free(game_board);
-        init_game_threads(TMP_GAME_ID); // TODO MANAGE ERRORS
+        init_game_threads(server, TMP_GAME_ID); // TODO MANAGE ERRORS
         free(nb_ready);
         pthread_cond_broadcast(cond);
     }
@@ -835,35 +875,36 @@ void *serve_client_tcp(void *arg_tcp_thread_data) {
     wait_all_clients_connected(tcp_data->lock_waiting_all_players_join, tcp_data->cond_lock_waiting_all_players_join,
                                is_everyone_connected, tcp_data->connected_players);
     printf("%d send\n", tcp_data->id);
-    send_connexion_information_of_client(tcp_data->id, 0);
+    send_connexion_information_of_client(tcp_data->server, tcp_data->id, 0);
     printf("%d after send\n", tcp_data->id);
 
     // TODO verify ready_informations
-    ready_connection_header *ready_informations = recv_ready_connexion_header_of_client(tcp_data->id);
+    ready_connection_header *ready_informations = recv_ready_connexion_header_of_client(tcp_data->server, tcp_data->id);
 
     print_ready_player(ready_informations);
     pthread_mutex_lock(tcp_data->lock_all_players_ready);
     *(tcp_data->ready_player_number) += 1;
 
     bool is_ready = *tcp_data->ready_player_number == PLAYER_NUM;
-    wait_all_clients_not_ready(tcp_data->lock_all_players_ready, tcp_data->cond_lock_all_players_ready, is_ready,
-                               tcp_data->ready_player_number);
+    wait_all_clients_not_ready(tcp_data->server, tcp_data->lock_all_players_ready,
+                               tcp_data->cond_lock_all_players_ready, is_ready, tcp_data->ready_player_number);
 
     // TODO end of the game
     lock_mutex_to_wait(tcp_data->lock_waiting_the_game_finish, tcp_data->cond_lock_waiting_the_game_finish);
 
     printf("Player %d left the game.\n", ready_informations->id);
     free(ready_informations);
-    close_socket_client(tcp_data->id);
+    close_socket_client(tcp_data->server, tcp_data->id);
     // TODO keep free(tcp_data) if we don't use join
     // TO CONTINUE
     return NULL;
 }
 
-int connect_one_player_to_game(int sock, unsigned *connected_player_solo, unsigned *connected_player_eq) {
+int connect_one_player_to_game(server_information *server, int sock, unsigned *connected_player_solo,
+                               unsigned *connected_player_eq) {
     // TODO change recv not tcp_data
-    sock_clients[*connected_player_solo] = sock;
-    initial_connection_header *head = recv_initial_connection_header_of_client(*connected_player_solo);
+    server->sock_clients[*connected_player_solo] = sock;
+    initial_connection_header *head = recv_initial_connection_header_of_client(server, *connected_player_solo);
 
     if (head->game_mode == SOLO) {
         // TODO INIT SOLO GAME
@@ -895,7 +936,7 @@ int connect_one_player_to_game(int sock, unsigned *connected_player_solo, unsign
     return EXIT_SUCCESS;
 }
 
-int connect_player_to_game() {
+int connect_player_to_game(server_information *server) {
     listen_players();
     printf("Waiting players on %u port.\n", get_port_tcp());
 
@@ -909,14 +950,14 @@ int connect_player_to_game() {
     int connected = 0; // TODO CHANGE
 
     // TODO Add 2 tcp thread data
-    init_tcp_threads_data();
+    init_tcp_threads_data(server);
 
     while (1) {
         poll(polls, nbfds, -1);
 
         for (unsigned i = 1; i < nbfds; i++) {
             if (polls[i].revents & POLL_IN) {
-                connect_one_player_to_game(polls[i].fd, &connected_player_solo, &connected_player_eq);
+                connect_one_player_to_game(server, polls[i].fd, &connected_player_solo, &connected_player_eq);
                 remove_polls_to_poll(polls, &nbfds, i);
             }
             if (polls[i].revents & POLL_HUP) {
@@ -925,9 +966,9 @@ int connect_player_to_game() {
             }
         }
         if (polls[0].revents & POLL_IN) {
-            try_to_init_socket_of_client(connected);
+            try_to_init_socket_of_client(server, connected);
             // TODO Change sock
-            add_polls_to_poll(polls, &nbfds, &s, sock_clients[connected]);
+            add_polls_to_poll(polls, &nbfds, &s, server->sock_clients[connected]);
             connected++;
         }
 
@@ -938,9 +979,9 @@ int connect_player_to_game() {
     return EXIT_SUCCESS;
 }
 
-int game_loop_server() {
+int game_loop_server(server_information *server) {
     int return_value;
-    if (connect_player_to_game() != EXIT_SUCCESS) {
+    if (connect_player_to_game(server) != EXIT_SUCCESS) {
         return_value = EXIT_FAILURE;
         goto exit_closing_sockets_and_free_addr_mult;
     }
@@ -949,8 +990,8 @@ int game_loop_server() {
 
 exit_closing_sockets_and_free_addr_mult:
     close_socket_tcp();
-    close_socket_udp();
-    close_socket_mult();
-    free_addr_mult();
+    close_socket_udp(server);
+    close_socket_mult(server);
+    free_addr_mult(server);
     return return_value;
 }
