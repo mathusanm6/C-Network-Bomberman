@@ -489,7 +489,7 @@ void print_tag_chat(int *player_tag_len, int *whispering_tag_len, int sender, bo
                     int offset_y) {
     *player_tag_len = print_player_tag_chat(whispering, sender, wc, offset_y);
     *whispering_tag_len = 0;
-    if (whispering) {
+    if (whispering && get_game_mode(TMP_GAME_ID) == TEAM) {
         *whispering_tag_len = print_whispering_tag_chat(*player_tag_len, sender, wc, offset_y);
     }
 }

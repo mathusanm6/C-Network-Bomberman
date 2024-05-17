@@ -497,33 +497,47 @@ chat_message *recv_chat_message_of_client(int id) {
 int send_chat_message_to_client(int id, chat_message_type type, int sender_id, int eq, uint8_t message_length,
                                 char *message);
 
+void handle_chat_message_global(int sender_id, chat_message *msg) {
+    for (int i = 0; i < PLAYER_NUM; i++) {
+        if (i == sender_id)
+            continue; // Don't send the message to the sender
+        if (send_chat_message_to_client(i, msg->type, sender_id, msg->eq, msg->message_length, msg->message) < 0) {
+            perror("send_chat_message_to_client");
+        }
+    }
+}
+
+void handle_chat_message_team(int sender_id, chat_message *msg) {
+    for (int i = 0; i < PLAYER_NUM; i++) {
+        if (i == sender_id) {
+            continue; // Don't send the message to the sender or to the other team
+        }
+
+        if (msg->eq == 0 && (i == 1 || i == 2)) {
+            continue; // If the sender is in the first team, don't send the message to the second team
+        }
+
+        if (msg->eq == 1 && (i == 0 || i == 3)) {
+            continue; // If the sender is in the second team, don't send the message to the first team
+        }
+
+        if (send_chat_message_to_client(i, msg->type, sender_id, msg->eq, msg->message_length, msg->message) < 0) {
+            perror("send_chat_message_to_client");
+        }
+    }
+}
+
 void handle_chat_message(int sender_id, chat_message *msg) {
-    if (msg->type == GLOBAL_M) {
-        for (int i = 0; i < PLAYER_NUM; i++) {
-            if (i == sender_id)
-                continue; // Don't send the message to the sender
-            if (send_chat_message_to_client(i, msg->type, sender_id, msg->eq, msg->message_length, msg->message) < 0) {
-                perror("send_chat_message_to_client");
-            }
+    if (get_game_mode(TMP_GAME_ID) == SOLO) {
+        handle_chat_message_global(sender_id, msg);
+    } else if (get_game_mode(TMP_GAME_ID) == TEAM) {
+        if (msg->type == GLOBAL_M) {
+            handle_chat_message_global(sender_id, msg);
+        } else if (msg->type == TEAM_M) {
+            handle_chat_message_team(sender_id, msg);
         }
-    } else if (msg->type == TEAM_M) {
-        for (int i = 0; i < PLAYER_NUM; i++) {
-            if (i == sender_id) {
-                continue;   // Don't send the message to the sender or to the other team
-            }
-
-            if (msg->eq == 0 && (i == 1 || i == 2)) {
-                continue;   // If the sender is in the first team, don't send the message to the second team
-            }
-
-            if (msg->eq == 1 && (i == 0 || i == 3)) {
-                continue;   // If the sender is in the second team, don't send the message to the first team
-            }
-
-            if (send_chat_message_to_client(i, msg->type, sender_id, msg->eq, msg->message_length, msg->message) < 0) {
-                perror("send_chat_message_to_client");
-            }
-        }
+    } else {
+        perror("Unknown game mode");
     }
 }
 

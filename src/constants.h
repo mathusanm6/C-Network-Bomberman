@@ -2,6 +2,7 @@
 #define CONSTANTS_H
 
 #define PLAYER_NUM 4
+#define TMP_GAME_ID 0
 
 #define MIN_GAMEBOARD_WIDTH 10
 #define MIN_GAMEBOARD_HEIGHT 10
