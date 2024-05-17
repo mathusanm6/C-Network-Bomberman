@@ -12,7 +12,7 @@ int init_tcp_socket();
 void close_socket_tcp();
 void set_tcp_port(uint16_t port);
 int try_to_connect_tcp();
-int start_initialisation_game(GAME_MODE mode);
+connection_information *start_initialisation_game(GAME_MODE mode);
 int send_ready_to_play(GAME_MODE mode);
 
 typedef enum game_message_type {

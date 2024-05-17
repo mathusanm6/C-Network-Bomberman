@@ -6,7 +6,7 @@
 
 /** Initialize view, controller and model to start a game
  */
-int init_game(int, GAME_MODE);
+int init_game(int id, int eq, GAME_MODE);
 
 /** Game loop
  */
