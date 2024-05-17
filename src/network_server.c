@@ -955,6 +955,7 @@ int connect_one_player_to_game(int sock) {
     // TODO change recv not tcp_data
     initial_connection_header *head = recv_initial_connection_header_of_client(sock);
 
+    // TODO: refactor
     if (head->game_mode == SOLO) {
         if (connected_solo_players == 0) {
             int game_id = init_game_model(SOLO);
