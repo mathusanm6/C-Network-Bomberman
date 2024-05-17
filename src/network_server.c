@@ -33,6 +33,7 @@
 typedef struct tcp_thread_data {
     unsigned id;
     int game_id;
+    int eq;
     unsigned *ready_player_number;
     unsigned *connected_players;
 
@@ -423,6 +424,7 @@ int init_tcp_threads_data(server_information *server, GAME_MODE mode, int game_i
                 solo_tcp_threads_data_players[i]->cond_lock_waiting_the_game_finish = cond_lock_waiting_the_game_finish;
 
                 solo_tcp_threads_data_players[i]->game_id = game_id;
+                solo_tcp_threads_data_players[i]->eq = 0;
                 solo_tcp_threads_data_players[i]->server = server;
                 break;
 
@@ -449,6 +451,12 @@ int init_tcp_threads_data(server_information *server, GAME_MODE mode, int game_i
                     cond_lock_waiting_all_players_join;
                 team_tcp_threads_data_players[i]->cond_lock_all_players_ready = cond_lock_all_players_ready;
                 team_tcp_threads_data_players[i]->cond_lock_waiting_the_game_finish = cond_lock_waiting_the_game_finish;
+
+                if (game_id == 0 || game_id == 3) { // 0 and 3 are in the same team
+                    team_tcp_threads_data_players[i]->eq = 0;
+                } else {
+                    team_tcp_threads_data_players[i]->eq = 1;
+                }
 
                 team_tcp_threads_data_players[i]->game_id = game_id;
                 team_tcp_threads_data_players[i]->server = server;
@@ -525,13 +533,21 @@ void handle_chat_message_team(server_information *server, int sender_id, chat_me
             continue; // Don't send the message to the sender or to the other team
         }
 
-        if (msg->eq == 0 && (i == 1 || i == 2)) {
+        if ((sender_id == 0 || sender_id == 3) && (i == 1 || i == 2)) {
             continue; // If the sender is in the first team, don't send the message to the second team
         }
 
-        if (msg->eq == 1 && (i == 0 || i == 3)) {
+        if ((sender_id == 1 || sender_id == 2) && (i == 0 || i == 3)) {
             continue; // If the sender is in the second team, don't send the message to the first team
         }
+
+        printf("Sending message to %d\n", i);
+        printf("Sender id : %d\n", sender_id);
+        printf("Message : %s\n", msg->message);
+        printf("Message length : %d\n", msg->message_length);
+        printf("Message type : %d\n", msg->type);
+        printf("Message eq : %d\n", msg->eq);
+        printf("\n");
 
         if (send_chat_message_to_client(server, i, msg->type, sender_id, msg->eq, msg->message_length, msg->message) <
             0) {
@@ -978,7 +994,7 @@ void *serve_client_tcp(void *arg_tcp_thread_data) {
     wait_all_clients_connected(tcp_data->lock_waiting_all_players_join, tcp_data->cond_lock_waiting_all_players_join,
                                is_everyone_connected, tcp_data->connected_players);
     printf("%d send\n", tcp_data->id);
-    send_connexion_information_of_client(tcp_data->server, tcp_data->id, 0);
+    send_connexion_information_of_client(tcp_data->server, tcp_data->id, tcp_data->eq);
     printf("%d after send\n", tcp_data->id);
 
     // TODO verify ready_informations
