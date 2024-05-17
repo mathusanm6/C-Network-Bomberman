@@ -485,29 +485,41 @@ game_action *recv_game_action_of_clients(server_information *server) {
     return recv_game_action(server->sock_udp);
 }
 
-game_action *recv_game_action_of_clients() {
-    return recv_game_action(sock_udp);
+chat_message *recv_chat_message_of_client(server_information *server, int id) {
+    return recv_chat_message(server->sock_clients[id]);
 }
 
-chat_message *recv_chat_message_of_client(int id) {
-    // TODO: CHECK if its working
-    return recv_chat_message(sock_clients[id]);
+int send_connexion_information_of_client(server_information *server, int id, int eq) {
+    // TODO Replace the gamemode
+    return send_connexion_information(server->sock_clients[id], SOLO, id, eq, ntohs(server->port_udp),
+                                      ntohs(server->port_mult), server->adrmdiff);
 }
 
-int send_chat_message_to_client(int id, chat_message_type type, int sender_id, int eq, uint8_t message_length,
-                                char *message);
+int send_game_board_for_clients(server_information *server, uint16_t num, board *board_) {
+    return send_game_board(server->sock_mult, server->addr_mult, num, board_);
+}
 
-void handle_chat_message_global(int sender_id, chat_message *msg) {
+int send_game_update_for_clients(server_information *server, uint16_t num, tile_diff *diff, uint8_t nb) {
+    return send_game_update(server->sock_mult, server->addr_mult, num, diff, nb);
+}
+
+int send_chat_message_to_client(server_information *server, int id, chat_message_type type, int sender_id, int eq,
+                                uint8_t message_length, char *message) {
+    return send_chat_message(server->sock_clients[id], type, sender_id, eq, message_length, message);
+}
+
+void handle_chat_message_global(server_information *server, int sender_id, chat_message *msg) {
     for (int i = 0; i < PLAYER_NUM; i++) {
         if (i == sender_id)
             continue; // Don't send the message to the sender
-        if (send_chat_message_to_client(i, msg->type, sender_id, msg->eq, msg->message_length, msg->message) < 0) {
+        if (send_chat_message_to_client(server, i, msg->type, sender_id, msg->eq, msg->message_length, msg->message) <
+            0) {
             perror("send_chat_message_to_client");
         }
     }
 }
 
-void handle_chat_message_team(int sender_id, chat_message *msg) {
+void handle_chat_message_team(server_information *server, int sender_id, chat_message *msg) {
     for (int i = 0; i < PLAYER_NUM; i++) {
         if (i == sender_id) {
             continue; // Don't send the message to the sender or to the other team
@@ -521,38 +533,25 @@ void handle_chat_message_team(int sender_id, chat_message *msg) {
             continue; // If the sender is in the second team, don't send the message to the first team
         }
 
-        if (send_chat_message_to_client(i, msg->type, sender_id, msg->eq, msg->message_length, msg->message) < 0) {
+        if (send_chat_message_to_client(server, i, msg->type, sender_id, msg->eq, msg->message_length, msg->message) <
+            0) {
             perror("send_chat_message_to_client");
         }
     }
 }
 
-void handle_chat_message(int sender_id, chat_message *msg) {
+void handle_chat_message(server_information *server, int sender_id, chat_message *msg) {
     if (get_game_mode(TMP_GAME_ID) == SOLO) {
-        handle_chat_message_global(sender_id, msg);
+        handle_chat_message_global(server, sender_id, msg);
     } else if (get_game_mode(TMP_GAME_ID) == TEAM) {
         if (msg->type == GLOBAL_M) {
-            handle_chat_message_global(sender_id, msg);
+            handle_chat_message_global(server, sender_id, msg);
         } else if (msg->type == TEAM_M) {
-            handle_chat_message_team(sender_id, msg);
+            handle_chat_message_team(server, sender_id, msg);
         }
     } else {
         perror("Unknown game mode");
     }
-}
-
-int send_connexion_information_of_client(int id, int eq) {
-    // TODO Replace the gamemode
-    return send_connexion_information(server->sock_clients[id], SOLO, id, eq, ntohs(server->port_udp),
-                                      ntohs(server->port_mult), server->adrmdiff);
-}
-
-int send_game_board_for_clients(server_information *server, uint16_t num, board *board_) {
-    return send_game_board(server->sock_mult, server->addr_mult, num, board_);
-}
-
-int send_game_update_for_clients(server_information *server, uint16_t num, tile_diff *diff, uint8_t nb) {
-    return send_game_update(server->sock_mult, server->addr_mult, num, diff, nb);
 }
 
 struct pollfd *init_polls_connexion(int sock) {
@@ -585,66 +584,14 @@ void remove_polls_to_poll(struct pollfd *polls, unsigned *nb, unsigned i) {
     *nb -= 1;
 }
 
-int send_chat_message_to_client(int id, chat_message_type type, int eq, uint8_t message_length, char *message) {
-    return send_chat_message(sock_clients[id], type, id, eq, message_length, message);
-}
-
-void init_connexion_with_client(tcp_thread_data *tcp_data) {
-    // TODO separate solo and eq client
-    initial_connection_header *head = recv_initial_connection_header_of_client(tcp_data->id);
-    free(head);
-    lock_mutex_to_wait(&lock_waiting_all_players_join, &cond_lock_waiting_all_players_join);
-    // TODO verify well send
-    send_connexion_information_of_client(tcp_data->id, 0);
-}
-
 void print_ready_player(ready_connection_header *ready_informations) {
     printf("Player with Id : %d, eq : %d is ready.\n", ready_informations->id, ready_informations->eq);
 }
 
-void *serve_client_tcp(void *arg_tcp_thread_data) {
-    tcp_thread_data *tcp_data = (tcp_thread_data *)arg_tcp_thread_data;
-
-    init_connexion_with_client(tcp_data);
-
-    // TODO verify ready_informations
-    ready_connection_header *ready_informations = recv_ready_connexion_header_of_client(tcp_data->id);
-
-    print_ready_player(ready_informations);
-    pthread_mutex_lock(&lock_all_players_ready);
-    ready_player_number++;
-
-    wait_all_clients_not_ready();
-
-    // Receive and handle chat messages
-    while (true) {
-        // TODO : end of the game - stop the loop
-        chat_message *msg = recv_chat_message_of_client(tcp_data->id);
-        if (msg != NULL) {
-            handle_chat_message(tcp_data->id, msg);
-            free(msg->message);
-            free(msg);
-        }
-    }
-
-    printf("Sorti de la boucle\n");
-    // TODO end of the game
-    lock_mutex_to_wait(&lock_waiting_the_game_finish, &cond_lock_waiting_the_game_finish);
-
-    printf("Player %d left the game.\n", ready_informations->id);
-    free(ready_informations);
-    close_socket_client(tcp_data->id);
-    // TODO keep free(tcp_data) if we don't use join
-    // TO CONTINUE
-    return NULL;
-}
-
-int connect_one_player_to_game(int id) {
-    tcp_threads_data_players[id] = malloc(sizeof(tcp_threads_data_players));
-    tcp_threads_data_players[id]->id = id;
-
-    int res = try_to_init_socket_of_client(id);
-
+int try_to_init_socket_of_client() {
+    struct sockaddr_in6 client_addr;
+    int client_addr_len = sizeof(client_addr);
+    int res = accept(sock_tcp, (struct sockaddr *)&client_addr, (socklen_t *)&client_addr_len);
     if (res < 0) {
         perror("client acceptance");
         return EXIT_FAILURE;
@@ -1046,6 +993,17 @@ void *serve_client_tcp(void *arg_tcp_thread_data) {
     wait_all_clients_not_ready(tcp_data->server, tcp_data->lock_all_players_ready,
                                tcp_data->cond_lock_all_players_ready, is_ready, tcp_data->ready_player_number,
                                tcp_data->game_id);
+
+    // Receive and handle chat messages
+    while (true) {
+        // TODO : end of the game - stop the loop
+        chat_message *msg = recv_chat_message_of_client(tcp_data->server, tcp_data->id);
+        if (msg != NULL) {
+            handle_chat_message(tcp_data->server, tcp_data->id, msg);
+            free(msg->message);
+            free(msg);
+        }
+    }
 
     // TODO end of the game
     lock_mutex_to_wait(tcp_data->lock_waiting_the_game_finish, tcp_data->cond_lock_waiting_the_game_finish);

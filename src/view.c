@@ -52,7 +52,7 @@ static int split_chat_window(window_context *, window_context *, window_context 
 
 // Helper functions for refreshing the game and chat windows
 static void print_game(board *, window_context *);
-static void print_chat(chat *, int, window_context *, window_context *);
+static void print_chat(GAME_MODE, chat *, int, window_context *, window_context *);
 
 static void toggle_focus(chat *, window_context *, window_context *, window_context *);
 
@@ -157,13 +157,13 @@ void get_computed_board_dimension(dimension *dim) {
     }
 }
 
-void refresh_game(board *b, chat *c, int player_id) {
+void refresh_game(GAME_MODE game_mode, board *b, chat *c, int player_id) {
     // TODO Reimplement chat
     toggle_focus(c, game_wc, chat_history_wc, chat_input_wc);
     print_game(b, game_wc);
     wrefresh(game_wc->win); // Refresh the game window
 
-    print_chat(c, player_id, chat_history_wc, chat_input_wc);
+    print_chat(game_mode, c, player_id, chat_history_wc, chat_input_wc);
     wrefresh(chat_input_wc->win);   // Refresh the chat input window (Before chat_win refresh)
     wrefresh(chat_history_wc->win); // Refresh the chat history window
     wrefresh(chat_wc->win);         // Refresh the chat window
@@ -442,14 +442,14 @@ void clear_view_line(window_context *wc, int offset_y, int offset_x) {
     }
 }
 
-int print_player_tag_chat(bool whispering, int sender, window_context *wc, int offset_y) {
+int print_player_tag_chat(GAME_MODE game_mode, bool whispering, int sender, window_context *wc, int offset_y) {
     // Update chat text
     activate_color_for_player(wc, sender + 1);
     wattron(wc->win, A_BOLD); // Enable bold
 
     char buf[30];
     int len = 0;
-    if (whispering) {
+    if (whispering && game_mode == TEAM) {
         len = snprintf(buf, sizeof(buf), " Player%d ", sender + 1);
     } else {
         len = snprintf(buf, sizeof(buf), " Player%d : ", sender + 1);
@@ -485,11 +485,11 @@ int print_whispering_tag_chat(int player_tag_len, int sender, window_context *wc
     return len;
 }
 
-void print_tag_chat(int *player_tag_len, int *whispering_tag_len, int sender, bool whispering, window_context *wc,
-                    int offset_y) {
-    *player_tag_len = print_player_tag_chat(whispering, sender, wc, offset_y);
+void print_tag_chat(GAME_MODE game_mode, int *player_tag_len, int *whispering_tag_len, int sender, bool whispering,
+                    window_context *wc, int offset_y) {
+    *player_tag_len = print_player_tag_chat(game_mode, whispering, sender, wc, offset_y);
     *whispering_tag_len = 0;
-    if (whispering && get_game_mode(TMP_GAME_ID) == TEAM) {
+    if (whispering && game_mode == TEAM) {
         *whispering_tag_len = print_whispering_tag_chat(*player_tag_len, sender, wc, offset_y);
     }
 }
@@ -508,14 +508,15 @@ void print_chat_input(chat *c, int player_tag_len, int whispering_tag_len, windo
     wattroff(chat_input_wc->win, COLOR_PAIR(3)); // Disable custom color 3
 }
 
-void print_chat_history(chat *c, window_context *chat_history_wc) {
+void print_chat_history(GAME_MODE game_mode, chat *c, window_context *chat_history_wc) {
     wattron(chat_history_wc->win, COLOR_PAIR(3)); // Enable custom color 3
     chat_node *cnode = c->history->head;
     int i = 0;
     while (i < c->history->count) {
         int player_tag_len = 0;
         int whispering_tag_len = 0;
-        print_tag_chat(&player_tag_len, &whispering_tag_len, cnode->sender, cnode->whispered, chat_history_wc, i);
+        print_tag_chat(game_mode, &player_tag_len, &whispering_tag_len, cnode->sender, cnode->whispered,
+                       chat_history_wc, i);
 
         activate_color_for_player(chat_history_wc, cnode->sender + 1);
         clear_view_line(chat_history_wc, i + 1, 1 + player_tag_len + whispering_tag_len);
@@ -527,17 +528,18 @@ void print_chat_history(chat *c, window_context *chat_history_wc) {
     wattroff(chat_history_wc->win, COLOR_PAIR(3)); // Disable custom color 3
 }
 
-void print_chat(chat *c, int player_id, window_context *chat_history_wc, window_context *chat_input_wc) {
+void print_chat(GAME_MODE game_mode, chat *c, int player_id, window_context *chat_history_wc,
+                window_context *chat_input_wc) {
     // Add tag
     int player_tag_len = 0;
     int whispering_tag_len = 0;
-    print_tag_chat(&player_tag_len, &whispering_tag_len, player_id, c->whispering, chat_input_wc, 0);
+    print_tag_chat(game_mode, &player_tag_len, &whispering_tag_len, player_id, c->whispering, chat_input_wc, 0);
 
     // Update chat text
     print_chat_input(c, player_tag_len, whispering_tag_len, chat_input_wc);
 
     // Update chat history
-    print_chat_history(c, chat_history_wc);
+    print_chat_history(game_mode, c, chat_history_wc);
 }
 
 void toggle_focus(chat *c, window_context *game_wc, window_context *chat_history_wc, window_context *chat_input_wc) {

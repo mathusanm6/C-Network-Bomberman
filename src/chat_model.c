@@ -13,6 +13,7 @@ chat *create_chat() {
         return NULL;
     }
     c->history->count = 0;
+    c->history->head = NULL; // Initialize head to NULL
 
     c->line = malloc(sizeof(chat_line));
     if (c->line == NULL) {
@@ -21,6 +22,7 @@ chat *create_chat() {
         return NULL;
     }
     c->line->cursor = 0;
+    memset(c->line->data, EMPTY_CHAR, TEXT_SIZE); // Initialize line data
     c->on_focus = false;
     c->whispering = false;
 
@@ -125,7 +127,7 @@ chat_node *create_chat_node(int sender, char msg[TEXT_SIZE], bool whispered) {
         // Ensure null terminated string
         new_node->message[TEXT_SIZE - 1] = '\0';
         new_node->whispered = whispered;
-        new_node->next = NULL;
+        new_node->next = NULL; // Initialize next to NULL
     }
     return new_node;
 }
@@ -138,15 +140,19 @@ int add_message_from_server(chat *c, int sender, char *message, bool whispered) 
     RETURN_FAILURE_IF_NULL(new_node);
 
     if (c->history->count == MAX_CHAT_HISTORY_LEN) {
-        // If the history is full, replace the oldest message
-        chat_node *temp = c->history->head;
-        while (temp->next != c->history->head) { // Find the last node before head
-            temp = temp->next;
+        chat_node *oldest = c->history->head;
+        chat_node *last = c->history->head;
+
+        while (last->next != c->history->head) { // Find the last node before head
+            last = last->next;
         }
-        temp->next = new_node;                   // Link the new node after the last node
-        new_node->next = c->history->head->next; // New node points to second oldest node
-        free(c->history->head);
-        c->history->head = new_node->next; // New head is the second oldest node
+
+        c->history->head = oldest->next;   // Update head to next oldest node
+        last->next = new_node;             // Link the new node after the last node
+        new_node->next = c->history->head; // New node points to the new head
+
+        oldest->next = NULL;    // Detach the oldest node
+        free_chat_node(oldest); // Free the detached oldest node
     } else {
         // List is not full, add the new node to the end
         if (c->history->head == NULL) {
@@ -187,15 +193,19 @@ int add_message_from_client(chat *c, int client_id, char **message, bool *whispe
     *whispered = c->whispering;
 
     if (c->history->count == MAX_CHAT_HISTORY_LEN) {
-        // If the history is full, replace the oldest message
-        chat_node *temp = c->history->head;
-        while (temp->next != c->history->head) { // Find the last node before head
-            temp = temp->next;
+        chat_node *oldest = c->history->head;
+        chat_node *last = c->history->head;
+
+        while (last->next != c->history->head) { // Find the last node before head
+            last = last->next;
         }
-        temp->next = new_node;                   // Link the new node after the last node
-        new_node->next = c->history->head->next; // New node points to second oldest node
-        free(c->history->head);
-        c->history->head = new_node->next; // New head is the second oldest node
+
+        c->history->head = oldest->next;   // Update head to next oldest node
+        last->next = new_node;             // Link the new node after the last node
+        new_node->next = c->history->head; // New node points to the new head
+
+        oldest->next = NULL;    // Detach the oldest node
+        free_chat_node(oldest); // Free the detached oldest node
     } else {
         // List is not full, add the new node to the end
         if (c->history->head == NULL) {

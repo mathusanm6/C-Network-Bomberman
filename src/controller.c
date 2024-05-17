@@ -321,7 +321,7 @@ void *game_board_info_thread_function() {
 
         board *b = get_board();
         pthread_mutex_lock(&view_mutex);
-        refresh_game(b, client_chat, player_id);
+        refresh_game(game_mode, b, client_chat, player_id);
         pthread_mutex_unlock(&view_mutex);
     }
 
@@ -345,7 +345,7 @@ void *chat_message_thread_function() {
 
         board *b = get_board();
         pthread_mutex_lock(&view_mutex);
-        refresh_game(b, client_chat, player_id);
+        refresh_game(game_mode, b, client_chat, player_id);
         pthread_mutex_unlock(&view_mutex);
     }
 

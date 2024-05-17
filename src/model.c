@@ -562,10 +562,6 @@ board *get_game_board(unsigned int game_id) {
 }
 
 GAME_MODE get_game_mode(unsigned int game_id) {
-    if (games[game_id] == NULL) {
-        return SOLO;
-    }
-
     return games[game_id]->game_mode;
 }
 
