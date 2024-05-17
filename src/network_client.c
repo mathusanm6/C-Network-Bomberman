@@ -186,20 +186,17 @@ void set_server_informations(connection_information *head) {
     RETURN_IF_ERROR(init_udp_info(head));
 }
 
-int start_initialisation_game(GAME_MODE mode) {
+connection_information *start_initialisation_game(GAME_MODE mode) {
     if (send_initial_connexion_information(sock_tcp, mode) == EXIT_FAILURE) {
-        return -1;
+        return NULL;
     }
     printf("You have to wait for other players.\n");
     connection_information *head = recv_connexion_information(sock_tcp);
-    if (head == NULL) {
-        return -1;
-    }
+    RETURN_NULL_IF_NULL(head);
+
     set_server_informations(head);
-    int id = head->id;
-    free(head);
     printf("The server is ready.\n");
-    return id;
+    return head;
 }
 
 int send_ready_to_play(GAME_MODE mode) {

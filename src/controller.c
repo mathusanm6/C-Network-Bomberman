@@ -45,6 +45,7 @@ static GAME_MODE game_mode = SOLO;
 static int player_id = 0;
 
 static int message_number = 0;
+static int eq = 0;
 
 static pthread_mutex_t view_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -209,7 +210,7 @@ bool perform_game_action(int c) {
 
             action->game_mode = game_mode;
             action->id = player_id;
-            action->eq = 0; // TODO
+            action->eq = eq;
             action->message_number = message_number;
             message_number = (message_number + 1) % (1 << 13);
             action->action = a;
@@ -250,7 +251,7 @@ bool control() {
     return false;
 }
 
-int init_game(int player_nb, GAME_MODE mode) {
+int init_game(int player_nb, int eq_, GAME_MODE mode) {
     RETURN_FAILURE_IF_ERROR(init_view());
 
     // TODO: init the chat
@@ -258,6 +259,7 @@ int init_game(int player_nb, GAME_MODE mode) {
     init_controller();
 
     player_id = player_nb;
+    eq = eq_;
     game_mode = mode;
 
     return EXIT_SUCCESS;
