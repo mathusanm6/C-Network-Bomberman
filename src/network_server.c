@@ -450,7 +450,7 @@ int init_tcp_threads_data(server_information *server, GAME_MODE mode, int game_i
                 team_tcp_threads_data_players[i]->cond_lock_all_players_ready = cond_lock_all_players_ready;
                 team_tcp_threads_data_players[i]->cond_lock_waiting_the_game_finish = cond_lock_waiting_the_game_finish;
 
-                solo_tcp_threads_data_players[i]->game_id = game_id;
+                team_tcp_threads_data_players[i]->game_id = game_id;
                 team_tcp_threads_data_players[i]->server = server;
                 break;
             default:
@@ -956,7 +956,6 @@ int connect_one_player_to_game(int sock) {
     initial_connection_header *head = recv_initial_connection_header_of_client(sock);
 
     if (head->game_mode == SOLO) {
-        // TODO INIT SOLO GAME
         if (connected_solo_players == 0) {
             int game_id = init_game_model(SOLO);
             if (game_id == -1) {
@@ -964,7 +963,6 @@ int connect_one_player_to_game(int sock) {
             }
             solo_waiting_server = init_server_network(connection_port);
             RETURN_FAILURE_IF_NULL(solo_waiting_server);
-            // TODO Add 2 tcp thread data
             init_tcp_threads_data(solo_waiting_server, SOLO, game_id);
         }
         solo_waiting_server->sock_clients[connected_solo_players] = sock;
@@ -978,8 +976,7 @@ int connect_one_player_to_game(int sock) {
             return EXIT_FAILURE;
         }
 
-    } else if (head->game_mode == TEAM && connected_team_players == 0) {
-        // TODO INIT TEAM GAME
+    } else if (head->game_mode == TEAM) {
         if (connected_team_players == 0) {
             int game_id = init_game_model(TEAM);
             if (game_id == -1) {
@@ -987,7 +984,6 @@ int connect_one_player_to_game(int sock) {
             }
             team_waiting_server = init_server_network(connection_port);
             RETURN_FAILURE_IF_NULL(team_waiting_server);
-            // TODO Add 2 tcp thread data
             init_tcp_threads_data(team_waiting_server, TEAM, game_id);
         }
         team_waiting_server->sock_clients[connected_team_players] = sock;
