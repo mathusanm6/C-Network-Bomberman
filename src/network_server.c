@@ -7,12 +7,15 @@
 #include <errno.h>
 #include <net/if.h>
 #include <netinet/in.h>
+#include <poll.h>
 #include <pthread.h>
+#include <signal.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/poll.h>
 #include <unistd.h>
 
 #define MAX_PORT_TRY 250
@@ -23,10 +26,22 @@
 #define LIMIT_LAST_NUM_MESSAGE_MULT ((1 << 15) - 1)   // 2^16
 #define LIMIT_LAST_NUM_MESSAGE_CLIENT ((1 << 12) - 1) // 2^13
 
+#define TMP_GAME_ID 0
+#define FREQ 50000 // 100 00 us = 10 ms
+#define INITIAL_GAME_ACTIONS_SIZE 4
+#define INITIAL_POLL_FD_SIZE 9
+
 typedef struct tcp_thread_data {
     unsigned id;
-    pthread_t thread_id;
-    bool finished_flag;
+    unsigned *ready_player_number;
+    unsigned *connected_players;
+    pthread_mutex_t *lock_waiting_all_players_join;
+    pthread_mutex_t *lock_all_players_ready;
+    pthread_mutex_t *lock_waiting_the_game_finish;
+    pthread_cond_t *cond_lock_waiting_all_players_join;
+    pthread_cond_t *cond_lock_all_players_ready;
+    pthread_cond_t *cond_lock_waiting_the_game_finish;
+    bool *finished_flag;
 } tcp_thread_data;
 
 typedef struct udp_thread_data {
@@ -39,10 +54,6 @@ typedef struct udp_thread_data {
     pthread_mutex_t lock_send_udp;
     pthread_mutex_t lock_game_board;
 } udp_thread_data;
-
-#define TMP_GAME_ID 0
-#define FREQ 50000 // 100 00 us = 10 ms
-#define INITIAL_GAME_ACTIONS_SIZE 4
 
 /** Parameter for a server managing a single game, will change in the future to manage multiple game
  */
@@ -60,17 +71,6 @@ static struct sockaddr_in6 *addr_mult = NULL;
 
 static tcp_thread_data *tcp_threads_data_players[PLAYER_NUM];
 static pthread_t game_threads[3];
-
-pthread_mutex_t lock_waiting_all_players_join = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t lock_all_players_ready = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t lock_waiting_the_game_finish = PTHREAD_MUTEX_INITIALIZER;
-
-pthread_cond_t cond_lock_waiting_all_players_join = PTHREAD_COND_INITIALIZER;
-pthread_cond_t cond_lock_all_players_ready = PTHREAD_COND_INITIALIZER;
-pthread_cond_t cond_lock_waiting_the_game_finish = PTHREAD_COND_INITIALIZER;
-
-static unsigned connected_player_number = 0;
-static unsigned ready_player_number = 0;
 
 void close_socket(int sock) {
     if (sock != -1) {
@@ -144,23 +144,6 @@ void print_ip_of_client(struct sockaddr_in6 client_addr) {
     char client_ip[INET6_ADDRSTRLEN];
     inet_ntop(AF_INET6, &(client_addr.sin6_addr), client_ip, INET6_ADDRSTRLEN);
     printf("%s\n", client_ip);
-}
-
-int try_to_init_socket_of_client(int id) {
-    if (id < 0 || id >= PLAYER_NUM) {
-        return EXIT_FAILURE;
-    }
-    struct sockaddr_in6 client_addr;
-    int client_addr_len = sizeof(client_addr);
-    int res = accept(sock_tcp, (struct sockaddr *)&client_addr, (socklen_t *)&client_addr_len);
-    if (res < 0) {
-        perror("client acceptance");
-        return EXIT_FAILURE;
-    }
-    sock_clients[id] = res;
-
-    print_ip_of_client(client_addr);
-    return EXIT_SUCCESS;
 }
 
 uint16_t get_random_port() {
@@ -326,18 +309,46 @@ int listen_players() {
     return EXIT_SUCCESS;
 }
 
-void free_tcp_threads_data() {
-    for (unsigned i = 0; i < connected_player_number; i++) {
-        if (tcp_threads_data_players[i] != NULL) {
-            free(tcp_threads_data_players[i]);
-            tcp_threads_data_players[i] = NULL;
+void free_tcp_threads_data(tcp_thread_data **data_thread, unsigned nb_data) {
+    for (unsigned i = 0; i < nb_data; i++) {
+        if (data_thread[i] == NULL) {
+            free(data_thread[i]);
+            data_thread[i] = NULL;
         }
     }
+    free(data_thread);
 }
 
-void *serve_client_tcp(void *);
-
 int init_tcp_threads_data() {
+    // TODO CHANGE FOR MULTIGAME
+    unsigned *ready_player_number = malloc(sizeof(unsigned));
+    *ready_player_number = 0;
+    unsigned *connected_players = malloc(sizeof(unsigned));
+    *connected_players = 0;
+    pthread_mutex_t *lock_waiting_all_players_join = malloc(sizeof(pthread_mutex_t));
+    pthread_mutex_t *lock_all_players_ready = malloc(sizeof(pthread_mutex_t));
+    pthread_mutex_t *lock_waiting_the_game_finish = malloc(sizeof(pthread_mutex_t));
+    pthread_cond_t *cond_lock_waiting_all_players_join = malloc(sizeof(pthread_cond_t));
+    pthread_cond_t *cond_lock_all_players_ready = malloc(sizeof(pthread_cond_t));
+    pthread_cond_t *cond_lock_waiting_the_game_finish = malloc(sizeof(pthread_cond_t));
+    if (pthread_mutex_init(lock_waiting_the_game_finish, NULL) < 0) {
+        return EXIT_FAILURE;
+    }
+    if (pthread_mutex_init(lock_all_players_ready, NULL) < 0) {
+        return EXIT_FAILURE;
+    }
+    if (pthread_mutex_init(lock_waiting_all_players_join, NULL) < 0) {
+        return EXIT_FAILURE;
+    }
+    if (pthread_cond_init(cond_lock_waiting_the_game_finish, NULL) < 0) {
+        return EXIT_FAILURE;
+    }
+    if (pthread_cond_init(cond_lock_all_players_ready, NULL) < 0) {
+        return EXIT_FAILURE;
+    }
+    if (pthread_cond_init(cond_lock_waiting_all_players_join, NULL) < 0) {
+        return EXIT_FAILURE;
+    }
     for (unsigned i = 0; i < PLAYER_NUM; i++) {
         tcp_threads_data_players[i] = malloc(sizeof(tcp_thread_data));
 
@@ -348,10 +359,20 @@ int init_tcp_threads_data() {
             }
             return EXIT_FAILURE;
         }
-        memset(&tcp_threads_data_players[i], 0, sizeof(tcp_thread_data));
+        memset(tcp_threads_data_players[i], 0, sizeof(tcp_thread_data));
+        tcp_threads_data_players[i]->ready_player_number = ready_player_number;
+        tcp_threads_data_players[i]->connected_players = connected_players;
+        tcp_threads_data_players[i]->lock_waiting_all_players_join = lock_waiting_all_players_join;
+        tcp_threads_data_players[i]->lock_all_players_ready = lock_all_players_ready;
+        tcp_threads_data_players[i]->lock_waiting_the_game_finish = lock_waiting_the_game_finish;
+        tcp_threads_data_players[i]->cond_lock_waiting_all_players_join = cond_lock_waiting_all_players_join;
+        tcp_threads_data_players[i]->cond_lock_all_players_ready = cond_lock_all_players_ready;
+        tcp_threads_data_players[i]->cond_lock_waiting_the_game_finish = cond_lock_waiting_the_game_finish;
     }
     return EXIT_SUCCESS;
 }
+
+void *serve_client_tcp(void *);
 
 void lock_mutex_to_wait(pthread_mutex_t *mutex, pthread_cond_t *cond) {
     pthread_mutex_lock(mutex);
@@ -363,15 +384,6 @@ void unlock_mutex_for_everyone(pthread_mutex_t *mutex, pthread_cond_t *cond) {
     pthread_mutex_lock(mutex);
     pthread_cond_broadcast(cond);
     pthread_mutex_unlock(mutex);
-}
-
-void wait_all_clients_not_ready() {
-    if (ready_player_number < PLAYER_NUM) {
-        pthread_cond_wait(&cond_lock_all_players_ready, &lock_all_players_ready);
-    } else {
-        pthread_cond_broadcast(&cond_lock_all_players_ready);
-    }
-    pthread_mutex_unlock(&lock_all_players_ready);
 }
 
 initial_connection_header *recv_initial_connection_header_of_client(int id) {
@@ -399,82 +411,55 @@ int send_game_update_for_clients(uint16_t num, tile_diff *diff, uint8_t nb) {
     return send_game_update(sock_mult, addr_mult, num, diff, nb);
 }
 
-void init_connexion_with_client(tcp_thread_data *tcp_data) {
-    // TODO separate solo and eq client
-    initial_connection_header *head = recv_initial_connection_header_of_client(tcp_data->id);
-    free(head);
-    lock_mutex_to_wait(&lock_waiting_all_players_join, &cond_lock_waiting_all_players_join);
-    // TODO verify well send
-    send_connexion_information_of_client(tcp_data->id, 0);
+struct pollfd *init_polls_connexion(int sock) {
+    struct pollfd *polls = malloc(INITIAL_POLL_FD_SIZE * sizeof(struct pollfd));
+    RETURN_NULL_IF_NULL_PERROR(polls, "malloc polls");
+    polls[0].fd = sock;
+    polls[0].events = POLL_IN;
+    return polls;
+}
+
+struct pollfd *add_polls_to_poll(struct pollfd *polls, unsigned *nb, unsigned *s, int sock) {
+    if (*nb == *s) {
+        struct pollfd *n = (struct pollfd *)realloc(polls, 4 * (*s) * sizeof(struct pollfd));
+        *s *= 4;
+        *nb += 1;
+        return n;
+    } else {
+        polls[*nb].fd = sock;
+        polls[*nb].events = POLL_IN;
+        *nb += 1;
+        return polls;
+    }
+}
+
+void remove_polls_to_poll(struct pollfd *polls, unsigned *nb, unsigned i) {
+    if (i >= *nb) {
+        return;
+    }
+    polls[i].fd = polls[0].fd;
+    *nb -= 1;
 }
 
 void print_ready_player(ready_connection_header *ready_informations) {
     printf("Player with Id : %d, eq : %d is ready.\n", ready_informations->id, ready_informations->eq);
 }
 
-void *serve_client_tcp(void *arg_tcp_thread_data) {
-    tcp_thread_data *tcp_data = (tcp_thread_data *)arg_tcp_thread_data;
-
-    init_connexion_with_client(tcp_data);
-
-    // TODO verify ready_informations
-    ready_connection_header *ready_informations = recv_ready_connexion_header_of_client(tcp_data->id);
-
-    print_ready_player(ready_informations);
-    pthread_mutex_lock(&lock_all_players_ready);
-    ready_player_number++;
-
-    wait_all_clients_not_ready();
-
-    // TODO end of the game
-    lock_mutex_to_wait(&lock_waiting_the_game_finish, &cond_lock_waiting_the_game_finish);
-
-    printf("Player %d left the game.\n", ready_informations->id);
-    free(ready_informations);
-    close_socket_client(tcp_data->id);
-    // TODO keep free(tcp_data) if we don't use join
-    // TO CONTINUE
-    return NULL;
-}
-
-int connect_one_player_to_game(int id) {
-    tcp_threads_data_players[id] = malloc(sizeof(tcp_threads_data_players));
-    tcp_threads_data_players[id]->id = id;
-
-    int res = try_to_init_socket_of_client(id);
-
+int try_to_init_socket_of_client(int id) {
+    if (id < 0 || id >= PLAYER_NUM) {
+        return EXIT_FAILURE;
+    }
+    struct sockaddr_in6 client_addr;
+    int client_addr_len = sizeof(client_addr);
+    int res = accept(sock_tcp, (struct sockaddr *)&client_addr, (socklen_t *)&client_addr_len);
     if (res < 0) {
+        perror("client acceptance");
         return EXIT_FAILURE;
     }
+    sock_clients[id] = res;
 
-    if (pthread_create(&tcp_threads_data_players[id]->thread_id, NULL, serve_client_tcp, tcp_threads_data_players[id]) <
-        0) {
-        perror("thread creation");
-        return EXIT_FAILURE;
-    }
-    connected_player_number++;
+    print_ip_of_client(client_addr);
     return EXIT_SUCCESS;
-}
-
-int connect_player_to_game() {
-    listen_players();
-    printf("Waiting players on %u port.\n", get_port_tcp());
-    while (connected_player_number < PLAYER_NUM) {
-        connect_one_player_to_game(connected_player_number);
-    }
-    printf("All players are connected.\n");
-    return EXIT_SUCCESS;
-}
-
-void join_tcp_threads() {
-    for (unsigned i = 0; i < PLAYER_NUM; i++) {
-        pthread_join(tcp_threads_data_players[i]->thread_id, NULL);
-    }
-    free_tcp_threads_data();
-}
-
-void increment_last_num_message(int *last_num_message) {
-    *last_num_message = *last_num_message + 1 % LIMIT_LAST_NUM_MESSAGE_MULT;
 }
 
 int init_game_model(GAME_MODE mode, unsigned id) {
@@ -527,6 +512,10 @@ void *serv_client_recv_game_action(void *arg_udp_thread_data) {
         }
     }
     return NULL;
+}
+
+void increment_last_num_message(int *last_num_message) {
+    *last_num_message = *last_num_message + 1 % LIMIT_LAST_NUM_MESSAGE_MULT;
 }
 
 void *serve_clients_send_mult_sec(void *arg_udp_thread_data) {
@@ -811,6 +800,144 @@ EXIT_FREEING_DATA:
     return EXIT_FAILURE;
 }
 
+void wait_all_clients_connected(pthread_mutex_t *lock, pthread_cond_t *cond, bool is_everyone_connected,
+                                unsigned *nb_connected) {
+    if (!is_everyone_connected) {
+        pthread_cond_wait(cond, lock);
+    } else {
+        free(nb_connected);
+        pthread_cond_broadcast(cond);
+    }
+    pthread_mutex_unlock(lock);
+}
+
+void wait_all_clients_not_ready(pthread_mutex_t *lock, pthread_cond_t *cond, bool is_ready, unsigned *nb_ready) {
+    if (!is_ready) {
+        pthread_cond_wait(cond, lock);
+    } else {
+        board *game_board = get_game_board(TMP_GAME_ID);
+        send_game_board_for_clients(0, game_board); // Initial game_board send
+        free(game_board);
+        init_game_threads(TMP_GAME_ID); // TODO MANAGE ERRORS
+        free(nb_ready);
+        pthread_cond_broadcast(cond);
+    }
+    pthread_mutex_unlock(lock);
+}
+
+void *serve_client_tcp(void *arg_tcp_thread_data) {
+    tcp_thread_data *tcp_data = (tcp_thread_data *)arg_tcp_thread_data;
+
+    pthread_mutex_lock(tcp_data->lock_waiting_all_players_join);
+    *(tcp_data->connected_players) += 1;
+    printf("%d\n", *tcp_data->connected_players);
+    bool is_everyone_connected = *tcp_data->connected_players == PLAYER_NUM;
+    wait_all_clients_connected(tcp_data->lock_waiting_all_players_join, tcp_data->cond_lock_waiting_all_players_join,
+                               is_everyone_connected, tcp_data->connected_players);
+    printf("%d send\n", tcp_data->id);
+    send_connexion_information_of_client(tcp_data->id, 0);
+    printf("%d after send\n", tcp_data->id);
+
+    // TODO verify ready_informations
+    ready_connection_header *ready_informations = recv_ready_connexion_header_of_client(tcp_data->id);
+
+    print_ready_player(ready_informations);
+    pthread_mutex_lock(tcp_data->lock_all_players_ready);
+    *(tcp_data->ready_player_number) += 1;
+
+    bool is_ready = *tcp_data->ready_player_number == PLAYER_NUM;
+    wait_all_clients_not_ready(tcp_data->lock_all_players_ready, tcp_data->cond_lock_all_players_ready, is_ready,
+                               tcp_data->ready_player_number);
+
+    // TODO end of the game
+    lock_mutex_to_wait(tcp_data->lock_waiting_the_game_finish, tcp_data->cond_lock_waiting_the_game_finish);
+
+    printf("Player %d left the game.\n", ready_informations->id);
+    free(ready_informations);
+    close_socket_client(tcp_data->id);
+    // TODO keep free(tcp_data) if we don't use join
+    // TO CONTINUE
+    return NULL;
+}
+
+int connect_one_player_to_game(int sock, unsigned *connected_player_solo, unsigned *connected_player_eq) {
+    // TODO change recv not tcp_data
+    sock_clients[*connected_player_solo] = sock;
+    initial_connection_header *head = recv_initial_connection_header_of_client(*connected_player_solo);
+
+    if (head->game_mode == SOLO) {
+        // TODO INIT SOLO GAME
+        if (*connected_player_solo == 0) {
+            RETURN_FAILURE_IF_ERROR(init_game_model(SOLO, TMP_GAME_ID)); // TODO Change it to run more than 1 server
+        }
+        tcp_threads_data_players[*connected_player_solo]->id = *connected_player_solo;
+        *connected_player_solo += 1;
+    } else if (head->game_mode == TEAM && *connected_player_eq == 0) {
+        // TODO INIT TEAM GAME
+        if (*connected_player_eq == 0) {
+            RETURN_FAILURE_IF_ERROR(init_game_model(TEAM, TMP_GAME_ID)); // TODO Change it to run more than 1 server
+        }
+        tcp_threads_data_players[*connected_player_eq]->id = *connected_player_eq;
+        *connected_player_eq += 1;
+    }
+    free(head);
+
+    // DO CASE EQ
+    pthread_t t;
+    if (pthread_create(&t, NULL, serve_client_tcp, tcp_threads_data_players[*connected_player_solo - 1]) < 0) {
+        perror("thread creation");
+        return EXIT_FAILURE;
+    }
+
+    if (*connected_player_solo == PLAYER_NUM) {
+        // New game
+    }
+    return EXIT_SUCCESS;
+}
+
+int connect_player_to_game() {
+    listen_players();
+    printf("Waiting players on %u port.\n", get_port_tcp());
+
+    struct pollfd *polls = init_polls_connexion(sock_tcp);
+    unsigned nbfds = 1;
+    unsigned s = INITIAL_POLL_FD_SIZE;
+
+    unsigned connected_player_solo = 0;
+    unsigned connected_player_eq = 0;
+
+    int connected = 0; // TODO CHANGE
+
+    // TODO Add 2 tcp thread data
+    init_tcp_threads_data();
+
+    while (1) {
+        poll(polls, nbfds, -1);
+
+        for (unsigned i = 1; i < nbfds; i++) {
+            if (polls[i].revents & POLL_IN) {
+                connect_one_player_to_game(polls[i].fd, &connected_player_solo, &connected_player_eq);
+                remove_polls_to_poll(polls, &nbfds, i);
+            }
+            if (polls[i].revents & POLL_HUP) {
+                close(polls[i].fd);
+                remove_polls_to_poll(polls, &nbfds, i);
+            }
+        }
+        if (polls[0].revents & POLL_IN) {
+            try_to_init_socket_of_client(connected);
+            // TODO Change sock
+            add_polls_to_poll(polls, &nbfds, &s, sock_clients[connected]);
+            connected++;
+        }
+
+        // TODO verify well send
+    }
+
+    printf("All players are connected.\n");
+    return EXIT_SUCCESS;
+}
+
 int game_loop_server() {
     int return_value;
     if (connect_player_to_game() != EXIT_SUCCESS) {
@@ -818,18 +945,6 @@ int game_loop_server() {
         goto exit_closing_sockets_and_free_addr_mult;
     }
     sleep(1); // Wait all clients for the join mutex
-    unlock_mutex_for_everyone(&lock_waiting_all_players_join, &cond_lock_waiting_all_players_join);
-    wait_all_clients_not_ready();
-    RETURN_FAILURE_IF_ERROR(init_game_model(SOLO, TMP_GAME_ID)); // TODO Change it to run more than 1 server
-
-    board *game_board = get_game_board(TMP_GAME_ID);
-    send_game_board_for_clients(0, game_board); // Initial game_board send
-    free(game_board);
-    if (init_game_threads(TMP_GAME_ID) != EXIT_SUCCESS) {
-        return_value = EXIT_FAILURE;
-        goto exit_closing_sockets_and_free_addr_mult;
-    }
-    join_tcp_threads();
     goto exit_closing_sockets_and_free_addr_mult;
 
 exit_closing_sockets_and_free_addr_mult:

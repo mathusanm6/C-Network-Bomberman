@@ -1,7 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/poll.h>
 #include <time.h>
+#include <unistd.h>
 
 #include "network_server.h"
 #include "utils.h"
