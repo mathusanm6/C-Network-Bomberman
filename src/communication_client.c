@@ -148,7 +148,7 @@ chat_message *recv_chat_message(int sock) {
     uint16_t header;
     int res = recv_tcp(sock, &header, sizeof(uint16_t));
     RETURN_NULL_IF_NEG_PERROR(res, "recv chat_message header");
-    
+
     uint8_t length;
     res = recv_tcp(sock, &length, sizeof(uint8_t));
     RETURN_NULL_IF_NEG_PERROR(res, "recv chat_message length");
@@ -161,7 +161,7 @@ chat_message *recv_chat_message(int sock) {
         free(message);
         return NULL;
     }
-    
+
     // Allocate memory for the total received message
     char *total_received = malloc(3 + length);
     if (total_received == NULL) {
@@ -169,7 +169,7 @@ chat_message *recv_chat_message(int sock) {
         free(message);
         return NULL;
     }
-    
+
     // Copy the header, length and message into the total_received buffer
     memcpy(total_received, &header, 2);
     memcpy(total_received + 2, &length, 1);

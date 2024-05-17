@@ -335,7 +335,7 @@ void *chat_message_thread_function() {
             pthread_mutex_lock(&chat_mutex);
             if (chat_msg->type == GLOBAL_M) {
                 add_message_from_server(client_chat, chat_msg->id, chat_msg->message, false);
-            } else if (chat_msg->type == TEAM_M){
+            } else if (chat_msg->type == TEAM_M) {
                 add_message_from_server(client_chat, chat_msg->id, chat_msg->message, true);
             }
             pthread_mutex_unlock(&chat_mutex);

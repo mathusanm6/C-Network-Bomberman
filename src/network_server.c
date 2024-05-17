@@ -508,8 +508,18 @@ void handle_chat_message(int sender_id, chat_message *msg) {
         }
     } else if (msg->type == TEAM_M) {
         for (int i = 0; i < PLAYER_NUM; i++) {
-            if (i == sender_id || i % 2 != msg->eq)
-                continue; // Don't send the message to the sender or to the other team
+            if (i == sender_id) {
+                continue;   // Don't send the message to the sender or to the other team
+            }
+
+            if (msg->eq == 0 && (i == 1 || i == 2)) {
+                continue;   // If the sender is in the first team, don't send the message to the second team
+            }
+
+            if (msg->eq == 1 && (i == 0 || i == 3)) {
+                continue;   // If the sender is in the second team, don't send the message to the first team
+            }
+
             if (send_chat_message_to_client(i, msg->type, sender_id, msg->eq, msg->message_length, msg->message) < 0) {
                 perror("send_chat_message_to_client");
             }
