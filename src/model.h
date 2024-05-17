@@ -111,8 +111,13 @@ typedef struct chat {
  *              - The chat line
  *              - The current position of the player
  *              - The game mode
+ *  It returns the id of the game
  */
-int init_model(dimension dim, GAME_MODE mode, unsigned int game_id);
+int init_model(dimension dim, GAME_MODE mode);
+
+/** Removes all the games
+ */
+void reset_games();
 
 /** Frees - The game board with the width and the height
  *              - The chat line

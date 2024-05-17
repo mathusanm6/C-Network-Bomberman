@@ -237,8 +237,9 @@ bool perform_game_action(int c) {
 
 bool control() {
     int c = get_pressed_key();
-
-    if (is_chat_on_focus(TMP_GAME_ID)) {
+    // TODO : Make chat work
+    // if (is_chat_on_focus(TMP_GAME_ID)) {
+    if (false) {
         if (perform_chat_action(c)) {
             return true;
         }
