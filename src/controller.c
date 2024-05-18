@@ -401,7 +401,7 @@ void print_result() {
             printf(GREEN_COLOR "You won\n" RESET_COLOR);
         } else {
             printf(RED_COLOR "You lost\n" RESET_COLOR);
-            printf(YELLOW_COLOR "Winner player: %d\n" RESET_COLOR, winner_player);
+            printf(YELLOW_COLOR "Winner player: %d\n" RESET_COLOR, winner_player + 1);
         }
     }
 

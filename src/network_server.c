@@ -1003,26 +1003,30 @@ void handle_tcp_communication(tcp_thread_data *tcp_data) {
     struct timeval tv;
     int retval;
 
+    // Get the client socket file descriptor
+    int client_sock = tcp_data->server->sock_clients[tcp_data->id];
+
     while (true) {
         if (is_game_over(tcp_data->game_id)) {
             break;
         }
 
         FD_ZERO(&read_fds);
-        FD_SET(tcp_data->last_num_message, &read_fds);
+        FD_SET(client_sock, &read_fds);
 
         // Set timeout to 1 second
         tv.tv_sec = 1;
         tv.tv_usec = 0;
 
-        retval = select(tcp_data->last_num_message + 1, &read_fds, NULL, NULL, &tv);
+        retval = select(client_sock + 1, &read_fds, NULL, NULL, &tv);
 
         if (retval == -1) {
             perror("select");
             break;
         } else if (retval) {
-            if (FD_ISSET(tcp_data->last_num_message, &read_fds)) {
+            if (FD_ISSET(client_sock, &read_fds)) {
                 chat_message *msg = recv_chat_message_of_client(tcp_data->server, tcp_data->id);
+
                 if (msg != NULL) {
                     handle_chat_message(tcp_data->server, tcp_data->id, msg);
                     free(msg->message);

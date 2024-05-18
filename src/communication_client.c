@@ -87,14 +87,11 @@ int send_chat_message(int sock, chat_message_type type, int id, int eq, uint8_t 
 
     char *serialized_msg = client_serialize_chat_message(msg);
 
-    fprintf(stderr, serialized_msg);
-
     if (serialized_msg == NULL) {
         free(msg->message);
         free(msg);
         return EXIT_FAILURE;
     }
-
     int res = send_tcp(sock, serialized_msg, 3 + message_length);
     free(msg->message);
     free(msg);
@@ -172,6 +169,7 @@ chat_message *recv_chat_message(int sock, uint16_t header) {
     memcpy(total_received + 3, message, length);
 
     chat_message *msg = server_deserialize_chat_message(total_received);
+
     if (msg == NULL) {
         perror("deserialize chat_message");
         free(total_received);
@@ -187,8 +185,6 @@ chat_message *recv_chat_message(int sock, uint16_t header) {
 u_int16_t recv_header(int sock) {
     uint16_t header;
     int res = recv_tcp(sock, &header, sizeof(uint16_t));
-    printf("recv header\n");
-    printf("header: %x\n", header);
     if (res < 0) {
         perror("recv header");
         return 0;
