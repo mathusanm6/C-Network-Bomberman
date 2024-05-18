@@ -346,18 +346,14 @@ void *chat_message_thread_function() {
         if (game_end_header != NULL) {
             if (game_end_header->game_mode == game_mode) {
                 if (game_mode == SOLO && game_end_header->id == player_id) {
-                    fprintf(stderr, "You won!\n");
                     solo_won = true;
                 } else if (game_mode == SOLO) {
-                    fprintf(stderr, "You lost!\n");
                     solo_won = false;
                 }
 
                 if (game_mode == TEAM && game_end_header->eq == eq) {
-                    fprintf(stderr, "You're team won!\n");
                     team_won = true;
                 } else if (game_mode == TEAM) {
-                    fprintf(stderr, "You're team lost!\n");
                     team_won = false;
                 }
 
