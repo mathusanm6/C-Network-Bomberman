@@ -17,6 +17,8 @@
 #include <string.h>
 #include <sys/poll.h>
 #include <unistd.h>
+#include <sys/select.h>
+#include <sys/socket.h>
 
 #define MAX_PORT_TRY 250
 #define START_ADRMDIFF 0xff12
@@ -36,6 +38,8 @@ typedef struct tcp_thread_data {
     int eq;
     unsigned *ready_player_number;
     unsigned *connected_players;
+
+    int last_num_message;
 
     pthread_mutex_t *lock_waiting_all_players_join;
     pthread_mutex_t *lock_all_players_ready;
@@ -996,7 +1000,7 @@ void wait_all_clients_not_ready(server_information *server, pthread_mutex_t *loc
     pthread_mutex_unlock(lock);
 }
 
-void handle_tcp_communication(tcp_data_t* tcp_data) {
+void handle_tcp_communication(tcp_thread_data* tcp_data) {
     fd_set read_fds;
     struct timeval tv;
     int retval;
@@ -1007,19 +1011,19 @@ void handle_tcp_communication(tcp_data_t* tcp_data) {
         }
 
         FD_ZERO(&read_fds);
-        FD_SET(tcp_data->server, &read_fds);
+        FD_SET(tcp_data->last_num_message, &read_fds);
 
         // Set timeout to 1 second
         tv.tv_sec = 1;
         tv.tv_usec = 0;
 
-        retval = select(tcp_data->server + 1, &read_fds, NULL, NULL, &tv);
+        retval = select(tcp_data->last_num_message + 1, &read_fds, NULL, NULL, &tv);
 
         if (retval == -1) {
             perror("select");
             break;
         } else if (retval) {
-            if (FD_ISSET(tcp_data->server, &read_fds)) {
+            if (FD_ISSET(tcp_data->last_num_message, &read_fds)) {
                 chat_message* msg = recv_chat_message_of_client(tcp_data->server, tcp_data->id);
                 if (msg != NULL) {
                     handle_chat_message(tcp_data->server, tcp_data->id, msg);
