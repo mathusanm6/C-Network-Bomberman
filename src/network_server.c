@@ -452,7 +452,7 @@ int init_tcp_threads_data(server_information *server, GAME_MODE mode, int game_i
                 team_tcp_threads_data_players[i]->cond_lock_all_players_ready = cond_lock_all_players_ready;
                 team_tcp_threads_data_players[i]->cond_lock_waiting_the_game_finish = cond_lock_waiting_the_game_finish;
 
-                if (game_id == 0 || game_id == 3) { // 0 and 3 are in the same team
+                if (i == 0 || i == 3) {
                     team_tcp_threads_data_players[i]->eq = 0;
                 } else {
                     team_tcp_threads_data_players[i]->eq = 1;
@@ -540,14 +540,6 @@ void handle_chat_message_team(server_information *server, int sender_id, chat_me
         if ((sender_id == 1 || sender_id == 2) && (i == 0 || i == 3)) {
             continue; // If the sender is in the second team, don't send the message to the first team
         }
-
-        printf("Sending message to %d\n", i);
-        printf("Sender id : %d\n", sender_id);
-        printf("Message : %s\n", msg->message);
-        printf("Message length : %d\n", msg->message_length);
-        printf("Message type : %d\n", msg->type);
-        printf("Message eq : %d\n", msg->eq);
-        printf("\n");
 
         if (send_chat_message_to_client(server, i, msg->type, sender_id, msg->eq, msg->message_length, msg->message) <
             0) {
@@ -1067,7 +1059,11 @@ int connect_one_player_to_game(int sock) {
             }
             team_waiting_server = init_server_network(connection_port);
             RETURN_FAILURE_IF_NULL(team_waiting_server);
-            init_tcp_threads_data(team_waiting_server, TEAM, game_id);
+            if (game_id == 0 || game_id == 3) { // 0 and 3 are in the same team
+                init_tcp_threads_data(team_waiting_server, TEAM, 0);
+            } else {
+                init_tcp_threads_data(team_waiting_server, TEAM, 1);
+            }
         }
         team_waiting_server->sock_clients[connected_team_players] = sock;
         team_tcp_threads_data_players[connected_team_players]->id = connected_team_players;
