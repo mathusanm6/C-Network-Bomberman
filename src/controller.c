@@ -25,6 +25,10 @@
 #define KEY_TAB_1 KEY_STAB
 #define KEY_TAB_2 '\t'
 
+#define RESET_COLOR "\033[0m"
+#define RED_COLOR "\033[31m"
+#define GREEN_COLOR "\033[32m"
+
 /* TODO: fixme once multiple games are supported */
 #define TMP_GAME_ID 0
 
@@ -394,10 +398,6 @@ void *view_thread_function() {
         }
     }
 
-    // Show the results for a few seconds
-    fprintf(stderr, "Game ended\n");
-    sleep(5);
-
     return NULL;
 }
 
@@ -419,6 +419,16 @@ int game_loop() {
 
     free_board(game_board);
     end_view();
+
+    if (solo_won) {
+        printf(GREEN_COLOR "You won!\n" RESET_COLOR);
+    } else if (team_won) {
+        printf(GREEN_COLOR "Your team won!\n" RESET_COLOR);
+    } else {
+        printf(RED_COLOR "You lost!\n" RESET_COLOR);
+    }
+
+    printf("Game ended\n");
 
     return EXIT_SUCCESS;
 }

@@ -1066,12 +1066,6 @@ void *serve_client_tcp(void *arg_tcp_thread_data) {
 
     handle_tcp_communication(tcp_data);
 
-    if (get_game_mode(tcp_data->game_id) == SOLO) {
-        printf("Player %d won the game.\n", get_winner_solo(tcp_data->game_id));
-    } else if (get_game_mode(tcp_data->game_id) == TEAM) {
-        printf("Team %d won the game.\n", get_winner_team(tcp_data->game_id));
-    }
-
     lock_mutex_to_wait(tcp_data->lock_waiting_the_game_finish, tcp_data->cond_lock_waiting_the_game_finish);
 
     printf("Player %d left the game.\n", ready_informations->id);
