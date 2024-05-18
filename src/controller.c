@@ -191,8 +191,8 @@ bool perform_chat_action(int c) {
             set_chat_focus(client_chat, false);
             break;
         case CHAT_GAME_QUIT:
-            // TODO: this is for testing
-            exit(1);
+            close_socket_tcp();
+            is_game_end = true;
             return true;
         case CHAT_NONE:
             break;
@@ -228,7 +228,8 @@ bool perform_game_action(int c) {
             set_chat_focus(client_chat, true);
             break;
         case GAME_QUIT:
-            // TODO: Quit connection
+            close_socket_tcp();
+            is_game_end = true;
             return true;
         case GAME_NONE:
             break;

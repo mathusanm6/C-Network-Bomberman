@@ -261,7 +261,7 @@ chat_message *recv_chat_message(int sock) {
     // Deserialize the chat message
     chat_message *msg = client_deserialize_chat_message(total_received);
     if (msg == NULL) {
-        fprintf(stderr, "msg recu nulle");
+        perror("deserialize chat_message");
         free(total_received);
         free(message);
         return NULL;

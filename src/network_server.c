@@ -456,7 +456,7 @@ int init_tcp_threads_data(server_information *server, GAME_MODE mode, int game_i
                 team_tcp_threads_data_players[i]->cond_lock_all_players_ready = cond_lock_all_players_ready;
                 team_tcp_threads_data_players[i]->cond_lock_waiting_the_game_finish = cond_lock_waiting_the_game_finish;
 
-                if (i == 0 || i == 3) {
+                if (game_id == 0 || game_id == 2) {
                     team_tcp_threads_data_players[i]->eq = 0;
                 } else {
                     team_tcp_threads_data_players[i]->eq = 1;
@@ -1006,6 +1006,13 @@ void handle_tcp_communication(tcp_thread_data *tcp_data) {
     // Get the client socket file descriptor
     int client_sock = tcp_data->server->sock_clients[tcp_data->id];
 
+    char buffer[1];
+    if (recv(client_sock, buffer, 1, MSG_PEEK | MSG_DONTWAIT) == 0) {
+        set_player_dead(tcp_data->game_id, tcp_data->id);
+        close_socket_client(tcp_data->server, tcp_data->id);
+        return; // Return early if the socket is closed
+    }
+
     while (true) {
         if (is_game_over(tcp_data->game_id)) {
             break;
@@ -1022,6 +1029,9 @@ void handle_tcp_communication(tcp_thread_data *tcp_data) {
 
         if (retval == -1) {
             perror("select");
+            if (errno == EBADF) {
+                fprintf(stderr, "Bad file descriptor: client_sock = %d\n", client_sock);
+            }
             break;
         } else if (retval) {
             if (FD_ISSET(client_sock, &read_fds)) {
@@ -1031,6 +1041,9 @@ void handle_tcp_communication(tcp_thread_data *tcp_data) {
                     handle_chat_message(tcp_data->server, tcp_data->id, msg);
                     free(msg->message);
                     free(msg);
+                } else {
+                    // Handle the case where recv_chat_message_of_client fails
+                    perror("recv_chat_message_of_client");
                 }
             }
         }

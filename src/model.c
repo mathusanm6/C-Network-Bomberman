@@ -573,6 +573,14 @@ bool is_player_dead(int id, unsigned int game_id) {
     return games[game_id]->players[id]->dead;
 }
 
+void set_player_dead(unsigned int game_id, int player_id) {
+    if (games[game_id] == NULL) {
+        return;
+    }
+
+    games[game_id]->players[player_id]->dead = true;
+}
+
 bool apply_explosion_effect(int x, int y, unsigned int game_id) {
     if (is_outside_board(x, y, game_id)) {
         return false;

@@ -144,6 +144,8 @@ GAME_MODE get_game_mode(unsigned int game_id);
 
 bool is_player_dead(int, unsigned int game_id);
 
+void set_player_dead(unsigned int game_id, int player_id);
+
 /** Iterates over all bombs, removing any that have exceeded their lifetime.
  */
 void update_bombs(unsigned int game_id);
