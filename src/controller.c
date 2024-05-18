@@ -28,6 +28,8 @@
 #define RESET_COLOR "\033[0m"
 #define RED_COLOR "\033[31m"
 #define GREEN_COLOR "\033[32m"
+#define BLUE_COLOR "\033[34m"
+#define YELLOW_COLOR "\033[33m"
 
 /* TODO: fixme once multiple games are supported */
 #define TMP_GAME_ID 0
@@ -40,8 +42,8 @@ static chat *client_chat = NULL;
 static pthread_mutex_t chat_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static bool is_game_end = false;
-static bool team_won = false;
-static bool solo_won = false;
+static int winner_team = -1;
+static int winner_player = -1;
 
 // TODO
 static GAME_MODE game_mode = SOLO;
@@ -345,16 +347,12 @@ void *chat_message_thread_function() {
 
         if (game_end_header != NULL) {
             if (game_end_header->game_mode == game_mode) {
-                if (game_mode == SOLO && game_end_header->id == player_id) {
-                    solo_won = true;
-                } else if (game_mode == SOLO) {
-                    solo_won = false;
+                if (game_mode == SOLO) {
+                    winner_player = game_end_header->id;
                 }
 
-                if (game_mode == TEAM && game_end_header->eq == eq) {
-                    team_won = true;
-                } else if (game_mode == TEAM) {
-                    team_won = false;
+                if (game_mode == TEAM) {
+                    winner_team = game_end_header->eq;
                 }
 
                 is_game_end = true;
@@ -397,6 +395,26 @@ void *view_thread_function() {
     return NULL;
 }
 
+void print_result() {
+    if (game_mode == SOLO) {
+        if (winner_player == player_id) {
+            printf(GREEN_COLOR "You won\n" RESET_COLOR);
+        } else {
+            printf(RED_COLOR "You lost\n" RESET_COLOR);
+            printf(YELLOW_COLOR "Winner player: %d\n" RESET_COLOR, winner_player);
+        }
+    }
+
+    if (game_mode == TEAM) {
+        if (winner_team == eq) {
+            printf(GREEN_COLOR "Your team won\n" RESET_COLOR);
+        } else {
+            printf(RED_COLOR "Your team lost\n" RESET_COLOR);
+            printf(YELLOW_COLOR "Winner team: %d\n" RESET_COLOR, winner_team);
+        }
+    }
+}
+
 int game_loop() {
     RETURN_FAILURE_IF_NULL(game_board);
 
@@ -416,15 +434,9 @@ int game_loop() {
     free_board(game_board);
     end_view();
 
-    if (solo_won) {
-        printf(GREEN_COLOR "You won!\n" RESET_COLOR);
-    } else if (team_won) {
-        printf(GREEN_COLOR "Your team won!\n" RESET_COLOR);
-    } else {
-        printf(RED_COLOR "You lost!\n" RESET_COLOR);
-    }
+    print_result();
 
-    printf("Game ended\n");
+    printf(BLUE_COLOR "Game Ended\n" RESET_COLOR);
 
     return EXIT_SUCCESS;
 }

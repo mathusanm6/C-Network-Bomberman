@@ -16,9 +16,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/poll.h>
-#include <unistd.h>
 #include <sys/select.h>
 #include <sys/socket.h>
+#include <unistd.h>
 
 #define MAX_PORT_TRY 250
 #define START_ADRMDIFF 0xff12
@@ -998,7 +998,7 @@ void wait_all_clients_not_ready(server_information *server, pthread_mutex_t *loc
     pthread_mutex_unlock(lock);
 }
 
-void handle_tcp_communication(tcp_thread_data* tcp_data) {
+void handle_tcp_communication(tcp_thread_data *tcp_data) {
     fd_set read_fds;
     struct timeval tv;
     int retval;
@@ -1022,7 +1022,7 @@ void handle_tcp_communication(tcp_thread_data* tcp_data) {
             break;
         } else if (retval) {
             if (FD_ISSET(tcp_data->last_num_message, &read_fds)) {
-                chat_message* msg = recv_chat_message_of_client(tcp_data->server, tcp_data->id);
+                chat_message *msg = recv_chat_message_of_client(tcp_data->server, tcp_data->id);
                 if (msg != NULL) {
                     handle_chat_message(tcp_data->server, tcp_data->id, msg);
                     free(msg->message);
