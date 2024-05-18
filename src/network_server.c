@@ -996,6 +996,48 @@ void wait_all_clients_not_ready(server_information *server, pthread_mutex_t *loc
     pthread_mutex_unlock(lock);
 }
 
+void handle_tcp_communication(tcp_data_t* tcp_data) {
+    fd_set read_fds;
+    struct timeval tv;
+    int retval;
+
+    while (true) {
+        if (is_game_over(tcp_data->game_id)) {
+            break;
+        }
+
+        FD_ZERO(&read_fds);
+        FD_SET(tcp_data->server, &read_fds);
+
+        // Set timeout to 1 second
+        tv.tv_sec = 1;
+        tv.tv_usec = 0;
+
+        retval = select(tcp_data->server + 1, &read_fds, NULL, NULL, &tv);
+
+        if (retval == -1) {
+            perror("select");
+            break;
+        } else if (retval) {
+            if (FD_ISSET(tcp_data->server, &read_fds)) {
+                chat_message* msg = recv_chat_message_of_client(tcp_data->server, tcp_data->id);
+                if (msg != NULL) {
+                    handle_chat_message(tcp_data->server, tcp_data->id, msg);
+                    free(msg->message);
+                    free(msg);
+                }
+            }
+        }
+
+        if (is_game_over(tcp_data->game_id)) {
+            handle_game_over(tcp_data->server, tcp_data->game_id);
+            break;
+        }
+    }
+
+    printf("End of the game.\n");
+}
+
 void *serve_client_tcp(void *arg_tcp_thread_data) {
     tcp_thread_data *tcp_data = (tcp_thread_data *)arg_tcp_thread_data;
 
@@ -1022,19 +1064,7 @@ void *serve_client_tcp(void *arg_tcp_thread_data) {
                                tcp_data->cond_lock_all_players_ready, is_ready, tcp_data->ready_player_number,
                                tcp_data->game_id);
 
-    // Receive and handle chat messages
-    while (true) {
-        if (is_game_over(tcp_data->game_id)) {
-            handle_game_over(tcp_data->server, tcp_data->game_id);
-            break;
-        }
-        chat_message *msg = recv_chat_message_of_client(tcp_data->server, tcp_data->id);
-        if (msg != NULL) {
-            handle_chat_message(tcp_data->server, tcp_data->id, msg);
-            free(msg->message);
-            free(msg);
-        }
-    }
+    handle_tcp_communication(tcp_data);
 
     printf("End of the game.\n");
 
