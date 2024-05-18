@@ -572,14 +572,12 @@ void handle_game_over(server_information *server, int game_id) {
             if (send_game_over(server->sock_clients[i], SOLO, get_winner_solo(game_id), 0) < 0) {
                 perror("send_game_over");
             }
-            printf("Player %d has won\n", get_winner_solo(game_id));
         }
     } else if (get_game_mode(game_id) == TEAM) {
         for (int i = 0; i < PLAYER_NUM; i++) {
             if (send_game_over(server->sock_clients[i], TEAM, 0, get_winner_team(game_id)) < 0) {
                 perror("send_game_over");
             }
-            printf("Team %d has won\n", get_winner_team(game_id));
         }
     } else {
         perror("Unknown game mode");
@@ -1068,7 +1066,11 @@ void *serve_client_tcp(void *arg_tcp_thread_data) {
 
     handle_tcp_communication(tcp_data);
 
-    printf("End of the game.\n");
+    if (get_game_mode(tcp_data->game_id) == SOLO) {
+        printf("Player %d won the game.\n", get_winner_solo(tcp_data->game_id));
+    } else if (get_game_mode(tcp_data->game_id) == TEAM) {
+        printf("Team %d won the game.\n", get_winner_team(tcp_data->game_id));
+    }
 
     lock_mutex_to_wait(tcp_data->lock_waiting_the_game_finish, tcp_data->cond_lock_waiting_the_game_finish);
 
