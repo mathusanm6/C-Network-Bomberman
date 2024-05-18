@@ -144,11 +144,7 @@ int recv_tcp(int sock, void *buffer, int size) {
     return EXIT_SUCCESS;
 }
 
-chat_message *recv_chat_message(int sock) {
-    uint16_t header;
-    int res = recv_tcp(sock, &header, sizeof(uint16_t));
-    RETURN_NULL_IF_NEG_PERROR(res, "recv chat_message header");
-
+chat_message *recv_chat_message(int sock, uint16_t header) {
     uint8_t length;
     res = recv_tcp(sock, &length, sizeof(uint8_t));
     RETURN_NULL_IF_NEG_PERROR(res, "recv chat_message length");
@@ -186,4 +182,11 @@ chat_message *recv_chat_message(int sock) {
     free(message);
 
     return msg;
+}
+
+u_int16_t recv_header(int sock) {
+    uint16_t header;
+    int res = recv_tcp(sock, &header, sizeof(uint16_t));
+    RETURN_NULL_IF_NEG_PERROR(res, "recv chat_message header");
+    return header;
 }

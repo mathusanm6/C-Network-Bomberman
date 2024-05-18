@@ -20,5 +20,6 @@ typedef struct udp_information {
 } udp_information;
 
 chat_message *recv_chat_message(int sock);
+u_int16_t recv_header(int sock);
 
 #endif // SRC_COMMUNICATION_CLIENT_H_

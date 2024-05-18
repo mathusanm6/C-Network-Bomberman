@@ -562,6 +562,20 @@ void handle_chat_message(server_information *server, int sender_id, chat_message
     }
 }
 
+void handle_game_over(server_information *server, int game_id) {
+    for (int i = 0; i < PLAYER_NUM; i++) {
+        if (i == 0 && i == 3) {
+            if (send_game_over(server->sock_clients[i], get_game_mode(game_id), i, 0) < 0) {
+                perror("send_game_over");
+            }
+        } else {
+            if (send_game_over(server->sock_clients[i], get_game_mode(game_id), i, 1) < 0) {
+                perror("send_game_over");
+            }
+        }
+    }
+}
+
 struct pollfd *init_polls_connexion(int sock) {
     struct pollfd *polls = malloc(INITIAL_POLL_FD_SIZE * sizeof(struct pollfd));
     RETURN_NULL_IF_NULL_PERROR(polls, "malloc polls");
@@ -1003,8 +1017,7 @@ void *serve_client_tcp(void *arg_tcp_thread_data) {
                                tcp_data->game_id);
 
     // Receive and handle chat messages
-    while (true) {
-        // TODO : end of the game - stop the loop
+    while (!is_game_over(tcp_data->game_id)) {
         chat_message *msg = recv_chat_message_of_client(tcp_data->server, tcp_data->id);
         if (msg != NULL) {
             handle_chat_message(tcp_data->server, tcp_data->id, msg);
@@ -1013,7 +1026,12 @@ void *serve_client_tcp(void *arg_tcp_thread_data) {
         }
     }
 
-    // TODO end of the game
+    if (is_game_over(tcp_data->game_id)) {
+        handle_game_over(tcp_data->server, tcp_data->game_id);
+    }
+
+    printf("End of the game.\n");
+
     lock_mutex_to_wait(tcp_data->lock_waiting_the_game_finish, tcp_data->cond_lock_waiting_the_game_finish);
 
     printf("Player %d left the game.\n", ready_informations->id);

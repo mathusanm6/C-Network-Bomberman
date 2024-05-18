@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdbool.h>
 
 #define KEY_BACKSPACE_1 0407
 #define KEY_BACKSPACE_2 127
@@ -33,6 +34,8 @@ static pthread_mutex_t game_board_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static chat *client_chat = NULL;
 static pthread_mutex_t chat_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+static bool game_end = false;
 
 // TODO
 static GAME_MODE game_mode = SOLO;
@@ -291,8 +294,7 @@ void update_tile_diff(board *b, tile_diff *diff, int size) {
 
 /** Updates the game board based on the server MESSAGE*/
 void *game_board_info_thread_function() {
-    // TODO : game end
-    while (true) {
+    while (!game_end) {
         received_game_message *received_message = recv_game_message();
         if (received_message == NULL || received_message->message == NULL) {
             // TODO: Handle error
@@ -329,8 +331,17 @@ void *game_board_info_thread_function() {
 }
 
 void *chat_message_thread_function() {
-    while (true) {
-        chat_message *chat_msg = recv_chat_message_from_server();
+    while (!game_end) {
+        u_int16_t header = recv_header_from_server();
+        message_header *msg_header = deserialize_header(header);
+
+        if (msg_header->codereq == 15 && game_mode == SOLO) {
+            game_end = true;
+        } else if (msg_header->codereq == 16 && game_mode == TEAM) {
+            game_end = true;
+        }
+
+        chat_message *chat_msg = recv_chat_message_from_server(header);
         if (chat_msg != NULL) {
             pthread_mutex_lock(&chat_mutex);
             if (chat_msg->type == GLOBAL_M) {
@@ -354,8 +365,7 @@ void *chat_message_thread_function() {
 
 /** Sends to the server the performed action*/
 void *view_thread_function() {
-    while (true) {
-        // TODO: Handle game quit
+    while (!game_end) {
         if (control()) {
             break;
         }

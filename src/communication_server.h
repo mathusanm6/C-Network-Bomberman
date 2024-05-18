@@ -12,6 +12,7 @@ int send_connexion_information(int sock, GAME_MODE mode, int id, int eq, int por
 int send_game_board(int sock, struct sockaddr_in6 *addr_mult, uint16_t num, board *board_);
 int send_game_update(int sock, struct sockaddr_in6 *addr_mult, int num, tile_diff *diff, uint8_t nb);
 int send_chat_message(int sock, chat_message_type type, int id, int eq, uint8_t message_length, char *message);
+int send_game_over(int sock, GAME_MODE mode, int id, int eq);
 
 initial_connection_header *recv_initial_connection_header(int sock);
 ready_connection_header *recv_ready_connexion_header(int sock);

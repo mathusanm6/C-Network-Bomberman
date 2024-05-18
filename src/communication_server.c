@@ -141,6 +141,23 @@ int send_chat_message(int sock, chat_message_type type, int id, int eq, uint8_t 
     return res;
 }
 
+int send_game_over(int sock, GAME_MODE mode, int id, int eq) {
+    game_end *head = malloc(sizeof(game_end));
+    RETURN_FAILURE_IF_NULL_PERROR(head, "malloc game_end");
+    head->game_mode = mode;
+    head->id = id;
+    head->eq = eq;
+
+    char *serialized_head = serialize_game_end(head);
+    free(head);
+    RETURN_FAILURE_IF_NULL(serialized_head);
+
+    int res = send_tcp(sock, serialized_head, 2);
+    free(serialized_head);
+
+    return res;
+}
+
 connection_header_raw *recv_connexion_header_raw(int sock) {
     connection_header_raw *head = malloc(sizeof(connection_header_raw));
     RETURN_NULL_IF_NULL_PERROR(head, "malloc connection_header_raw");

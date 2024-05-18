@@ -280,6 +280,6 @@ int send_chat_message_to_server(chat_message_type type, uint8_t message_length, 
     return send_chat_message(sock_tcp, type, id, eq, message_length, message);
 }
 
-chat_message *recv_chat_message_from_server() {
-    return recv_chat_message(sock_tcp);
+chat_message *recv_chat_message_from_server(u_int16_t header) {
+    return recv_chat_message(sock_tcp, header);
 }
