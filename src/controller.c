@@ -36,6 +36,8 @@ static chat *client_chat = NULL;
 static pthread_mutex_t chat_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static bool is_game_end = false;
+static bool team_won = false;
+static bool solo_won = false;
 
 // TODO
 static GAME_MODE game_mode = SOLO;
@@ -335,24 +337,28 @@ void *chat_message_thread_function() {
         u_int16_t header = recv_header_from_server();
         char *header_char = (char *)&header;
 
-
         game_end *game_end_header = deserialize_game_end(header_char);
 
         if (game_end_header != NULL) {
             if (game_end_header->game_mode == game_mode) {
                 if (game_mode == SOLO && game_end_header->id == player_id) {
                     fprintf(stderr, "You won!\n");
+                    solo_won = true;
                 } else if (game_mode == SOLO) {
                     fprintf(stderr, "You lost!\n");
+                    solo_won = false;
                 }
 
                 if (game_mode == TEAM && game_end_header->eq == eq) {
                     fprintf(stderr, "You're team won!\n");
+                    team_won = true;
                 } else if (game_mode == TEAM) {
                     fprintf(stderr, "You're team lost!\n");
+                    team_won = false;
                 }
 
                 is_game_end = true;
+
                 free(game_end_header);
                 break;
             }
@@ -387,6 +393,10 @@ void *view_thread_function() {
             break;
         }
     }
+
+    // Show the results for a few seconds
+    fprintf(stderr, "Game ended\n");
+    sleep(5);
 
     return NULL;
 }

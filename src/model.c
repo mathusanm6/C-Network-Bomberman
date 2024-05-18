@@ -797,11 +797,11 @@ int get_winner_team(unsigned int game_id) {
     player **players = games[game_id]->players;
 
     if (players[0]->dead && players[3]->dead) {
-        return 0;
+        return 1;
     }
 
     if (players[1]->dead && players[2]->dead) {
-        return 1;
+        return 0;
     }
 
     return -1;
