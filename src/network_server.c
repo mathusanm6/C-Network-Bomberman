@@ -567,7 +567,6 @@ void handle_chat_message(server_information *server, int sender_id, chat_message
 }
 
 void handle_game_over(server_information *server, int game_id) {
-    printf("Game over\n");
     if (get_game_mode(game_id) == SOLO) {
         for (int i = 0; i < PLAYER_NUM; i++) {
             if (send_game_over(server->sock_clients[i], SOLO, get_winner_solo(game_id), 0) < 0) {
@@ -580,6 +579,7 @@ void handle_game_over(server_information *server, int game_id) {
             if (send_game_over(server->sock_clients[i], TEAM, 0, get_winner_team(game_id)) < 0) {
                 perror("send_game_over");
             }
+            printf("Team %d has won\n", get_winner_team(game_id));
         }
     } else {
         perror("Unknown game mode");
@@ -1038,8 +1038,6 @@ void handle_tcp_communication(tcp_thread_data* tcp_data) {
             break;
         }
     }
-
-    printf("End of the game.\n");
 }
 
 void *serve_client_tcp(void *arg_tcp_thread_data) {
