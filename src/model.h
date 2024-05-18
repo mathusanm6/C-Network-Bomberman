@@ -158,6 +158,14 @@ tile_diff *update_game_board(unsigned game_id, player_action *actions, size_t nb
  */
 bool is_game_over(unsigned int game_id);
 
+/** Returns the winner player of the game if solo mode, -1 otherwise
+ */
+int get_winner_solo(unsigned int game_id);
+
+/** Returns the winner team of the game if team mode, -1 otherwise
+ */
+int get_winner_team(unsigned int game_id);
+
 /** Returns the chat information from the game
  */
 chat *get_chat(unsigned int game_id);

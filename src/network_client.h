@@ -29,6 +29,7 @@ received_game_message *recv_game_message();
 int send_game_action(game_action *action);
 
 int send_chat_message_to_server(chat_message_type type, uint8_t message_length, char *message);
-chat_message *recv_chat_message_from_server();
+chat_message *recv_chat_message_from_server(u_int16_t header);
+u_int16_t recv_header_from_server();
 
 #endif // SRC_NETWORK_CLIENT_H__H_

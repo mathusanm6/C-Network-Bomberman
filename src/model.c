@@ -773,6 +773,40 @@ bool is_game_over(unsigned int game_id) {
     return team1_dead || team2_dead;
 }
 
+int get_winner_solo(unsigned int game_id) {
+    if (games[game_id] == NULL) {
+        return -1;
+    }
+
+    player **players = games[game_id]->players;
+
+    for (int i = 0; i < PLAYER_NUM; ++i) {
+        if (!players[i]->dead) {
+            return i;
+        }
+    }
+
+    return -1;
+}
+
+int get_winner_team(unsigned int game_id) {
+    if (games[game_id] == NULL) {
+        return -1;
+    }
+
+    player **players = games[game_id]->players;
+
+    if (players[0]->dead && players[3]->dead) {
+        return 0;
+    }
+
+    if (players[1]->dead && players[2]->dead) {
+        return 1;
+    }
+
+    return -1;
+}
+
 chat *get_chat(unsigned int game_id) {
     RETURN_NULL_IF_NULL(games[game_id]);
 

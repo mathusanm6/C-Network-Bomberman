@@ -283,3 +283,7 @@ int send_chat_message_to_server(chat_message_type type, uint8_t message_length, 
 chat_message *recv_chat_message_from_server(u_int16_t header) {
     return recv_chat_message(sock_tcp, header);
 }
+
+u_int16_t recv_header_from_server() {
+    return recv_header(sock_tcp);
+}

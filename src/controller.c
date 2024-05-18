@@ -9,10 +9,10 @@
 
 #include <ncurses.h>
 #include <pthread.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <stdbool.h>
 
 #define KEY_BACKSPACE_1 0407
 #define KEY_BACKSPACE_2 127
@@ -35,7 +35,7 @@ static pthread_mutex_t game_board_mutex = PTHREAD_MUTEX_INITIALIZER;
 static chat *client_chat = NULL;
 static pthread_mutex_t chat_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-static bool game_end = false;
+static bool is_game_end = false;
 
 // TODO
 static GAME_MODE game_mode = SOLO;
@@ -294,7 +294,7 @@ void update_tile_diff(board *b, tile_diff *diff, int size) {
 
 /** Updates the game board based on the server MESSAGE*/
 void *game_board_info_thread_function() {
-    while (!game_end) {
+    while (!is_game_end) {
         received_game_message *received_message = recv_game_message();
         if (received_message == NULL || received_message->message == NULL) {
             // TODO: Handle error
@@ -331,14 +331,31 @@ void *game_board_info_thread_function() {
 }
 
 void *chat_message_thread_function() {
-    while (!game_end) {
+    while (!is_game_end) {
         u_int16_t header = recv_header_from_server();
-        message_header *msg_header = deserialize_header(header);
+        char *header_char = (char *)&header;
 
-        if (msg_header->codereq == 15 && game_mode == SOLO) {
-            game_end = true;
-        } else if (msg_header->codereq == 16 && game_mode == TEAM) {
-            game_end = true;
+
+        game_end *game_end_header = deserialize_game_end(header_char);
+
+        if (game_end_header != NULL) {
+            if (game_end_header->game_mode == game_mode) {
+                if (game_mode == SOLO && game_end_header->id == player_id) {
+                    fprintf(stderr, "You won!\n");
+                } else if (game_mode == SOLO) {
+                    fprintf(stderr, "You lost!\n");
+                }
+
+                if (game_mode == TEAM && game_end_header->eq == eq) {
+                    fprintf(stderr, "You're team won!\n");
+                } else if (game_mode == TEAM) {
+                    fprintf(stderr, "You're team lost!\n");
+                }
+
+                is_game_end = true;
+                free(game_end_header);
+                break;
+            }
         }
 
         chat_message *chat_msg = recv_chat_message_from_server(header);
@@ -365,7 +382,7 @@ void *chat_message_thread_function() {
 
 /** Sends to the server the performed action*/
 void *view_thread_function() {
-    while (!game_end) {
+    while (!is_game_end) {
         if (control()) {
             break;
         }
