@@ -456,12 +456,6 @@ int init_tcp_threads_data(server_information *server, GAME_MODE mode, int game_i
                 team_tcp_threads_data_players[i]->cond_lock_all_players_ready = cond_lock_all_players_ready;
                 team_tcp_threads_data_players[i]->cond_lock_waiting_the_game_finish = cond_lock_waiting_the_game_finish;
 
-                if (game_id == 0 || game_id == 2) {
-                    team_tcp_threads_data_players[i]->eq = 0;
-                } else {
-                    team_tcp_threads_data_players[i]->eq = 1;
-                }
-
                 team_tcp_threads_data_players[i]->game_id = game_id;
                 team_tcp_threads_data_players[i]->server = server;
                 break;
@@ -1083,8 +1077,6 @@ void *serve_client_tcp(void *arg_tcp_thread_data) {
 
     handle_tcp_communication(tcp_data);
 
-    lock_mutex_to_wait(tcp_data->lock_waiting_the_game_finish, tcp_data->cond_lock_waiting_the_game_finish);
-
     printf("Player %d left the game.\n", ready_informations->id);
     free(ready_informations);
     close_socket_client(tcp_data->server, tcp_data->id);
@@ -1136,6 +1128,13 @@ int connect_one_player_to_game(int sock) {
         }
         team_waiting_server->sock_clients[connected_team_players] = sock;
         team_tcp_threads_data_players[connected_team_players]->id = connected_team_players;
+
+        if (connected_team_players == 0 || connected_team_players == 3) {
+            team_tcp_threads_data_players[connected_team_players]->eq = 0;
+        } else {
+            team_tcp_threads_data_players[connected_team_players]->eq = 1;
+        }
+
         *(team_tcp_threads_data_players[connected_team_players]->connected_players) = connected_team_players;
         connected_team_players++;
 
