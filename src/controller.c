@@ -1,5 +1,4 @@
 #include "./controller.h"
-#include "./communication_client.h"
 #include "./messages.h"
 #include "./network_client.h"
 #include "./utils.h"
@@ -31,7 +30,6 @@
 #define BLUE_COLOR "\033[34m"
 #define YELLOW_COLOR "\033[33m"
 
-// TODO: Fix memory leak
 static board *game_board = NULL;
 static pthread_mutex_t game_board_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -510,6 +508,7 @@ int game_loop() {
     pthread_join(view_thread, NULL);
 
     free_board(game_board);
+    free_chat(client_chat);
     end_view();
     print_result();
 
