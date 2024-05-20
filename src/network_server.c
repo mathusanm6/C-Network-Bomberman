@@ -1228,7 +1228,7 @@ void handle_tcp_communication(tcp_thread_data *tcp_data) {
     int retval;
 
     while (true) {
-        if(client_sock == -1){
+        if (client_sock == -1) {
             break;
         }
         pthread_mutex_lock(tcp_data->lock_finished_flag);
