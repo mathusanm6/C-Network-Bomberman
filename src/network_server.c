@@ -258,7 +258,7 @@ int init_socket_mult(server_information *server) {
 void print_ip_of_client(struct sockaddr_in6 client_addr) {
     char client_ip[INET6_ADDRSTRLEN];
     inet_ntop(AF_INET6, &(client_addr.sin6_addr), client_ip, INET6_ADDRSTRLEN);
-    printf("%s\n", client_ip);
+    printf("New player connected: %s\n", client_ip);
 }
 
 uint16_t get_port_tcp() {
@@ -679,10 +679,6 @@ void remove_polls_to_poll(struct pollfd *polls, unsigned *nb, unsigned i) {
     }
     polls[i].fd = polls[0].fd;
     *nb -= 1;
-}
-
-void print_ready_player(ready_connection_header *ready_informations) {
-    printf("Player with Id : %d, eq : %d is ready.\n", ready_informations->id, ready_informations->eq);
 }
 
 int try_to_init_socket_of_client() {
@@ -1338,7 +1334,6 @@ void *serve_client_tcp(void *arg_tcp_thread_data) {
     } else {
         ready_connection_header *ready_informations =
             recv_ready_connexion_header_of_client(tcp_data->server->sock_clients[tcp_data->id]);
-        print_ready_player(ready_informations);
         free(ready_informations);
     }
     pthread_mutex_lock(tcp_data->lock_all_players_ready);
