@@ -31,9 +31,6 @@
 #define BLUE_COLOR "\033[34m"
 #define YELLOW_COLOR "\033[33m"
 
-/* TODO: fixme once multiple games are supported */
-#define TMP_GAME_ID 0
-
 // TODO: Fix memory leak
 static board *game_board = NULL;
 static pthread_mutex_t game_board_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -50,7 +47,6 @@ static pthread_mutex_t winner_team_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int winner_player = -1;
 static pthread_mutex_t winner_player_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-// TODO
 static GAME_MODE game_mode = SOLO;
 static int player_id = 0;
 
@@ -270,8 +266,6 @@ bool control() {
 int init_game(int player_nb, int eq_, GAME_MODE mode) {
     RETURN_FAILURE_IF_ERROR(init_view());
 
-    // TODO: init the chat
-
     init_controller();
 
     player_id = player_nb;
@@ -416,7 +410,7 @@ void *chat_message_thread_function() {
                 is_game_end = true;
                 pthread_mutex_unlock(&game_end_mutex);
 
-                // TODO! CHECK IF ERROR : shutdown_tcp_on_write();
+                // TODO: CHECK IF ERROR : shutdown_tcp_on_write();
                 close_socket_tcp();
                 close_socket_udp();
                 close_socket_diff();

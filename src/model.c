@@ -30,7 +30,6 @@ typedef struct game {
     chat *chat;
 } game;
 
-/* TODO: Make this a real list at some point */
 static game **games = NULL;
 size_t games_size = 0;
 size_t games_capacity = 10;

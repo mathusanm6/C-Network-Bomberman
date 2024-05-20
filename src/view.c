@@ -57,7 +57,6 @@ static void print_chat(GAME_MODE, chat *, int, window_context *, window_context 
 static void toggle_focus(chat *, window_context *, window_context *, window_context *);
 
 int init_colors() {
-    // TODO : Might be an issue for university computers
     if (has_colors() == FALSE) {
         endwin();
         printf("Your terminal does not support color\n");
@@ -158,7 +157,6 @@ void get_computed_board_dimension(dimension *dim) {
 }
 
 void refresh_game(GAME_MODE game_mode, board *b, chat *c, int player_id) {
-    // TODO Reimplement chat
     toggle_focus(c, game_wc, chat_history_wc, chat_input_wc);
     print_game(b, game_wc);
     wrefresh(game_wc->win); // Refresh the game window
