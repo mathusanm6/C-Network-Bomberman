@@ -59,8 +59,8 @@ void init_controller() {
     nodelay(stdscr, TRUE);    /* Make getch non-blocking */
     game_board = malloc(sizeof(board));
     RETURN_IF_NULL_PERROR(game_board, "malloc board_controller");
-    // TODO: wait for first message and init with the correct dimensions
-    game_board->dim = (dimension){49, 23};
+    // Will be resized when receiving the first game board, we just use a large size for now
+    game_board->dim = (dimension){100, 100};
     game_board->grid = malloc(game_board->dim.height * game_board->dim.width * sizeof(char));
     RETURN_IF_NULL_PERROR(game_board->grid, "malloc board_controller grid");
     for (int i = 0; i < game_board->dim.height * game_board->dim.width; i++) {
@@ -293,7 +293,11 @@ board *get_board() {
     return b;
 }
 
-void update_board(board *b, TILE *grid) {
+void update_board(board *b, TILE *grid, int width, int height) {
+    b->dim.width = width;
+    b->dim.height = height;
+    b->grid = malloc(b->dim.height * b->dim.width);
+
     for (int i = 0; i < b->dim.height * b->dim.width; i++) {
         b->grid[i] = grid[i];
     }
@@ -336,7 +340,7 @@ void *game_board_info_thread_function() {
             case GAME_BOARD_INFORMATION:
                 game_board_information *info = deserialize_game_board(received_message->message);
                 pthread_mutex_lock(&game_board_mutex);
-                update_board(game_board, info->board);
+                update_board(game_board, info->board, info->width, info->height);
                 pthread_mutex_unlock(&game_board_mutex);
                 free_game_board_information(info);
                 break;
