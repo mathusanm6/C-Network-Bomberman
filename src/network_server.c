@@ -1361,9 +1361,9 @@ void *serve_client_tcp(void *arg_tcp_thread_data) {
 
     int res = poll(p, 1, timeout_ml); // if -1
     if (res <= 0 || !(p[0].revents & POLL_IN)) {
-        pthread_mutex_lock(&lock_games);
+        pthread_mutex_lock(lock_game_model);
         set_player_dead(tcp_data->game_id, tcp_data->id);
-        pthread_mutex_unlock(&lock_games);
+        pthread_mutex_unlock(lock_game_model);
         shutdown(tcp_data->server->sock_clients[tcp_data->id], SHUT_RD);
         close(tcp_data->server->sock_clients[tcp_data->id]);
         tcp_data->server->sock_clients[tcp_data->id] = -1;
