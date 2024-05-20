@@ -291,3 +291,12 @@ chat_message *recv_chat_message_from_server(u_int16_t header) {
 u_int16_t recv_header_from_server() {
     return recv_header(sock_tcp);
 }
+
+bool has_server_disconnected_tcp() {
+    char buffer[1];
+    int res = recv(sock_tcp, buffer, 1, MSG_PEEK | MSG_DONTWAIT);
+    if (res == 0) {
+        return true;
+    }
+    return false;
+}

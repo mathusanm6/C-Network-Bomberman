@@ -363,6 +363,14 @@ void *chat_message_thread_function() {
         }
         pthread_mutex_unlock(&game_end_mutex);
 
+        // Check if connection is still alive
+        if (has_server_disconnected_tcp()) {
+            pthread_mutex_lock(&game_end_mutex);
+            is_game_end = true;
+            pthread_mutex_unlock(&game_end_mutex);
+            break;
+        }
+
         u_int16_t header = recv_header_from_server();
         char *header_char = (char *)&header;
 
@@ -408,6 +416,8 @@ void *chat_message_thread_function() {
         pthread_mutex_unlock(&view_mutex);
     }
 
+    close_socket_tcp();
+
     return NULL;
 }
 
@@ -446,6 +456,11 @@ void *view_thread_function() {
         control();
     }
 
+    end_view();
+    print_result();
+
+    exit(EXIT_SUCCESS);
+
     return NULL;
 }
 
@@ -464,12 +479,6 @@ int game_loop() {
 
     pthread_join(game_board_info_thread, NULL);
     pthread_join(chat_message_thread, NULL);
-
-    close_socket_tcp();
-    free_board(game_board);
-    end_view();
-
-    print_result();
 
     return EXIT_SUCCESS;
 }
