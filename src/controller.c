@@ -497,15 +497,20 @@ void *view_thread_function() {
 int game_loop() {
     RETURN_FAILURE_IF_NULL(game_board);
 
-    /* TODO: Handle possible errors here */
     pthread_t game_board_info_thread;
-    pthread_create(&game_board_info_thread, NULL, game_board_info_thread_function, NULL);
+    if (pthread_create(&game_board_info_thread, NULL, game_board_info_thread_function, NULL) != 0) {
+        return EXIT_FAILURE;
+    }
 
     pthread_t chat_message_thread;
-    pthread_create(&chat_message_thread, NULL, chat_message_thread_function, NULL);
+    if (pthread_create(&chat_message_thread, NULL, chat_message_thread_function, NULL) != 0) {
+        return EXIT_FAILURE;
+    }
 
     pthread_t view_thread;
-    pthread_create(&view_thread, NULL, view_thread_function, NULL);
+    if (pthread_create(&view_thread, NULL, view_thread_function, NULL) != 0) {
+        return EXIT_FAILURE;
+    }
 
     pthread_join(game_board_info_thread, NULL);
     pthread_join(chat_message_thread, NULL);
