@@ -1474,7 +1474,7 @@ int game_loop_server() {
     int return_value;
 
     lock_game_model = malloc(sizeof(pthread_mutex_t));
-    RETURN_NULL_IF_NULL(lock_game_model);
+    RETURN_FAILURE_IF_NULL(lock_game_model);
     if(pthread_mutex_init(lock_game_model, NULL) < 0){
         goto exit_closing_sockets_and_free_addr_mult;
     }
