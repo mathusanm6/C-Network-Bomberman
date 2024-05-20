@@ -199,6 +199,9 @@ bool perform_chat_action(int c) {
             pthread_mutex_lock(&game_end_mutex);
             is_game_end = true;
             pthread_mutex_unlock(&game_end_mutex);
+            close_socket_tcp();
+            close_socket_udp();
+            close_socket_diff();
             return true;
         case CHAT_NONE:
             break;
@@ -236,6 +239,9 @@ bool perform_game_action(int c) {
         case GAME_QUIT:
             pthread_mutex_lock(&game_end_mutex);
             is_game_end = true;
+            close_socket_tcp();
+            close_socket_udp();
+            close_socket_diff();
             pthread_mutex_unlock(&game_end_mutex);
             return true;
         case GAME_NONE:
@@ -320,6 +326,9 @@ void *game_board_info_thread_function() {
 
         // Check if connection is still alive
         if (has_server_disconnected_tcp()) {
+            close_socket_tcp();
+            close_socket_udp();
+            close_socket_diff();
             pthread_mutex_lock(&game_end_mutex);
             is_game_end = true;
             pthread_mutex_unlock(&game_end_mutex);
@@ -373,6 +382,9 @@ void *chat_message_thread_function() {
 
         // Check if connection is still alive
         if (has_server_disconnected_tcp()) {
+            close_socket_tcp();
+            close_socket_udp();
+            close_socket_diff();
             pthread_mutex_lock(&game_end_mutex);
             is_game_end = true;
             pthread_mutex_unlock(&game_end_mutex);
@@ -402,7 +414,10 @@ void *chat_message_thread_function() {
                 is_game_end = true;
                 pthread_mutex_unlock(&game_end_mutex);
 
-                shutdown_tcp_on_write();
+                // TODO! CHECK IF ERROR : shutdown_tcp_on_write();
+                close_socket_tcp();
+                close_socket_udp();
+                close_socket_diff();
 
                 free(game_end_header);
                 break;
@@ -429,6 +444,8 @@ void *chat_message_thread_function() {
     }
 
     close_socket_tcp();
+    close_socket_udp();
+    close_socket_diff();
 
     printf("Chat message thread ended\n");
     return NULL;

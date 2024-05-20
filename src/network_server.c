@@ -73,8 +73,9 @@ typedef struct udp_thread_data {
     pthread_mutex_t *lock_finished_flag;
     pthread_mutex_t *lock_all_tcp_threads_closed;
     pthread_mutex_t *lock_nb_stopped_udp_threads;
+    pthread_mutex_t *lock_all_udp_threads_closed;
     pthread_cond_t *cond_lock_all_tcp_threads_closed;
-    pthread_cond_t *cond_lock_nb_stopped_udp_threads;
+    pthread_cond_t *cond_lock_all_udp_threads_closed;
 
     server_information *server;
 } udp_thread_data;
@@ -134,15 +135,17 @@ void close_socket(int sock) {
 }
 
 void close_socket_tcp() {
-    return close_socket(sock_tcp);
+    close_socket(sock_tcp);
 }
 
 void close_socket_udp(server_information *server) {
-    return close_socket(server->sock_udp);
+    shutdown(server->sock_udp, SHUT_RD);
+    close_socket(server->sock_udp);
 }
 
 void close_socket_mult(server_information *server) {
-    return close_socket(server->sock_mult);
+    shutdown(server->sock_mult, SHUT_RD);
+    close_socket(server->sock_mult);
 }
 
 void close_socket_client(server_information *server, int id) {
@@ -759,7 +762,9 @@ void *serv_client_recv_game_action(void *arg_udp_thread_data) {
     *data->nb_stopped_udp_threads += 1;
 
     if (*data->nb_stopped_udp_threads == 2) {
-        unlock_mutex_for_everyone(data->lock_nb_stopped_udp_threads, data->cond_lock_nb_stopped_udp_threads);
+        sleep(1); // Wait for the other thread to finish
+
+        unlock_mutex_for_everyone(data->lock_all_udp_threads_closed, data->cond_lock_all_udp_threads_closed);
     }
 
     pthread_mutex_unlock(data->lock_nb_stopped_udp_threads);
@@ -804,29 +809,54 @@ void *serve_clients_send_mult_sec(void *arg_udp_thread_data) {
             *data->finished_flag = true;
             pthread_mutex_unlock(data->lock_finished_flag);
 
+            printf("Mult sec thread finished 1\n");
+
             // Wait for the TCP threads to finish
             lock_mutex_to_wait(data->lock_all_tcp_threads_closed, data->cond_lock_all_tcp_threads_closed);
 
+            printf("Mult sec thread finished 2\n");
+
             // Wait for the UDP threads to finish
-            lock_mutex_to_wait(data->lock_nb_stopped_udp_threads, data->cond_lock_nb_stopped_udp_threads);
+            lock_mutex_to_wait(data->lock_all_udp_threads_closed, data->cond_lock_all_udp_threads_closed);
+
+            printf("Mult sec thread finished 3\n");
 
             pthread_mutex_lock(&data->lock_game_actions);
             free_game_actions(data->game_actions, data->nb_game_actions);
             pthread_mutex_unlock(&data->lock_game_actions);
 
-            free(data->lock_all_tcp_threads_closed);
-            free(data->cond_lock_all_tcp_threads_closed);
-
             pthread_mutex_lock(&lock_games);
             free_model(data->game_id);
             pthread_mutex_unlock(&lock_games);
+
+            pthread_mutex_destroy(data->lock_finished_flag);
+            free(data->lock_finished_flag);
+
+            pthread_mutex_destroy(&data->lock_send_udp);
+
+            pthread_mutex_destroy(&data->lock_game_actions);
+
+            pthread_mutex_destroy(data->lock_nb_stopped_udp_threads);
+            free(data->lock_nb_stopped_udp_threads);
+
+            pthread_mutex_destroy(data->lock_all_tcp_threads_closed);
+            free(data->lock_all_tcp_threads_closed);
+
+            pthread_cond_destroy(data->cond_lock_all_tcp_threads_closed);
+            free(data->cond_lock_all_tcp_threads_closed);
+
+            pthread_mutex_destroy(data->lock_all_udp_threads_closed);
+            free(data->lock_all_udp_threads_closed);
+
+            pthread_cond_destroy(data->cond_lock_all_udp_threads_closed);
+            free(data->cond_lock_all_udp_threads_closed);
 
             break;
         }
     }
     free(data);
 
-    printf("Mult sec thread finished\n");
+    printf("Mult sec thread finished 4\n");
     return NULL;
 }
 
@@ -1068,7 +1098,9 @@ void *serve_clients_send_mult_freq(void *arg_udp_thread_data) {
     *data->nb_stopped_udp_threads += 1;
 
     if (*data->nb_stopped_udp_threads == 2) {
-        unlock_mutex_for_everyone(data->lock_nb_stopped_udp_threads, data->cond_lock_nb_stopped_udp_threads);
+        sleep(3); // Wait for the other thread to finish
+
+        unlock_mutex_for_everyone(data->lock_all_udp_threads_closed, data->cond_lock_all_udp_threads_closed);
     }
 
     pthread_mutex_unlock(data->lock_nb_stopped_udp_threads);
@@ -1098,9 +1130,11 @@ int init_game_threads(server_information *server, bool *finished_flag, pthread_m
     udp_thread_data_game->lock_all_tcp_threads_closed = lock_all_tcp_threads_closed;
     udp_thread_data_game->lock_nb_stopped_udp_threads = malloc(sizeof(pthread_mutex_t));
     RETURN_FAILURE_IF_NULL(udp_thread_data_game->lock_nb_stopped_udp_threads);
+    udp_thread_data_game->lock_all_udp_threads_closed = malloc(sizeof(pthread_mutex_t));
+    RETURN_FAILURE_IF_NULL(udp_thread_data_game->lock_all_udp_threads_closed);
     udp_thread_data_game->cond_lock_all_tcp_threads_closed = cond_lock_all_tcp_threads_closed;
-    udp_thread_data_game->cond_lock_nb_stopped_udp_threads = malloc(sizeof(pthread_cond_t));
-    RETURN_FAILURE_IF_NULL(udp_thread_data_game->cond_lock_nb_stopped_udp_threads);
+    udp_thread_data_game->cond_lock_all_udp_threads_closed = malloc(sizeof(pthread_cond_t));
+    RETURN_FAILURE_IF_NULL(udp_thread_data_game->cond_lock_all_udp_threads_closed);
 
     if (pthread_mutex_init(&udp_thread_data_game->lock_game_actions, NULL) < 0) {
         goto EXIT_FREEING_DATA;
@@ -1111,7 +1145,10 @@ int init_game_threads(server_information *server, bool *finished_flag, pthread_m
     if (pthread_mutex_init(udp_thread_data_game->lock_nb_stopped_udp_threads, NULL) < 0) {
         goto EXIT_FREEING_DATA;
     }
-    if (pthread_cond_init(udp_thread_data_game->cond_lock_nb_stopped_udp_threads, NULL) < 0) {
+    if (pthread_mutex_init(udp_thread_data_game->lock_all_udp_threads_closed, NULL) < 0) {
+        goto EXIT_FREEING_DATA;
+    }
+    if (pthread_cond_init(udp_thread_data_game->cond_lock_all_udp_threads_closed, NULL) < 0) {
         goto EXIT_FREEING_DATA;
     }
 
@@ -1184,7 +1221,6 @@ void handle_tcp_communication(tcp_thread_data *tcp_data) {
             pthread_mutex_lock(&lock_games);
             set_player_dead(tcp_data->game_id, tcp_data->id);
             pthread_mutex_unlock(&lock_games);
-
             break;
         }
 
@@ -1229,7 +1265,6 @@ void handle_tcp_communication(tcp_thread_data *tcp_data) {
 
     pthread_mutex_lock(tcp_data->lock_nb_players_left);
     if (*tcp_data->nb_players_left == PLAYER_NUM - 1) {
-
         pthread_mutex_lock(tcp_data->lock_finished_flag);
         if (*tcp_data->finished_flag) {
             pthread_mutex_unlock(tcp_data->lock_finished_flag);
@@ -1278,6 +1313,8 @@ void handle_tcp_communication(tcp_thread_data *tcp_data) {
         close_socket_udp(tcp_data->server);
         close_socket_mult(tcp_data->server);
 
+        sleep(3); // Wait for the other thread to finish
+
         unlock_mutex_for_everyone(tcp_data->lock_all_tcp_threads_closed, tcp_data->cond_lock_all_tcp_threads_closed);
 
         return;
@@ -1320,7 +1357,7 @@ void *serve_client_tcp(void *arg_tcp_thread_data) {
 
     free(tcp_data);
 
-    sleep(1); // Just in case
+    sleep(3); // Just in case
 
     return NULL;
 }

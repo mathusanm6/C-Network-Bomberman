@@ -40,7 +40,26 @@ void close_socket(int sock) {
 }
 
 void close_socket_tcp() {
-    close(sock_tcp);
+    if (sock_tcp != -1) {
+        close(sock_tcp);
+    }
+    sock_tcp = -1;
+}
+
+void close_socket_udp() {
+    if (sock_udp != -1) {
+        shutdown(sock_udp, SHUT_RD);
+        close(sock_udp);
+    }
+    sock_udp = -1;
+}
+
+void close_socket_diff() {
+    if (sock_diff != -1) {
+        shutdown(sock_diff, SHUT_RD);
+        close(sock_diff);
+    }
+    sock_diff = -1;
 }
 
 void shutdown_tcp_on_write() {

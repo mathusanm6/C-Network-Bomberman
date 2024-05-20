@@ -10,6 +10,8 @@
 
 int init_tcp_socket();
 void close_socket_tcp();
+void close_socket_udp();
+void close_socket_diff();
 void shutdown_tcp_on_write();
 void set_tcp_port(uint16_t port);
 int try_to_connect_tcp();
