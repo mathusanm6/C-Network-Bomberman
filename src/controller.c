@@ -360,11 +360,13 @@ void *game_board_info_thread_function() {
                 /* TODO: Handle error */
                 break;
         }
+        free(received_message->message);
 
         board *b = get_board();
         pthread_mutex_lock(&view_mutex);
         refresh_game(game_mode, b, client_chat, player_id);
         pthread_mutex_unlock(&view_mutex);
+        free_board(b);
     }
 
     printf("Game board info thread ended\n");
@@ -441,6 +443,7 @@ void *chat_message_thread_function() {
         pthread_mutex_lock(&view_mutex);
         refresh_game(game_mode, b, client_chat, player_id);
         pthread_mutex_unlock(&view_mutex);
+        free_board(b);
     }
 
     close_socket_tcp();
