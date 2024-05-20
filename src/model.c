@@ -326,6 +326,7 @@ void free_model(unsigned int game_id) {
     games[game_id]->chat = NULL;
     free_player_positions(game_id);
     free(games[game_id]);
+    games[game_id] = NULL;
 }
 
 char tile_to_char(TILE t) {

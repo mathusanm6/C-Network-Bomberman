@@ -758,12 +758,12 @@ void *serv_client_recv_game_action(void *arg_udp_thread_data) {
         }
     }
 
+    sleep(2); // Wait for the other thread to finish
+
     pthread_mutex_lock(data->lock_nb_stopped_udp_threads);
     *data->nb_stopped_udp_threads += 1;
 
     if (*data->nb_stopped_udp_threads == 2) {
-        sleep(1); // Wait for the other thread to finish
-
         unlock_mutex_for_everyone(data->lock_all_udp_threads_closed, data->cond_lock_all_udp_threads_closed);
     }
 
@@ -1094,11 +1094,12 @@ void *serve_clients_send_mult_freq(void *arg_udp_thread_data) {
         increment_last_num_message(&last_num_freq_message);
     }
 
+    sleep(2); // Wait for the other thread to finish
+
     pthread_mutex_lock(data->lock_nb_stopped_udp_threads);
     *data->nb_stopped_udp_threads += 1;
 
     if (*data->nb_stopped_udp_threads == 2) {
-        sleep(3); // Wait for the other thread to finish
 
         unlock_mutex_for_everyone(data->lock_all_udp_threads_closed, data->cond_lock_all_udp_threads_closed);
     }
@@ -1191,7 +1192,7 @@ void wait_all_clients_not_ready(server_information *server, bool *finished_flag,
         board *game_board = get_game_board(game_id);
         pthread_mutex_unlock(&lock_games);
         send_game_board_for_clients(server, 0, game_board); // Initial game_board send
-        free(game_board);
+        free_board(game_board);
         init_game_threads(server, finished_flag, lock_finished_flag, lock_all_tcp_threads_closed,
                           cond_lock_all_tcp_threads_closed, game_id); // TODO MANAGE ERRORS
 
@@ -1312,8 +1313,6 @@ void handle_tcp_communication(tcp_thread_data *tcp_data) {
 
         close_socket_udp(tcp_data->server);
         close_socket_mult(tcp_data->server);
-
-        sleep(3); // Wait for the other thread to finish
 
         unlock_mutex_for_everyone(tcp_data->lock_all_tcp_threads_closed, tcp_data->cond_lock_all_tcp_threads_closed);
 
