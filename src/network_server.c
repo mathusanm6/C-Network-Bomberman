@@ -158,7 +158,6 @@ void close_socket_client(server_information *server, int id) {
 }
 
 int init_socket(int *sock, bool is_tcp) {
-    printf("Creating socket\n");
     if (is_tcp) {
         *sock = socket(PF_INET6, SOCK_STREAM, 0);
     } else {
@@ -184,8 +183,6 @@ int init_socket(int *sock, bool is_tcp) {
         return EXIT_FAILURE;
     }
 
-    printf("Socket created\n");
-    printf("Socket : %d\n", *sock);
     return EXIT_SUCCESS;
 }
 
@@ -261,7 +258,7 @@ int init_socket_mult(server_information *server) {
 void print_ip_of_client(struct sockaddr_in6 client_addr) {
     char client_ip[INET6_ADDRSTRLEN];
     inet_ntop(AF_INET6, &(client_addr.sin6_addr), client_ip, INET6_ADDRSTRLEN);
-    printf("%s\n", client_ip);
+    printf("New player connected: %s\n", client_ip);
 }
 
 uint16_t get_port_tcp() {
@@ -684,10 +681,6 @@ void remove_polls_to_poll(struct pollfd *polls, unsigned *nb, unsigned i) {
     *nb -= 1;
 }
 
-void print_ready_player(ready_connection_header *ready_informations) {
-    printf("Player with Id : %d, eq : %d is ready.\n", ready_informations->id, ready_informations->eq);
-}
-
 int try_to_init_socket_of_client() {
     struct sockaddr_in6 client_addr;
     int client_addr_len = sizeof(client_addr);
@@ -706,16 +699,8 @@ int init_game_model(GAME_MODE mode) {
     dim.width = GAMEBOARD_WIDTH;
     dim.height = GAMEBOARD_HEIGHT;
 
-    printf("lock init game_model\n");
-
     pthread_mutex_lock(lock_game_model);
     int game_id = init_model(dim, mode);
-    printf("-->> Game id : %d\n", game_id);
-    if (get_game_board(game_id) == NULL) {
-        printf("Game board is NULL\n");
-    } else {
-        printf("Game board is not NULL\n");
-    }
     pthread_mutex_unlock(lock_game_model);
 
     return game_id;
@@ -784,8 +769,6 @@ void *serv_client_recv_game_action(void *arg_udp_thread_data) {
         unlock_mutex_for_everyone(data->lock_all_udp_threads_closed, data->cond_lock_all_udp_threads_closed);
     }
 
-    printf("Recv game action thread finished\n");
-
     return NULL;
 }
 
@@ -824,17 +807,11 @@ void *serve_clients_send_mult_sec(void *arg_udp_thread_data) {
             *data->finished_flag = true;
             pthread_mutex_unlock(data->lock_finished_flag);
 
-            printf("Mult sec thread finished 1\n");
-
             // Wait for the TCP threads to finish
             lock_mutex_to_wait(data->lock_all_tcp_threads_closed, data->cond_lock_all_tcp_threads_closed);
 
-            printf("Mult sec thread finished 2\n");
-
             // Wait for the UDP threads to finish
             lock_mutex_to_wait(data->lock_all_udp_threads_closed, data->cond_lock_all_udp_threads_closed);
-
-            printf("Mult sec thread finished 3\n");
 
             pthread_mutex_lock(&data->lock_game_actions);
             free_game_actions(data->game_actions, data->nb_game_actions);
@@ -871,7 +848,6 @@ void *serve_clients_send_mult_sec(void *arg_udp_thread_data) {
     }
     free(data);
 
-    printf("Mult sec thread finished 4\n");
     return NULL;
 }
 
@@ -1120,8 +1096,6 @@ void *serve_clients_send_mult_freq(void *arg_udp_thread_data) {
         unlock_mutex_for_everyone(data->lock_all_udp_threads_closed, data->cond_lock_all_udp_threads_closed);
     }
 
-    printf("Mult freq thread finished\n");
-
     return NULL;
 }
 
@@ -1202,7 +1176,6 @@ void wait_all_clients_not_ready(server_information *server, bool *finished_flag,
     if (!is_ready) {
         pthread_cond_wait(cond, lock);
     } else {
-        printf("lock wait all clients\n");
         pthread_mutex_lock(lock_game_model);
         board *game_board = get_game_board(game_id);
         pthread_mutex_unlock(lock_game_model);
@@ -1236,7 +1209,6 @@ void handle_tcp_communication(tcp_thread_data *tcp_data) {
         pthread_mutex_unlock(tcp_data->lock_finished_flag);
 
         if (recv(client_sock, buffer, 1, MSG_PEEK | MSG_DONTWAIT) == 0) {
-            printf("Player %d closed read\n", tcp_data->id);
             pthread_mutex_lock(lock_game_model);
             set_player_dead(tcp_data->game_id, tcp_data->id);
             pthread_mutex_unlock(lock_game_model);
@@ -1261,7 +1233,6 @@ void handle_tcp_communication(tcp_thread_data *tcp_data) {
                 if (msg != NULL) {
                     // Check if sending a message to the client is possible
                     if (send(client_sock, buffer, 0, MSG_NOSIGNAL) < 0) {
-                        printf("Player %d closed read\n", tcp_data->id);
                         pthread_mutex_lock(lock_game_model);
                         set_player_dead(tcp_data->game_id, tcp_data->id);
                         pthread_mutex_unlock(lock_game_model);
@@ -1272,7 +1243,6 @@ void handle_tcp_communication(tcp_thread_data *tcp_data) {
                     free(msg->message);
                     free(msg);
                 } else {
-                    printf("Player %d closed write\n", tcp_data->id);
                     pthread_mutex_lock(lock_game_model);
                     set_player_dead(tcp_data->game_id, tcp_data->id);
                     pthread_mutex_unlock(lock_game_model);
@@ -1342,13 +1312,10 @@ void *serve_client_tcp(void *arg_tcp_thread_data) {
     tcp_thread_data *tcp_data = (tcp_thread_data *)arg_tcp_thread_data;
     pthread_mutex_lock(tcp_data->lock_waiting_all_players_join);
     *(tcp_data->connected_players) += 1;
-    printf("%d\n", *tcp_data->connected_players);
     bool is_everyone_connected = *tcp_data->connected_players == PLAYER_NUM;
     wait_all_clients_connected(tcp_data->lock_waiting_all_players_join, tcp_data->cond_lock_waiting_all_players_join,
                                is_everyone_connected, tcp_data->connected_players);
-    printf("%d send\n", tcp_data->id);
     send_connexion_information_of_client(tcp_data->server, tcp_data->id, tcp_data->eq);
-    printf("%d after send\n", tcp_data->id);
 
     // TODO verify ready_informations
     struct pollfd p[1];
@@ -1367,7 +1334,6 @@ void *serve_client_tcp(void *arg_tcp_thread_data) {
     } else {
         ready_connection_header *ready_informations =
             recv_ready_connexion_header_of_client(tcp_data->server->sock_clients[tcp_data->id]);
-        print_ready_player(ready_informations);
         free(ready_informations);
     }
     pthread_mutex_lock(tcp_data->lock_all_players_ready);
@@ -1379,10 +1345,6 @@ void *serve_client_tcp(void *arg_tcp_thread_data) {
                                tcp_data->ready_player_number, tcp_data->game_id);
 
     handle_tcp_communication(tcp_data);
-
-    printf("Player %d left the game.\n", tcp_data->id);
-
-    printf("TCP thread finished : %d\n", tcp_data->id);
 
     free(tcp_data);
 
