@@ -33,6 +33,11 @@ static uint16_t adrmdiff[8];
 static int id;
 static int eq;
 
+void free_internal_info() {
+    free(addr_udp);
+    free(addr_diff);
+}
+
 void close_socket(int sock) {
     if (sock != 0) {
         close(sock);
