@@ -1228,6 +1228,9 @@ void handle_tcp_communication(tcp_thread_data *tcp_data) {
     int retval;
 
     while (true) {
+        if (client_sock == -1) {
+            break;
+        }
         pthread_mutex_lock(tcp_data->lock_finished_flag);
         if (*tcp_data->finished_flag) {
             pthread_mutex_unlock(tcp_data->lock_finished_flag);
@@ -1351,9 +1354,25 @@ void *serve_client_tcp(void *arg_tcp_thread_data) {
     printf("%d after send\n", tcp_data->id);
 
     // TODO verify ready_informations
-    ready_connection_header *ready_informations =
-        recv_ready_connexion_header_of_client(tcp_data->server->sock_clients[tcp_data->id]);
-    print_ready_player(ready_informations);
+    struct pollfd p[1];
+    p[0].fd = tcp_data->server->sock_clients[tcp_data->id];
+    p[0].events = POLL_IN;
+    int timeout_ml = 60000;
+
+    int res = poll(p, 1, timeout_ml); // if -1
+    if (res <= 0 || !(p[0].revents & POLL_IN)) {
+        pthread_mutex_lock(lock_game_model);
+        set_player_dead(tcp_data->game_id, tcp_data->id);
+        pthread_mutex_unlock(lock_game_model);
+        shutdown(tcp_data->server->sock_clients[tcp_data->id], SHUT_RD);
+        close(tcp_data->server->sock_clients[tcp_data->id]);
+        tcp_data->server->sock_clients[tcp_data->id] = -1;
+    } else {
+        ready_connection_header *ready_informations =
+            recv_ready_connexion_header_of_client(tcp_data->server->sock_clients[tcp_data->id]);
+        print_ready_player(ready_informations);
+        free(ready_informations);
+    }
     pthread_mutex_lock(tcp_data->lock_all_players_ready);
     *(tcp_data->ready_player_number) += 1;
     bool is_ready = *tcp_data->ready_player_number == PLAYER_NUM;
@@ -1364,8 +1383,7 @@ void *serve_client_tcp(void *arg_tcp_thread_data) {
 
     handle_tcp_communication(tcp_data);
 
-    printf("Player %d left the game.\n", ready_informations->id);
-    free(ready_informations);
+    printf("Player %d left the game.\n", tcp_data->id);
 
     printf("TCP thread finished : %d\n", tcp_data->id);
 
