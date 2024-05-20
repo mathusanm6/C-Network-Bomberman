@@ -233,9 +233,15 @@ int try_to_bind_random_port_on_socket_tcp() {
     return EXIT_SUCCESS;
 }
 
+int try_to_bind_port_on_socket_tcp(uint16_t connexion_port);
+
 int init_socket_tcp() {
     RETURN_FAILURE_IF_ERROR(init_socket(&sock_tcp, true));
 
+    if (connection_port != -1) {
+        int r = try_to_bind_port_on_socket_tcp(connection_port);
+        return r;
+    }
     if (try_to_bind_random_port_on_socket_tcp() != EXIT_SUCCESS) {
         close_socket_tcp();
         return EXIT_FAILURE;
@@ -270,6 +276,7 @@ int try_to_bind_port_on_socket_tcp(uint16_t connexion_port) {
     uint16_t network_port = htons(connexion_port);
 
     if (try_to_bind_port_on_socket(sock_tcp, adrsock, network_port) != EXIT_SUCCESS) {
+        printf("This port is not valid.\n");
         return EXIT_FAILURE;
     }
     port_tcp = network_port;
@@ -335,18 +342,11 @@ int init_addr_mult(server_information *server) {
     return EXIT_SUCCESS;
 }
 
-server_information *init_server_network(uint16_t connexion_port) {
+server_information *init_server_network() {
     server_information *server = create_server_information();
     RETURN_NULL_IF_NULL(server);
     RETURN_NULL_IF_ERROR(init_socket_udp(server));
     RETURN_NULL_IF_ERROR(init_socket_mult(server));
-
-    if (connexion_port >= MIN_PORT && connexion_port <= MAX_PORT) {
-        if (try_to_bind_port_on_socket_tcp(connexion_port) != EXIT_SUCCESS) {
-            fprintf(stderr, "The connexion port not works, try another one.\n");
-            goto exit_closing_sockets;
-        }
-    }
 
     if (try_to_bind_random_port_on_socket_udp(server) != EXIT_SUCCESS) {
         goto exit_closing_sockets;
@@ -1401,7 +1401,7 @@ int connect_one_player_to_game(int sock) {
             if (game_id == -1) {
                 return EXIT_FAILURE;
             }
-            solo_waiting_server = init_server_network(connection_port);
+            solo_waiting_server = init_server_network();
             RETURN_FAILURE_IF_NULL(solo_waiting_server);
             init_tcp_threads_data(solo_waiting_server, SOLO, game_id);
         }
@@ -1422,7 +1422,7 @@ int connect_one_player_to_game(int sock) {
             if (game_id == -1) {
                 return EXIT_FAILURE;
             }
-            team_waiting_server = init_server_network(connection_port);
+            team_waiting_server = init_server_network();
             RETURN_FAILURE_IF_NULL(team_waiting_server);
             if (game_id == 0 || game_id == 3) { // 0 and 3 are in the same team
                 init_tcp_threads_data(team_waiting_server, TEAM, 0);
