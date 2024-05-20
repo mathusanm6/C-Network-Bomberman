@@ -34,7 +34,7 @@ int main(int argc, char *argv[]) {
     srandom(time(NULL));
     RETURN_FAILURE_IF_ERROR(init_server_flags());
     parse_client_flags(argc, argv);
-    uint16_t connexion_port = -1;
+    uint16_t connexion_port = 0;
     if (server_flags->connexion_port != NULL) {
         int r = parse_unsigned_within_bounds(server_flags->connexion_port, MIN_PORT, MAX_PORT);
         if (r >= 0) {
@@ -47,8 +47,8 @@ int main(int argc, char *argv[]) {
     }
     free(server_flags);
 
-    init_state(connexion_port);
     RETURN_FAILURE_IF_ERROR(init_socket_tcp());
 
+    init_state(connexion_port);
     RETURN_FAILURE_IF_ERROR(game_loop_server());
 }
