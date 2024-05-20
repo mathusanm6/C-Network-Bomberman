@@ -197,18 +197,17 @@ int init_udp_info(connection_information *head) {
     return EXIT_SUCCESS;
 }
 
-void set_server_informations(connection_information *head) {
+int set_server_informations(connection_information *head) {
     id = head->id;
     eq = head->eq;
     for (unsigned i = 0; i < 8; i++) {
         adrmdiff[i] = head->adrmdiff[i];
     }
 
-    // TODO: Handle error
-    RETURN_IF_ERROR(init_diff_info(head));
+    RETURN_FAILURE_IF_ERROR(init_diff_info(head));
+    RETURN_FAILURE_IF_ERROR(init_udp_info(head));
 
-    // TODO: Handle error
-    RETURN_IF_ERROR(init_udp_info(head));
+    return EXIT_SUCCESS;
 }
 
 connection_information *start_initialisation_game(GAME_MODE mode) {
@@ -219,7 +218,7 @@ connection_information *start_initialisation_game(GAME_MODE mode) {
     connection_information *head = recv_connexion_information(sock_tcp);
     RETURN_NULL_IF_NULL(head);
 
-    set_server_informations(head);
+    RETURN_NULL_IF_ERROR(set_server_informations(head));
     printf("The server is ready.\n");
     return head;
 }
