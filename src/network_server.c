@@ -710,7 +710,16 @@ int init_game_model(GAME_MODE mode) {
     dim.height = GAMEBOARD_HEIGHT;
 
     printf("lock init game_model\n");
+
+    pthread_mutex_lock(lock_game_model);
     int game_id = init_model(dim, mode);
+    printf("-->> Game id : %d\n", game_id);
+    if (get_game_board(game_id) == NULL) {
+        printf("Game board is NULL\n");
+    } else {
+        printf("Game board is not NULL\n");
+    }
+    pthread_mutex_unlock(lock_game_model);
 
     return game_id;
 }
@@ -771,12 +780,12 @@ void *serv_client_recv_game_action(void *arg_udp_thread_data) {
 
     pthread_mutex_lock(data->lock_nb_stopped_udp_threads);
     *data->nb_stopped_udp_threads += 1;
+    int nb_stopped_udp_threads = *data->nb_stopped_udp_threads;
+    pthread_mutex_unlock(data->lock_nb_stopped_udp_threads);
 
-    if (*data->nb_stopped_udp_threads == 2) {
+    if (nb_stopped_udp_threads == 2) {
         unlock_mutex_for_everyone(data->lock_all_udp_threads_closed, data->cond_lock_all_udp_threads_closed);
     }
-
-    pthread_mutex_unlock(data->lock_nb_stopped_udp_threads);
 
     printf("Recv game action thread finished\n");
 
@@ -1107,13 +1116,12 @@ void *serve_clients_send_mult_freq(void *arg_udp_thread_data) {
 
     pthread_mutex_lock(data->lock_nb_stopped_udp_threads);
     *data->nb_stopped_udp_threads += 1;
+    int nb_stopped_udp_threads = *data->nb_stopped_udp_threads;
+    pthread_mutex_unlock(data->lock_nb_stopped_udp_threads);
 
-    if (*data->nb_stopped_udp_threads == 2) {
-
+    if (nb_stopped_udp_threads == 2) {
         unlock_mutex_for_everyone(data->lock_all_udp_threads_closed, data->cond_lock_all_udp_threads_closed);
     }
-
-    pthread_mutex_unlock(data->lock_nb_stopped_udp_threads);
 
     printf("Mult freq thread finished\n");
 
@@ -1376,9 +1384,7 @@ int connect_one_player_to_game(int sock) {
     // TODO: refactor
     if (head->game_mode == SOLO) {
         if (connected_solo_players == 0) {
-            pthread_mutex_lock(lock_game_model);
             int game_id = init_game_model(SOLO);
-            pthread_mutex_unlock(lock_game_model);
             if (game_id == -1) {
                 return EXIT_FAILURE;
             }
@@ -1399,9 +1405,7 @@ int connect_one_player_to_game(int sock) {
 
     } else if (head->game_mode == TEAM) {
         if (connected_team_players == 0) {
-            pthread_mutex_lock(lock_game_model);
             int game_id = init_game_model(TEAM);
-            pthread_mutex_unlock(lock_game_model);
             if (game_id == -1) {
                 return EXIT_FAILURE;
             }
@@ -1475,7 +1479,7 @@ int game_loop_server() {
 
     lock_game_model = malloc(sizeof(pthread_mutex_t));
     RETURN_FAILURE_IF_NULL(lock_game_model);
-    if(pthread_mutex_init(lock_game_model, NULL) < 0){
+    if (pthread_mutex_init(lock_game_model, NULL) < 0) {
         goto exit_closing_sockets_and_free_addr_mult;
     }
 
