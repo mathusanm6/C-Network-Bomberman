@@ -233,16 +233,15 @@ int try_to_bind_random_port_on_socket_tcp() {
     return EXIT_SUCCESS;
 }
 
-
 int try_to_bind_port_on_socket_tcp(uint16_t connexion_port);
 
 int init_socket_tcp() {
     RETURN_FAILURE_IF_ERROR(init_socket(&sock_tcp, true));
-    
-    if(connection_port != -1){
+
+    if (connection_port != -1) {
         int r = try_to_bind_port_on_socket_tcp(connection_port);
         return r;
-    }   
+    }
     if (try_to_bind_random_port_on_socket_tcp() != EXIT_SUCCESS) {
         close_socket_tcp();
         return EXIT_FAILURE;
