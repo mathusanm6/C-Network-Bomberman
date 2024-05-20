@@ -788,9 +788,11 @@ int get_winner_solo(unsigned int game_id) {
 
     player **players = games[game_id]->players;
 
-    for (int i = 0; i < PLAYER_NUM; ++i) {
-        if (!players[i]->dead) {
-            return i;
+    for (int i = 0; i < PLAYER_NUM; i++) {
+        for (int j = 0; j < PLAYER_NUM; j++) {
+            if (i != j && !players[i]->dead && players[j]->dead) {
+                return i;
+            }
         }
     }
 

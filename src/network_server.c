@@ -626,17 +626,19 @@ void handle_chat_message(server_information *server, int sender_id, chat_message
 
 void handle_game_over(server_information *server, int game_id) {
     if (get_game_mode(game_id) == SOLO) {
+        int winner_player = get_winner_solo(game_id);
         for (int i = 0; i < PLAYER_NUM; i++) {
             if (server->sock_clients[i] != -1) {
-                if (send_game_over(server->sock_clients[i], SOLO, i, get_winner_solo(game_id)) < 0) {
+                if (send_game_over(server->sock_clients[i], SOLO, winner_player, 0) < 0) {
                     perror("send_game_over");
                 }
             }
         }
     } else if (get_game_mode(game_id) == TEAM) {
+        int winner_team = get_winner_team(game_id);
         for (int i = 0; i < PLAYER_NUM; i++) {
             if (server->sock_clients[i] != -1) {
-                if (send_game_over(server->sock_clients[i], TEAM, i, get_winner_team(game_id)) < 0) {
+                if (send_game_over(server->sock_clients[i], TEAM, 0, winner_team) < 0) {
                     perror("send_game_over");
                 }
             }
