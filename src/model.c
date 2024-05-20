@@ -579,7 +579,13 @@ void set_player_dead(unsigned int game_id, int player_id) {
     if (games[game_id] == NULL) {
         return;
     }
-
+    for(int i = 0; i < games[game_id]->game_board->dim.width * games[game_id]->game_board->dim.height; i++) {
+        coord c = int_to_coord(i, game_id);
+        if(get_grid(c.x, c.y, game_id) == get_player(player_id)){
+            set_grid(c.x, c.y, EMPTY, game_id);
+            break;
+        }
+    }
     games[game_id]->players[player_id]->dead = true;
 }
 

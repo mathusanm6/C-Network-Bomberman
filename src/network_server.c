@@ -1357,7 +1357,7 @@ void *serve_client_tcp(void *arg_tcp_thread_data) {
     struct pollfd p[1];
     p[0].fd = tcp_data->server->sock_clients[tcp_data->id];
     p[0].events = POLL_IN;
-    int timeout_ml = 10000;
+    int timeout_ml = 60000;
 
     int res = poll(p, 1, timeout_ml); // if -1
     if (res <= 0 || !(p[0].revents & POLL_IN)) {
