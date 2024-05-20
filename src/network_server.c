@@ -96,6 +96,8 @@ static tcp_thread_data *team_tcp_threads_data_players[PLAYER_NUM];
 static int connection_port;
 
 static pthread_mutex_t lock_games = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t lock_game_mode = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t lock_get_winner = PTHREAD_MUTEX_INITIALIZER;
 
 void init_state(uint16_t connection_port_) {
     solo_waiting_server = NULL;
@@ -628,8 +630,15 @@ void handle_chat_message(server_information *server, int sender_id, chat_message
 }
 
 void handle_game_over(server_information *server, int game_id) {
-    if (get_game_mode(game_id) == SOLO) {
+    GAME_MODE mode;
+    pthread_mutex_lock(&lock_game_mode);
+    mode = get_game_mode(game_id);
+    pthread_mutex_unlock(&lock_game_mode);
+
+    if (mode == SOLO) {
+        pthread_mutex_lock(&lock_get_winner);
         int winner_player = get_winner_solo(game_id);
+        pthread_mutex_unlock(&lock_get_winner);
         for (int i = 0; i < PLAYER_NUM; i++) {
             if (server->sock_clients[i] != -1) {
                 if (send_game_over(server->sock_clients[i], SOLO, winner_player, 0) < 0) {
@@ -637,8 +646,10 @@ void handle_game_over(server_information *server, int game_id) {
                 }
             }
         }
-    } else if (get_game_mode(game_id) == TEAM) {
+    } else if (mode == TEAM) {
+        pthread_mutex_lock(&lock_get_winner);
         int winner_team = get_winner_team(game_id);
+        pthread_mutex_unlock(&lock_get_winner);
         for (int i = 0; i < PLAYER_NUM; i++) {
             if (server->sock_clients[i] != -1) {
                 if (send_game_over(server->sock_clients[i], TEAM, 0, winner_team) < 0) {
@@ -1266,11 +1277,8 @@ void handle_tcp_communication(tcp_thread_data *tcp_data) {
 
     pthread_mutex_lock(tcp_data->lock_nb_players_left);
     if (*tcp_data->nb_players_left == PLAYER_NUM - 1) {
-        pthread_mutex_lock(tcp_data->lock_finished_flag);
-        if (*tcp_data->finished_flag) {
-            pthread_mutex_unlock(tcp_data->lock_finished_flag);
-            handle_game_over(tcp_data->server, tcp_data->game_id);
-        }
+
+        handle_game_over(tcp_data->server, tcp_data->game_id);
 
         // Last player left
         if (tcp_data->nb_players_left != NULL) {
