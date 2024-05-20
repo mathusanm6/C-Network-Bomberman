@@ -1194,7 +1194,7 @@ void handle_tcp_communication(tcp_thread_data *tcp_data) {
         } else if (retval > 0) {
             if (FD_ISSET(client_sock, &read_fds)) {
                 chat_message *msg = recv_chat_message_of_client(tcp_data->server, tcp_data->id);
-                
+
                 if (msg != NULL) {
                     // Check if sending a message to the client is possible
                     if (send(client_sock, buffer, 0, MSG_NOSIGNAL) < 0) {
