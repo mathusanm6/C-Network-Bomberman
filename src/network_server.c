@@ -32,7 +32,6 @@
 #define INITIAL_GAME_ACTIONS_SIZE 4
 #define INITIAL_POLL_FD_SIZE 9
 
-
 typedef struct tcp_thread_data {
     unsigned id;
     int game_id;
@@ -96,7 +95,7 @@ static tcp_thread_data *team_tcp_threads_data_players[PLAYER_NUM];
 
 static int connection_port;
 
-static pthread_mutex_t* lock_game_model;
+static pthread_mutex_t *lock_game_model;
 
 void init_state(uint16_t connection_port_) {
     solo_waiting_server = NULL;
@@ -627,14 +626,14 @@ void handle_chat_message(server_information *server, int sender_id, chat_message
 
 void handle_game_over(server_information *server, int game_id) {
     GAME_MODE mode;
-    pthread_mutex_lock(&lock_game_mode);
+    pthread_mutex_lock(lock_game_model);
     mode = get_game_mode(game_id);
-    pthread_mutex_unlock(&lock_game_mode);
+    pthread_mutex_unlock(lock_game_model);
 
     if (mode == SOLO) {
-        pthread_mutex_lock(&lock_get_winner);
+        pthread_mutex_lock(lock_game_model);
         int winner_player = get_winner_solo(game_id);
-        pthread_mutex_unlock(&lock_get_winner);
+        pthread_mutex_unlock(lock_game_model);
         for (int i = 0; i < PLAYER_NUM; i++) {
             if (server->sock_clients[i] != -1) {
                 if (send_game_over(server->sock_clients[i], SOLO, winner_player, 0) < 0) {
@@ -643,9 +642,9 @@ void handle_game_over(server_information *server, int game_id) {
             }
         }
     } else if (mode == TEAM) {
-        pthread_mutex_lock(&lock_get_winner);
+        pthread_mutex_lock(lock_game_model);
         int winner_team = get_winner_team(game_id);
-        pthread_mutex_unlock(&lock_get_winner);
+        pthread_mutex_unlock(lock_game_model);
         for (int i = 0; i < PLAYER_NUM; i++) {
             if (server->sock_clients[i] != -1) {
                 if (send_game_over(server->sock_clients[i], TEAM, 0, winner_team) < 0) {
@@ -709,7 +708,7 @@ int init_game_model(GAME_MODE mode) {
     dimension dim;
     dim.width = GAMEBOARD_WIDTH;
     dim.height = GAMEBOARD_HEIGHT;
-    
+
     printf("lock init game_model\n");
     int game_id = init_model(dim, mode);
 
