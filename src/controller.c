@@ -45,7 +45,10 @@ static bool is_game_end = false;
 static pthread_mutex_t game_end_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static int winner_team = -1;
+static pthread_mutex_t winner_team_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 static int winner_player = -1;
+static pthread_mutex_t winner_player_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 // TODO
 static GAME_MODE game_mode = SOLO;
@@ -379,11 +382,15 @@ void *chat_message_thread_function() {
         if (game_end_header != NULL) {
             if (game_end_header->game_mode == game_mode) {
                 if (game_mode == SOLO) {
+                    pthread_mutex_lock(&winner_player_mutex);
                     winner_player = game_end_header->id;
+                    pthread_mutex_unlock(&winner_player_mutex);
                 }
 
                 if (game_mode == TEAM) {
+                    pthread_mutex_lock(&winner_team_mutex);
                     winner_team = game_end_header->eq;
+                    pthread_mutex_unlock(&winner_team_mutex);
                 }
 
                 pthread_mutex_lock(&game_end_mutex);
@@ -423,21 +430,25 @@ void *chat_message_thread_function() {
 
 void print_result() {
     if (game_mode == SOLO) {
+        pthread_mutex_lock(&winner_player_mutex);
         if (winner_player == player_id) {
             printf(GREEN_COLOR "You won\n" RESET_COLOR);
         } else {
             printf(RED_COLOR "You lost\n" RESET_COLOR);
             printf(YELLOW_COLOR "Winner player: %d\n" RESET_COLOR, winner_player + 1);
         }
+        pthread_mutex_unlock(&winner_player_mutex);
     }
 
     if (game_mode == TEAM) {
+        pthread_mutex_lock(&winner_team_mutex);
         if (winner_team == eq) {
             printf(GREEN_COLOR "Your team won\n" RESET_COLOR);
         } else {
             printf(RED_COLOR "Your team lost\n" RESET_COLOR);
             printf(YELLOW_COLOR "Winner team: %d\n" RESET_COLOR, winner_team);
         }
+        pthread_mutex_unlock(&winner_team_mutex);
     }
 
     printf(BLUE_COLOR "Game Ended\n" RESET_COLOR);
