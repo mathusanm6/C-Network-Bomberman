@@ -1,5 +1,4 @@
 #include "./controller.h"
-#include "./communication_client.h"
 #include "./messages.h"
 #include "./network_client.h"
 #include "./utils.h"
@@ -31,10 +30,6 @@
 #define BLUE_COLOR "\033[34m"
 #define YELLOW_COLOR "\033[33m"
 
-/* TODO: fixme once multiple games are supported */
-#define TMP_GAME_ID 0
-
-// TODO: Fix memory leak
 static board *game_board = NULL;
 static pthread_mutex_t game_board_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -50,7 +45,6 @@ static pthread_mutex_t winner_team_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int winner_player = -1;
 static pthread_mutex_t winner_player_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-// TODO
 static GAME_MODE game_mode = SOLO;
 static int player_id = 0;
 
@@ -65,8 +59,8 @@ void init_controller() {
     nodelay(stdscr, TRUE);    /* Make getch non-blocking */
     game_board = malloc(sizeof(board));
     RETURN_IF_NULL_PERROR(game_board, "malloc board_controller");
-    // TODO: wait for first message and init with the correct dimensions
-    game_board->dim = (dimension){49, 23};
+    // Will be resized when receiving the first game board, we just use a large size for now
+    game_board->dim = (dimension){100, 100};
     game_board->grid = malloc(game_board->dim.height * game_board->dim.width * sizeof(char));
     RETURN_IF_NULL_PERROR(game_board->grid, "malloc board_controller grid");
     for (int i = 0; i < game_board->dim.height * game_board->dim.width; i++) {
@@ -270,8 +264,6 @@ bool control() {
 int init_game(int player_nb, int eq_, GAME_MODE mode) {
     RETURN_FAILURE_IF_ERROR(init_view());
 
-    // TODO: init the chat
-
     init_controller();
 
     player_id = player_nb;
@@ -301,7 +293,11 @@ board *get_board() {
     return b;
 }
 
-void update_board(board *b, TILE *grid) {
+void update_board(board *b, TILE *grid, int width, int height) {
+    b->dim.width = width;
+    b->dim.height = height;
+    b->grid = malloc(b->dim.height * b->dim.width);
+
     for (int i = 0; i < b->dim.height * b->dim.width; i++) {
         b->grid[i] = grid[i];
     }
@@ -344,7 +340,7 @@ void *game_board_info_thread_function() {
             case GAME_BOARD_INFORMATION:
                 game_board_information *info = deserialize_game_board(received_message->message);
                 pthread_mutex_lock(&game_board_mutex);
-                update_board(game_board, info->board);
+                update_board(game_board, info->board, info->width, info->height);
                 pthread_mutex_unlock(&game_board_mutex);
                 free_game_board_information(info);
                 break;
@@ -416,7 +412,7 @@ void *chat_message_thread_function() {
                 is_game_end = true;
                 pthread_mutex_unlock(&game_end_mutex);
 
-                // TODO! CHECK IF ERROR : shutdown_tcp_on_write();
+                // TODO: CHECK IF ERROR : shutdown_tcp_on_write();
                 close_socket_tcp();
                 close_socket_udp();
                 close_socket_diff();
@@ -501,21 +497,27 @@ void *view_thread_function() {
 int game_loop() {
     RETURN_FAILURE_IF_NULL(game_board);
 
-    /* TODO: Handle possible errors here */
     pthread_t game_board_info_thread;
-    pthread_create(&game_board_info_thread, NULL, game_board_info_thread_function, NULL);
+    if (pthread_create(&game_board_info_thread, NULL, game_board_info_thread_function, NULL) != 0) {
+        return EXIT_FAILURE;
+    }
 
     pthread_t chat_message_thread;
-    pthread_create(&chat_message_thread, NULL, chat_message_thread_function, NULL);
+    if (pthread_create(&chat_message_thread, NULL, chat_message_thread_function, NULL) != 0) {
+        return EXIT_FAILURE;
+    }
 
     pthread_t view_thread;
-    pthread_create(&view_thread, NULL, view_thread_function, NULL);
+    if (pthread_create(&view_thread, NULL, view_thread_function, NULL) != 0) {
+        return EXIT_FAILURE;
+    }
 
     pthread_join(game_board_info_thread, NULL);
     pthread_join(chat_message_thread, NULL);
     pthread_join(view_thread, NULL);
 
     free_board(game_board);
+    free_chat(client_chat);
     end_view();
     print_result();
 

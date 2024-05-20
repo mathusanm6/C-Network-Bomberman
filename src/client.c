@@ -164,12 +164,20 @@ int main(int argc, char *argv[]) {
 
     r = be_ready();
     if (r != EXIT_SUCCESS) {
-        return r;
+        goto error;
     }
 
-    RETURN_FAILURE_IF_ERROR(init_game(info->id, info->eq, choosen_game_mode));
+    if (init_game(info->id, info->eq, choosen_game_mode) == EXIT_FAILURE) {
 
+        goto error;
+    }
+
+    r = game_loop();
+
+    goto error;
+
+error:
     free(info);
-
-    return game_loop();
+    free_internal_info();
+    return r;
 }

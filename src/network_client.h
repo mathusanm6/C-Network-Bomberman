@@ -28,6 +28,8 @@ typedef struct received_game_message {
     game_message_type type;
 } received_game_message;
 
+void free_internal_info();
+
 received_game_message *recv_game_message();
 int send_game_action(game_action *action);
 
