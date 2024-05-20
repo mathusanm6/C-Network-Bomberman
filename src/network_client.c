@@ -24,7 +24,6 @@ static uint16_t port_tcp = 0;
 static uint16_t port_udp = 0;
 static uint16_t port_diff = 0;
 
-// TODO: fix this memory leak
 static struct sockaddr_in6 *addr_udp;
 static struct sockaddr_in6 *addr_diff;
 
