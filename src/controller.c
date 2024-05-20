@@ -42,6 +42,8 @@ static chat *client_chat = NULL;
 static pthread_mutex_t chat_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static bool is_game_end = false;
+static pthread_mutex_t game_end_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 static int winner_team = -1;
 static int winner_player = -1;
 
@@ -191,8 +193,9 @@ bool perform_chat_action(int c) {
             set_chat_focus(client_chat, false);
             break;
         case CHAT_GAME_QUIT:
-            close_socket_tcp();
+            pthread_mutex_lock(&game_end_mutex);
             is_game_end = true;
+            pthread_mutex_unlock(&game_end_mutex);
             return true;
         case CHAT_NONE:
             break;
@@ -228,8 +231,9 @@ bool perform_game_action(int c) {
             set_chat_focus(client_chat, true);
             break;
         case GAME_QUIT:
-            close_socket_tcp();
+            pthread_mutex_lock(&game_end_mutex);
             is_game_end = true;
+            pthread_mutex_unlock(&game_end_mutex);
             return true;
         case GAME_NONE:
             break;
@@ -303,7 +307,7 @@ void update_tile_diff(board *b, tile_diff *diff, int size) {
 
 /** Updates the game board based on the server MESSAGE*/
 void *game_board_info_thread_function() {
-    while (!is_game_end) {
+    while (true) {
         received_game_message *received_message = recv_game_message();
         if (received_message == NULL || received_message->message == NULL) {
             // TODO: Handle error
@@ -334,13 +338,22 @@ void *game_board_info_thread_function() {
         pthread_mutex_lock(&view_mutex);
         refresh_game(game_mode, b, client_chat, player_id);
         pthread_mutex_unlock(&view_mutex);
+
+        pthread_mutex_lock(&game_end_mutex);
+        if (is_game_end) {
+            pthread_mutex_unlock(&game_end_mutex);
+            break;
+        }
+        pthread_mutex_unlock(&game_end_mutex);
     }
+
+    fprintf(stderr, "game_board_info_thread_function ended\n");
 
     return NULL;
 }
 
 void *chat_message_thread_function() {
-    while (!is_game_end) {
+    while (true) {
         u_int16_t header = recv_header_from_server();
         char *header_char = (char *)&header;
 
@@ -380,18 +393,34 @@ void *chat_message_thread_function() {
         pthread_mutex_lock(&view_mutex);
         refresh_game(game_mode, b, client_chat, player_id);
         pthread_mutex_unlock(&view_mutex);
+
+        pthread_mutex_lock(&game_end_mutex);
+        if (is_game_end) {
+            pthread_mutex_unlock(&game_end_mutex);
+            break;
+        }
+        pthread_mutex_unlock(&game_end_mutex);
     }
+
+    fprintf(stderr, "chat_message_thread_function ended\n");
 
     return NULL;
 }
 
 /** Sends to the server the performed action*/
 void *view_thread_function() {
-    while (!is_game_end) {
-        if (control()) {
+    while (true) {
+        control();
+
+        pthread_mutex_lock(&game_end_mutex);
+        if (is_game_end) {
+            pthread_mutex_unlock(&game_end_mutex);
             break;
         }
+        pthread_mutex_unlock(&game_end_mutex);
     }
+
+    fprintf(stderr, "view_thread_function ended\n");
 
     return NULL;
 }
@@ -429,11 +458,22 @@ int game_loop() {
     pthread_t view_thread;
     pthread_create(&view_thread, NULL, view_thread_function, NULL);
 
+    fprintf(stderr, "Threads created\n");
+
     pthread_join(game_board_info_thread, NULL);
+    fprintf(stderr, "game_board_info_thread joined\n");
+
     pthread_join(chat_message_thread, NULL);
+    fprintf(stderr, "chat_message_thread joined\n");
+
+    pthread_join(view_thread, NULL);
+    fprintf(stderr, "view_thread joined\n");
 
     free_board(game_board);
+    fprintf(stderr, "game_board freed\n");
+
     end_view();
+    fprintf(stderr, "view ended\n");
 
     print_result();
 
