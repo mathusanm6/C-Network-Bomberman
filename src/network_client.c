@@ -229,18 +229,12 @@ int send_ready_to_play(GAME_MODE mode) {
 }
 
 received_game_message *recv_game_message() {
-    udp_information *info = malloc(sizeof(udp_information));
-    RETURN_NULL_IF_NULL_PERROR(info, "malloc udp_information");
-
-    info->sock = sock_diff;
-    info->addr = *addr_diff;
-
     received_game_message *recieved = malloc(sizeof(received_game_message));
     RETURN_NULL_IF_NULL_PERROR(recieved, "malloc received_game_message");
 
     char *message = malloc(sizeof(char) * message_gameboard_max_size);
     memset(message, 0, sizeof(char) * message_gameboard_max_size);
-    int res = recvfrom(info->sock, message, message_gameboard_max_size, 0, NULL, 0);
+    int res = recvfrom(sock_diff, message, message_gameboard_max_size, 0, NULL, 0);
 
     if (res < 0) {
         free(message);
@@ -282,16 +276,9 @@ received_game_message *recv_game_message() {
 }
 
 int send_game_action(game_action *action) {
-    // TODO: fix this
-    udp_information *info = malloc(sizeof(udp_information));
-    RETURN_FAILURE_IF_NULL_PERROR(info, "malloc udp_information");
-
-    info->sock = sock_udp;
-    info->addr = *addr_udp;
-
     char *serialized = serialize_game_action(action);
 
-    int res = sendto(info->sock, serialized, 4, 0, (struct sockaddr *)&info->addr, sizeof(struct sockaddr_in6));
+    int res = sendto(sock_udp, serialized, 4, 0, (struct sockaddr *)addr_udp, sizeof(struct sockaddr_in6));
     if (res < 0) {
         perror("sendto action");
         free(serialized);

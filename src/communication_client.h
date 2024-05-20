@@ -13,12 +13,6 @@ int send_chat_message(int sock, chat_message_type type, int id, int eq, uint8_t 
 
 connection_information *recv_connexion_information(int sock);
 
-/* TODO: think about this */
-typedef struct udp_information {
-    int sock;
-    struct sockaddr_in6 addr;
-} udp_information;
-
 chat_message *recv_chat_message(int sock, u_int16_t header);
 u_int16_t recv_header(int sock);
 
