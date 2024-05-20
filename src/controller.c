@@ -318,6 +318,14 @@ void *game_board_info_thread_function() {
         }
         pthread_mutex_unlock(&game_end_mutex);
 
+        // Check if connection is still alive
+        if (has_server_disconnected_tcp()) {
+            pthread_mutex_lock(&game_end_mutex);
+            is_game_end = true;
+            pthread_mutex_unlock(&game_end_mutex);
+            break;
+        }
+
         received_game_message *received_message = recv_game_message();
         if (received_message == NULL || received_message->message == NULL) {
             // TODO: Handle error
@@ -350,10 +358,7 @@ void *game_board_info_thread_function() {
         pthread_mutex_unlock(&view_mutex);
     }
 
-    pthread_mutex_lock(&game_board_mutex);
-    free_board(game_board);
-    pthread_mutex_unlock(&game_board_mutex);
-
+    printf("Game board info thread ended\n");
     return NULL;
 }
 
@@ -425,6 +430,7 @@ void *chat_message_thread_function() {
 
     close_socket_tcp();
 
+    printf("Chat message thread ended\n");
     return NULL;
 }
 
@@ -467,10 +473,7 @@ void *view_thread_function() {
         control();
     }
 
-    end_view();
-    print_result();
-
-    exit(EXIT_SUCCESS);
+    printf("View thread ended\n");
 
     return NULL;
 }
@@ -490,6 +493,11 @@ int game_loop() {
 
     pthread_join(game_board_info_thread, NULL);
     pthread_join(chat_message_thread, NULL);
+    pthread_join(view_thread, NULL);
+
+    free_board(game_board);
+    end_view();
+    print_result();
 
     return EXIT_SUCCESS;
 }

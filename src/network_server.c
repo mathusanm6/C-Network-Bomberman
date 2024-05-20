@@ -764,6 +764,8 @@ void *serv_client_recv_game_action(void *arg_udp_thread_data) {
 
     pthread_mutex_unlock(data->lock_nb_stopped_udp_threads);
 
+    printf("Recv game action thread finished\n");
+
     return NULL;
 }
 
@@ -823,6 +825,8 @@ void *serve_clients_send_mult_sec(void *arg_udp_thread_data) {
         }
     }
     free(data);
+
+    printf("Mult sec thread finished\n");
     return NULL;
 }
 
@@ -1069,6 +1073,8 @@ void *serve_clients_send_mult_freq(void *arg_udp_thread_data) {
 
     pthread_mutex_unlock(data->lock_nb_stopped_udp_threads);
 
+    printf("Mult freq thread finished\n");
+
     return NULL;
 }
 
@@ -1309,6 +1315,8 @@ void *serve_client_tcp(void *arg_tcp_thread_data) {
 
     printf("Player %d left the game.\n", ready_informations->id);
     free(ready_informations);
+
+    printf("TCP thread finished : %d\n", tcp_data->id);
 
     free(tcp_data);
 
