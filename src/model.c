@@ -680,7 +680,6 @@ bool apply_explosion_effect(int x, int y, unsigned int game_id) {
             id = get_player_id(t);
             players[id]->dead = true;
             set_grid(x, y, EMPTY, game_id);
-            impact_happened = true;
             break;
         case INDESTRUCTIBLE_WALL:
             impact_happened = true;
@@ -696,7 +695,6 @@ bool apply_explosion_effect(int x, int y, unsigned int game_id) {
             player_pos = players[i]->pos;
             if (player_pos->x == x && player_pos->y == y) {
                 players[i]->dead = true;
-                impact_happened = true;
             }
         }
     }
