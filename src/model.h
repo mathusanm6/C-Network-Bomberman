@@ -88,7 +88,7 @@ void reset_games();
  *              - The chat line
  *              - The current position of the players
  */
-void free_model(unsigned int game_id);
+void remove_game(unsigned int game_id);
 
 /** Frees the board
  */

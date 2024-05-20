@@ -38,6 +38,8 @@ size_t games_capacity = 10;
 
 TILE get_player(int);
 
+void free_model(unsigned int game_id);
+
 int add_game(game *g) {
     if (games == NULL) {
         games = malloc(games_capacity * sizeof(game *));
@@ -326,7 +328,6 @@ void free_model(unsigned int game_id) {
     games[game_id]->chat = NULL;
     free_player_positions(game_id);
     free(games[game_id]);
-    games[game_id] = NULL;
 }
 
 char tile_to_char(TILE t) {
