@@ -10,6 +10,9 @@
 
 int init_tcp_socket();
 void close_socket_tcp();
+void close_socket_udp();
+void close_socket_diff();
+void shutdown_tcp_on_write();
 void set_tcp_port(uint16_t port);
 int try_to_connect_tcp();
 connection_information *start_initialisation_game(GAME_MODE mode);
@@ -27,5 +30,11 @@ typedef struct received_game_message {
 
 received_game_message *recv_game_message();
 int send_game_action(game_action *action);
+
+int send_chat_message_to_server(chat_message_type type, uint8_t message_length, char *message);
+chat_message *recv_chat_message_from_server(u_int16_t header);
+u_int16_t recv_header_from_server();
+
+bool has_server_disconnected_tcp();
 
 #endif // SRC_NETWORK_CLIENT_H__H_

@@ -6,8 +6,6 @@
 
 #include "./utils.h"
 
-#define EMPTY_CHAR '\0'
-
 typedef struct player {
     coord *pos;
     bool dead;
@@ -248,31 +246,6 @@ int init_player_positions(unsigned int game_id) {
     return EXIT_SUCCESS;
 }
 
-chat *create_chat() {
-    chat *chat_ = malloc(sizeof(chat));
-    RETURN_NULL_IF_NULL_PERROR(chat_, "malloc");
-
-    chat_->history = malloc(sizeof(chat_history));
-    if (chat_->history == NULL) {
-        free(chat_);
-        return NULL;
-    }
-    chat_->history->count = 0;
-
-    chat_->line = malloc(sizeof(chat_line));
-    if (chat_->line == NULL) {
-        free(chat_->history);
-        free(chat_);
-        return NULL;
-    }
-    chat_->line->cursor = 0;
-    chat_->on_focus = false;
-    chat_->whispering = false;
-    chat_->history->head = NULL;
-
-    return chat_;
-}
-
 int init_game_chat(unsigned int game_id) {
     RETURN_FAILURE_IF_NULL(games[game_id]);
 
@@ -347,69 +320,13 @@ void free_player_positions(unsigned int game_id) {
     }
 }
 
-void free_chat_node(chat_node *node) {
-    if (node == NULL) {
-        return;
-    }
-
-    free(node);
-}
-
-void free_chat_history(chat_history *history) {
-    if (history == NULL) {
-        return;
-    }
-
-    if (history->head == NULL) {
-        free(history);
-        return;
-    }
-
-    chat_node *current = history->head->next; // Start from the second node
-    chat_node *next;
-
-    while (current != history->head) {
-        next = current->next;
-        free_chat_node(current);
-        current = next;
-    }
-
-    free_chat_node(history->head);
-
-    history->head = NULL;
-    history->count = 0;
-
-    free(history);
-}
-
-void free_chat(unsigned int game_id) {
-    if (games[game_id] == NULL) {
-        return;
-    }
-
-    if (games[game_id]->chat == NULL) {
-        return;
-    }
-
-    if (games[game_id]->chat->history != NULL) {
-        free_chat_history(games[game_id]->chat->history);
-        games[game_id]->chat->history = NULL;
-    }
-
-    if (games[game_id]->chat->line != NULL) {
-        free(games[game_id]->chat->line);
-        games[game_id]->chat->line = NULL;
-    }
-
-    free(games[game_id]->chat);
-    games[game_id]->chat = NULL;
-}
-
 void free_model(unsigned int game_id) {
     free_game_board(game_id);
-    free_chat(game_id);
+    free_chat(games[game_id]->chat);
+    games[game_id]->chat = NULL;
     free_player_positions(game_id);
     free(games[game_id]);
+    games[game_id] = NULL;
 }
 
 char tile_to_char(TILE t) {
@@ -657,6 +574,14 @@ bool is_player_dead(int id, unsigned int game_id) {
     return games[game_id]->players[id]->dead;
 }
 
+void set_player_dead(unsigned int game_id, int player_id) {
+    if (games[game_id] == NULL) {
+        return;
+    }
+
+    games[game_id]->players[player_id]->dead = true;
+}
+
 bool apply_explosion_effect(int x, int y, unsigned int game_id) {
     if (is_outside_board(x, y, game_id)) {
         return false;
@@ -855,123 +780,44 @@ bool is_game_over(unsigned int game_id) {
     return team1_dead || team2_dead;
 }
 
-void decrement_line(unsigned int game_id) {
-    RETURN_IF_NULL(games[game_id]);
-
-    if (games[game_id]->chat->line != NULL && games[game_id]->chat->line->cursor > 0) {
-        games[game_id]->chat->line->cursor--;
-        games[game_id]->chat->line->data[games[game_id]->chat->line->cursor] = EMPTY_CHAR;
-    }
-}
-
-void clear_line(unsigned int game_id) {
-    RETURN_IF_NULL(games[game_id]);
-
-    if (games[game_id]->chat->line != NULL) {
-        memset(games[game_id]->chat->line->data, EMPTY_CHAR, games[game_id]->chat->line->cursor);
-        games[game_id]->chat->line->cursor = 0;
-    }
-}
-
-void add_to_line(char c, unsigned int game_id) {
-    RETURN_IF_NULL(games[game_id]);
-
-    if (games[game_id]->chat->line != NULL && games[game_id]->chat->line->cursor < TEXT_SIZE && c >= ' ' && c <= '~') {
-        games[game_id]->chat->line->data[(games[game_id]->chat->line->cursor)] = c;
-        (games[game_id]->chat->line->cursor)++;
-    }
-}
-
-chat_node *create_chat_node(int sender, char msg[TEXT_SIZE], bool whispered) {
-    if (sender < 0 || sender >= PLAYER_NUM) {
-        return NULL;
+int get_winner_solo(unsigned int game_id) {
+    if (games[game_id] == NULL) {
+        return -1;
     }
 
-    RETURN_NULL_IF_NULL(msg);
+    player **players = games[game_id]->players;
 
-    if (strlen(msg) == 0) {
-        return NULL;
-    }
-
-    chat_node *new_node = malloc(sizeof(chat_node));
-    if (new_node != NULL) {
-        new_node->sender = sender;
-        strncpy(new_node->message, msg, TEXT_SIZE);
-        // Ensure null terminated string
-        new_node->message[TEXT_SIZE - 1] = '\0';
-        new_node->whispered = whispered;
-        new_node->next = NULL;
-    }
-    return new_node;
-}
-
-int add_message(int sender, unsigned int game_id) {
-    RETURN_FAILURE_IF_NULL(games[game_id]);
-    RETURN_FAILURE_IF_NULL(games[game_id]->chat);
-    RETURN_FAILURE_IF_NULL(games[game_id]->chat->history);
-
-    if (games[game_id]->chat->line->cursor == 0) {
-        return EXIT_FAILURE;
-    }
-
-    chat_node *new_node = create_chat_node(sender, games[game_id]->chat->line->data, games[game_id]->chat->whispering);
-    RETURN_FAILURE_IF_NULL(new_node);
-
-    if (games[game_id]->chat->history->count == MAX_CHAT_HISTORY_LEN) {
-        // If the history is full, replace the oldest message
-        chat_node *temp = games[game_id]->chat->history->head;
-        while (temp->next != games[game_id]->chat->history->head) { // Find the last node before head
-            temp = temp->next;
-        }
-        temp->next = new_node;                                      // Link the new node after the last node
-        new_node->next = games[game_id]->chat->history->head->next; // New node points to second oldest node
-        free(games[game_id]->chat->history->head);
-        games[game_id]->chat->history->head = new_node->next; // New head is the second oldest node
-    } else {
-        // List is not full, add the new node to the end
-        if (games[game_id]->chat->history->head == NULL) {
-            games[game_id]->chat->history->head = new_node;
-            new_node->next = new_node;
-        } else {
-            chat_node *temp = games[game_id]->chat->history->head;
-            while (temp->next != games[game_id]->chat->history->head) {
-                temp = temp->next;
+    for (int i = 0; i < PLAYER_NUM; i++) {
+        for (int j = 0; j < PLAYER_NUM; j++) {
+            if (i != j && !players[i]->dead && players[j]->dead) {
+                return i;
             }
-            temp->next = new_node;
-            new_node->next = games[game_id]->chat->history->head;
         }
-        games[game_id]->chat->history->count++;
     }
 
-    return EXIT_SUCCESS;
+    return -1;
+}
+
+int get_winner_team(unsigned int game_id) {
+    if (games[game_id] == NULL) {
+        return -1;
+    }
+
+    player **players = games[game_id]->players;
+
+    if (players[0]->dead && players[3]->dead) {
+        return 1;
+    }
+
+    if (players[1]->dead && players[2]->dead) {
+        return 0;
+    }
+
+    return -1;
 }
 
 chat *get_chat(unsigned int game_id) {
     RETURN_NULL_IF_NULL(games[game_id]);
 
     return games[game_id]->chat;
-}
-
-bool is_chat_on_focus(unsigned int game_id) {
-    if (games[game_id] == NULL) {
-        return false;
-    }
-
-    if (games[game_id]->chat == NULL) {
-        return false;
-    }
-
-    return games[game_id]->chat->on_focus;
-}
-
-void set_chat_focus(bool on_focus, unsigned int game_id) {
-    RETURN_IF_NULL(games[game_id]);
-
-    games[game_id]->chat->on_focus = on_focus;
-}
-
-void toggle_whispering(unsigned int game_id) {
-    RETURN_IF_NULL(games[game_id]);
-
-    games[game_id]->chat->whispering = !games[game_id]->chat->whispering;
 }

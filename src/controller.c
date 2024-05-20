@@ -4,11 +4,14 @@
 #include "./network_client.h"
 #include "./utils.h"
 #include "./view.h"
+#include "chat_model.h"
 #include "model.h"
 
 #include <ncurses.h>
 #include <pthread.h>
+#include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 #define KEY_BACKSPACE_1 0407
@@ -18,27 +21,34 @@
 #define KEY_BACKSLASH '\\'
 #define KEY_SPACE ' '
 #define KEY_TILDA '~'
-#define KEY_VERTICAL_BAR '|'
 #define KEY_CONTROL_D 4
 #define KEY_TAB_1 KEY_STAB
 #define KEY_TAB_2 '\t'
 
+#define RESET_COLOR "\033[0m"
+#define RED_COLOR "\033[31m"
+#define GREEN_COLOR "\033[32m"
+#define BLUE_COLOR "\033[34m"
+#define YELLOW_COLOR "\033[33m"
+
 /* TODO: fixme once multiple games are supported */
 #define TMP_GAME_ID 0
-
-static int current_player = 0;
-
-// TODO: Remove this
-static void switch_player() {
-    clear_line(TMP_GAME_ID);
-    do {
-        current_player = (current_player + 1) % PLAYER_NUM;
-    } while (is_player_dead(current_player, TMP_GAME_ID));
-}
 
 // TODO: Fix memory leak
 static board *game_board = NULL;
 static pthread_mutex_t game_board_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+static chat *client_chat = NULL;
+static pthread_mutex_t chat_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+static bool is_game_end = false;
+static pthread_mutex_t game_end_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+static int winner_team = -1;
+static pthread_mutex_t winner_team_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+static int winner_player = -1;
+static pthread_mutex_t winner_player_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 // TODO
 static GAME_MODE game_mode = SOLO;
@@ -62,6 +72,8 @@ void init_controller() {
     for (int i = 0; i < game_board->dim.height * game_board->dim.width; i++) {
         game_board->grid[i] = EMPTY;
     }
+    client_chat = create_chat();
+    RETURN_IF_NULL_PERROR(client_chat, "create_chat");
 }
 
 GAME_ACTION key_press_to_game_action(int c) {
@@ -89,9 +101,6 @@ GAME_ACTION key_press_to_game_action(int c) {
             break;
         case KEY_TILDA:
             a = GAME_QUIT;
-            break;
-        case KEY_VERTICAL_BAR:
-            a = GAME_SWITCH_PLAYER;
             break;
     }
 
@@ -123,9 +132,6 @@ CHAT_ACTION key_press_to_chat_action(int c) {
             break;
         case KEY_TILDA:
             a = CHAT_GAME_QUIT;
-            break;
-        case KEY_VERTICAL_BAR:
-            a = CHAT_SWITCH_PLAYER;
             break;
         default:
             a = CHAT_WRITE;
@@ -162,32 +168,41 @@ bool perform_chat_action(int c) {
     CHAT_ACTION a = key_press_to_chat_action(c);
     switch (a) {
         case CHAT_WRITE:
-            add_to_line(c, TMP_GAME_ID);
+            add_to_line(client_chat, c);
             break;
         case CHAT_ERASE:
-            decrement_line(TMP_GAME_ID);
+            decrement_line(client_chat);
             break;
         case CHAT_SEND:
-            if (add_message(current_player, TMP_GAME_ID) == EXIT_SUCCESS) {
-                clear_line(TMP_GAME_ID);
+            char *message = NULL;
+            bool whispered = false;
+            if (add_message_from_client(client_chat, player_id, &message, &whispered) == EXIT_SUCCESS) {
+                // Send message to server
+                if (whispered) {
+                    send_chat_message_to_server(TEAM_M, strlen(message), message);
+                } else {
+                    send_chat_message_to_server(GLOBAL_M, strlen(message), message);
+                }
+                clear_line(client_chat);
             }
             break;
         case CHAT_TOGGLE_WHISPER:
-            toggle_whispering(TMP_GAME_ID);
+            toggle_whispering(client_chat);
             break;
         case CHAT_CLEAR:
-            clear_line(TMP_GAME_ID);
+            clear_line(client_chat);
             break;
         case CHAT_MODE_QUIT:
-            set_chat_focus(false, TMP_GAME_ID);
+            set_chat_focus(client_chat, false);
             break;
         case CHAT_GAME_QUIT:
-            // TODO: this is for testing
-            exit(1);
+            pthread_mutex_lock(&game_end_mutex);
+            is_game_end = true;
+            pthread_mutex_unlock(&game_end_mutex);
+            close_socket_tcp();
+            close_socket_udp();
+            close_socket_diff();
             return true;
-        case CHAT_SWITCH_PLAYER:
-            switch_player();
-            break;
         case CHAT_NONE:
             break;
     }
@@ -219,15 +234,16 @@ bool perform_game_action(int c) {
 
             break;
         case GAME_CHAT_MODE_START:
-            set_chat_focus(true, TMP_GAME_ID);
+            set_chat_focus(client_chat, true);
             break;
         case GAME_QUIT:
-            // TODO: Quit connection
+            pthread_mutex_lock(&game_end_mutex);
+            is_game_end = true;
+            close_socket_tcp();
+            close_socket_udp();
+            close_socket_diff();
+            pthread_mutex_unlock(&game_end_mutex);
             return true;
-        case GAME_SWITCH_PLAYER:
-            // TODO: Remove this?
-            switch_player();
-            break;
         case GAME_NONE:
             break;
     }
@@ -237,9 +253,8 @@ bool perform_game_action(int c) {
 
 bool control() {
     int c = get_pressed_key();
-    // TODO : Make chat work
-    // if (is_chat_on_focus(TMP_GAME_ID)) {
-    if (false) {
+
+    if (is_chat_on_focus(client_chat)) {
         if (perform_chat_action(c)) {
             return true;
         }
@@ -301,8 +316,25 @@ void update_tile_diff(board *b, tile_diff *diff, int size) {
 
 /** Updates the game board based on the server MESSAGE*/
 void *game_board_info_thread_function() {
-    // TODO : game end
     while (true) {
+        pthread_mutex_lock(&game_end_mutex);
+        if (is_game_end) {
+            pthread_mutex_unlock(&game_end_mutex);
+            break;
+        }
+        pthread_mutex_unlock(&game_end_mutex);
+
+        // Check if connection is still alive
+        if (has_server_disconnected_tcp()) {
+            close_socket_tcp();
+            close_socket_udp();
+            close_socket_diff();
+            pthread_mutex_lock(&game_end_mutex);
+            is_game_end = true;
+            pthread_mutex_unlock(&game_end_mutex);
+            break;
+        }
+
         received_game_message *received_message = recv_game_message();
         if (received_message == NULL || received_message->message == NULL) {
             // TODO: Handle error
@@ -330,23 +362,135 @@ void *game_board_info_thread_function() {
         }
 
         board *b = get_board();
-        // TODO: Chat
         pthread_mutex_lock(&view_mutex);
-        refresh_game(b, create_chat(), current_player);
+        refresh_game(game_mode, b, client_chat, player_id);
         pthread_mutex_unlock(&view_mutex);
     }
 
+    printf("Game board info thread ended\n");
     return NULL;
+}
+
+void *chat_message_thread_function() {
+    while (true) {
+        pthread_mutex_lock(&game_end_mutex);
+        if (is_game_end) {
+            pthread_mutex_unlock(&game_end_mutex);
+            break;
+        }
+        pthread_mutex_unlock(&game_end_mutex);
+
+        // Check if connection is still alive
+        if (has_server_disconnected_tcp()) {
+            close_socket_tcp();
+            close_socket_udp();
+            close_socket_diff();
+            pthread_mutex_lock(&game_end_mutex);
+            is_game_end = true;
+            pthread_mutex_unlock(&game_end_mutex);
+            break;
+        }
+
+        u_int16_t header = recv_header_from_server();
+        char *header_char = (char *)&header;
+
+        game_end *game_end_header = deserialize_game_end(header_char);
+
+        if (game_end_header != NULL) {
+            if (game_end_header->game_mode == game_mode) {
+                if (game_mode == SOLO) {
+                    pthread_mutex_lock(&winner_player_mutex);
+                    winner_player = game_end_header->id;
+                    pthread_mutex_unlock(&winner_player_mutex);
+                }
+
+                if (game_mode == TEAM) {
+                    pthread_mutex_lock(&winner_team_mutex);
+                    winner_team = game_end_header->eq;
+                    pthread_mutex_unlock(&winner_team_mutex);
+                }
+
+                pthread_mutex_lock(&game_end_mutex);
+                is_game_end = true;
+                pthread_mutex_unlock(&game_end_mutex);
+
+                // TODO! CHECK IF ERROR : shutdown_tcp_on_write();
+                close_socket_tcp();
+                close_socket_udp();
+                close_socket_diff();
+
+                free(game_end_header);
+                break;
+            }
+        }
+
+        chat_message *chat_msg = recv_chat_message_from_server(header);
+        if (chat_msg != NULL) {
+            pthread_mutex_lock(&chat_mutex);
+            if (chat_msg->type == GLOBAL_M) {
+                add_message_from_server(client_chat, chat_msg->id, chat_msg->message, false);
+            } else if (chat_msg->type == TEAM_M) {
+                add_message_from_server(client_chat, chat_msg->id, chat_msg->message, true);
+            }
+            pthread_mutex_unlock(&chat_mutex);
+            free(chat_msg->message);
+            free(chat_msg);
+        }
+
+        board *b = get_board();
+        pthread_mutex_lock(&view_mutex);
+        refresh_game(game_mode, b, client_chat, player_id);
+        pthread_mutex_unlock(&view_mutex);
+    }
+
+    close_socket_tcp();
+    close_socket_udp();
+    close_socket_diff();
+
+    printf("Chat message thread ended\n");
+    return NULL;
+}
+
+void print_result() {
+    if (game_mode == SOLO) {
+        pthread_mutex_lock(&winner_player_mutex);
+        if (winner_player == player_id) {
+            printf(GREEN_COLOR "You won\n" RESET_COLOR);
+        } else {
+            printf(RED_COLOR "You lost\n" RESET_COLOR);
+            printf(YELLOW_COLOR "Winner player: %d\n" RESET_COLOR, winner_player + 1);
+        }
+        pthread_mutex_unlock(&winner_player_mutex);
+    }
+
+    if (game_mode == TEAM) {
+        pthread_mutex_lock(&winner_team_mutex);
+        if (winner_team == eq) {
+            printf(GREEN_COLOR "Your team won\n" RESET_COLOR);
+        } else {
+            printf(RED_COLOR "Your team lost\n" RESET_COLOR);
+            printf(YELLOW_COLOR "Winner team: %d\n" RESET_COLOR, winner_team);
+        }
+        pthread_mutex_unlock(&winner_team_mutex);
+    }
+
+    printf(BLUE_COLOR "Game Ended\n" RESET_COLOR);
 }
 
 /** Sends to the server the performed action*/
 void *view_thread_function() {
     while (true) {
-        // TODO: Handle game quit
-        if (control()) {
+        pthread_mutex_lock(&game_end_mutex);
+        if (is_game_end) {
+            pthread_mutex_unlock(&game_end_mutex);
             break;
         }
+        pthread_mutex_unlock(&game_end_mutex);
+
+        control();
     }
+
+    printf("View thread ended\n");
 
     return NULL;
 }
@@ -358,13 +502,19 @@ int game_loop() {
     pthread_t game_board_info_thread;
     pthread_create(&game_board_info_thread, NULL, game_board_info_thread_function, NULL);
 
+    pthread_t chat_message_thread;
+    pthread_create(&chat_message_thread, NULL, chat_message_thread_function, NULL);
+
     pthread_t view_thread;
     pthread_create(&view_thread, NULL, view_thread_function, NULL);
 
     pthread_join(game_board_info_thread, NULL);
+    pthread_join(chat_message_thread, NULL);
+    pthread_join(view_thread, NULL);
 
     free_board(game_board);
     end_view();
+    print_result();
 
     return EXIT_SUCCESS;
 }

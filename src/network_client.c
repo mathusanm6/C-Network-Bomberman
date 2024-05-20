@@ -40,7 +40,30 @@ void close_socket(int sock) {
 }
 
 void close_socket_tcp() {
-    close(sock_tcp);
+    if (sock_tcp != -1) {
+        close(sock_tcp);
+    }
+    sock_tcp = -1;
+}
+
+void close_socket_udp() {
+    if (sock_udp != -1) {
+        shutdown(sock_udp, SHUT_RD);
+        close(sock_udp);
+    }
+    sock_udp = -1;
+}
+
+void close_socket_diff() {
+    if (sock_diff != -1) {
+        shutdown(sock_diff, SHUT_RD);
+        close(sock_diff);
+    }
+    sock_diff = -1;
+}
+
+void shutdown_tcp_on_write() {
+    shutdown(sock_tcp, SHUT_WR);
 }
 
 int init_socket(int *sock, bool is_tcp) {
@@ -274,4 +297,25 @@ int send_game_action(game_action *action) {
     }
 
     return EXIT_SUCCESS;
+}
+
+int send_chat_message_to_server(chat_message_type type, uint8_t message_length, char *message) {
+    return send_chat_message(sock_tcp, type, id, eq, message_length, message);
+}
+
+chat_message *recv_chat_message_from_server(u_int16_t header) {
+    return recv_chat_message(sock_tcp, header);
+}
+
+u_int16_t recv_header_from_server() {
+    return recv_header(sock_tcp);
+}
+
+bool has_server_disconnected_tcp() {
+    char buffer[1];
+    int res = recv(sock_tcp, buffer, 1, MSG_PEEK | MSG_DONTWAIT);
+    if (res == 0) {
+        return true;
+    }
+    return false;
 }

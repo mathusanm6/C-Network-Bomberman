@@ -1,17 +1,8 @@
 #ifndef SRC_MODEL_H_
 #define SRC_MODEL_H_
 
-#define PLAYER_NUM 4
-
-#define MIN_GAMEBOARD_WIDTH 10
-#define MIN_GAMEBOARD_HEIGHT 10
-#define GAMEBOARD_WIDTH 52
-#define GAMEBOARD_HEIGHT 25
-#define DESTRUCTIBLE_WALL_CHANCE 20
-#define BOMB_LIFETIME 3 // in seconds
-
-#define TEXT_SIZE 60
-#define MAX_CHAT_HISTORY_LEN 23
+#include "chat_model.h"
+#include "constants.h"
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -26,7 +17,6 @@ typedef enum GAME_ACTION {
     GAME_NONE = 5,
     GAME_CHAT_MODE_START = 6,
     GAME_QUIT = 7,
-    GAME_SWITCH_PLAYER = 8
 } GAME_ACTION;
 
 typedef enum CHAT_ACTION {
@@ -37,8 +27,7 @@ typedef enum CHAT_ACTION {
     CHAT_CLEAR = 4,
     CHAT_MODE_QUIT = 5,
     CHAT_GAME_QUIT = 6,
-    CHAT_SWITCH_PLAYER = 7,
-    CHAT_NONE = 8
+    CHAT_NONE = 7
 } CHAT_ACTION;
 
 typedef enum TILE {
@@ -82,30 +71,6 @@ typedef struct tile_diff {
     uint8_t y;
     TILE tile;
 } tile_diff;
-
-typedef struct chat_node {
-    int sender;
-    char message[TEXT_SIZE];
-    bool whispered;
-    struct chat_node *next;
-} chat_node;
-
-typedef struct chat_history {
-    chat_node *head;
-    int count;
-} chat_history;
-
-typedef struct chat_line {
-    char data[TEXT_SIZE];
-    int cursor;
-} chat_line;
-
-typedef struct chat {
-    chat_history *history;
-    chat_line *line;
-    bool on_focus;
-    bool whispering;
-} chat;
 
 /** Initializes - The game board with the width and the height
  *              - The chat line
@@ -179,6 +144,8 @@ GAME_MODE get_game_mode(unsigned int game_id);
 
 bool is_player_dead(int, unsigned int game_id);
 
+void set_player_dead(unsigned int game_id, int player_id);
+
 /** Iterates over all bombs, removing any that have exceeded their lifetime.
  */
 void update_bombs(unsigned int game_id);
@@ -193,34 +160,16 @@ tile_diff *update_game_board(unsigned game_id, player_action *actions, size_t nb
  */
 bool is_game_over(unsigned int game_id);
 
-chat *create_chat();
-
-/** Decrements the line cursor
+/** Returns the winner player of the game if solo mode, -1 otherwise
  */
-void decrement_line(unsigned int game_id);
+int get_winner_solo(unsigned int game_id);
 
-/** Nullifies the line cursor
+/** Returns the winner team of the game if team mode, -1 otherwise
  */
-void clear_line(unsigned int game_id);
-
-/** Adds the character at the end of chat_line if it does not exceed TEXT_SIZE and increment the cursor
- */
-void add_to_line(char, unsigned int game_id);
-
-/** Adds a message to the chat history with the sender and the message content and sets the whispered flag
- */
-int add_message(int sender, unsigned int game_id);
+int get_winner_team(unsigned int game_id);
 
 /** Returns the chat information from the game
  */
 chat *get_chat(unsigned int game_id);
-
-bool is_chat_on_focus(unsigned int game_id);
-
-void set_chat_focus(bool on_focus, unsigned int game_id);
-
-/** Toggles the whispering flag in the chat
- */
-void toggle_whispering(unsigned int game_id);
 
 #endif // SRC_MODEL_H_
