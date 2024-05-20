@@ -10,6 +10,7 @@
 
 int init_tcp_socket();
 void close_socket_tcp();
+void shutdown_tcp_on_write();
 void set_tcp_port(uint16_t port);
 int try_to_connect_tcp();
 connection_information *start_initialisation_game(GAME_MODE mode);

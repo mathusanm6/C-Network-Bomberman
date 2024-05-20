@@ -43,6 +43,10 @@ void close_socket_tcp() {
     close(sock_tcp);
 }
 
+void shutdown_tcp_on_write() {
+    shutdown(sock_tcp, SHUT_WR);
+}
+
 int init_socket(int *sock, bool is_tcp) {
     if (is_tcp) {
         *sock = socket(PF_INET6, SOCK_STREAM, 0);

@@ -308,6 +308,13 @@ void update_tile_diff(board *b, tile_diff *diff, int size) {
 /** Updates the game board based on the server MESSAGE*/
 void *game_board_info_thread_function() {
     while (true) {
+        pthread_mutex_lock(&game_end_mutex);
+        if (is_game_end) {
+            pthread_mutex_unlock(&game_end_mutex);
+            break;
+        }
+        pthread_mutex_unlock(&game_end_mutex);
+
         received_game_message *received_message = recv_game_message();
         if (received_message == NULL || received_message->message == NULL) {
             // TODO: Handle error
@@ -338,22 +345,24 @@ void *game_board_info_thread_function() {
         pthread_mutex_lock(&view_mutex);
         refresh_game(game_mode, b, client_chat, player_id);
         pthread_mutex_unlock(&view_mutex);
-
-        pthread_mutex_lock(&game_end_mutex);
-        if (is_game_end) {
-            pthread_mutex_unlock(&game_end_mutex);
-            break;
-        }
-        pthread_mutex_unlock(&game_end_mutex);
     }
 
-    fprintf(stderr, "game_board_info_thread_function ended\n");
+    pthread_mutex_lock(&game_board_mutex);
+    free_board(game_board);
+    pthread_mutex_unlock(&game_board_mutex);
 
     return NULL;
 }
 
 void *chat_message_thread_function() {
     while (true) {
+        pthread_mutex_lock(&game_end_mutex);
+        if (is_game_end) {
+            pthread_mutex_unlock(&game_end_mutex);
+            break;
+        }
+        pthread_mutex_unlock(&game_end_mutex);
+
         u_int16_t header = recv_header_from_server();
         char *header_char = (char *)&header;
 
@@ -369,7 +378,11 @@ void *chat_message_thread_function() {
                     winner_team = game_end_header->eq;
                 }
 
+                pthread_mutex_lock(&game_end_mutex);
                 is_game_end = true;
+                pthread_mutex_unlock(&game_end_mutex);
+
+                shutdown_tcp_on_write();
 
                 free(game_end_header);
                 break;
@@ -393,34 +406,7 @@ void *chat_message_thread_function() {
         pthread_mutex_lock(&view_mutex);
         refresh_game(game_mode, b, client_chat, player_id);
         pthread_mutex_unlock(&view_mutex);
-
-        pthread_mutex_lock(&game_end_mutex);
-        if (is_game_end) {
-            pthread_mutex_unlock(&game_end_mutex);
-            break;
-        }
-        pthread_mutex_unlock(&game_end_mutex);
     }
-
-    fprintf(stderr, "chat_message_thread_function ended\n");
-
-    return NULL;
-}
-
-/** Sends to the server the performed action*/
-void *view_thread_function() {
-    while (true) {
-        control();
-
-        pthread_mutex_lock(&game_end_mutex);
-        if (is_game_end) {
-            pthread_mutex_unlock(&game_end_mutex);
-            break;
-        }
-        pthread_mutex_unlock(&game_end_mutex);
-    }
-
-    fprintf(stderr, "view_thread_function ended\n");
 
     return NULL;
 }
@@ -443,6 +429,24 @@ void print_result() {
             printf(YELLOW_COLOR "Winner team: %d\n" RESET_COLOR, winner_team);
         }
     }
+
+    printf(BLUE_COLOR "Game Ended\n" RESET_COLOR);
+}
+
+/** Sends to the server the performed action*/
+void *view_thread_function() {
+    while (true) {
+        pthread_mutex_lock(&game_end_mutex);
+        if (is_game_end) {
+            pthread_mutex_unlock(&game_end_mutex);
+            break;
+        }
+        pthread_mutex_unlock(&game_end_mutex);
+
+        control();
+    }
+
+    return NULL;
 }
 
 int game_loop() {
@@ -458,26 +462,14 @@ int game_loop() {
     pthread_t view_thread;
     pthread_create(&view_thread, NULL, view_thread_function, NULL);
 
-    fprintf(stderr, "Threads created\n");
-
     pthread_join(game_board_info_thread, NULL);
-    fprintf(stderr, "game_board_info_thread joined\n");
-
     pthread_join(chat_message_thread, NULL);
-    fprintf(stderr, "chat_message_thread joined\n");
 
-    pthread_join(view_thread, NULL);
-    fprintf(stderr, "view_thread joined\n");
-
+    close_socket_tcp();
     free_board(game_board);
-    fprintf(stderr, "game_board freed\n");
-
     end_view();
-    fprintf(stderr, "view ended\n");
 
     print_result();
-
-    printf(BLUE_COLOR "Game Ended\n" RESET_COLOR);
 
     return EXIT_SUCCESS;
 }

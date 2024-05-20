@@ -776,19 +776,10 @@ void *serve_clients_send_mult_sec(void *arg_udp_thread_data) {
 
             lock_mutex_to_wait(data->lock_all_tcp_threads_closed, data->cond_lock_all_tcp_threads_closed);
 
-            // Close all sockets
-            for (int i = 0; i < PLAYER_NUM; i++) {
-                close_socket_client(data->server, i);
-            }
-
-            close_socket_udp(data->server);
-            close_socket_mult(data->server);
-
             pthread_mutex_lock(&data->lock_game_actions);
             free_game_actions(data->game_actions, data->nb_game_actions);
             pthread_mutex_unlock(&data->lock_game_actions);
 
-            free(data->server);
             free(data->lock_all_tcp_threads_closed);
             free(data->cond_lock_all_tcp_threads_closed);
 
@@ -1123,7 +1114,6 @@ void handle_tcp_communication(tcp_thread_data *tcp_data) {
         pthread_mutex_lock(tcp_data->lock_finished_flag);
         if (*tcp_data->finished_flag) {
             pthread_mutex_unlock(tcp_data->lock_finished_flag);
-            handle_game_over(tcp_data->server, tcp_data->game_id);
             break;
         }
         pthread_mutex_unlock(tcp_data->lock_finished_flag);
@@ -1162,8 +1152,6 @@ void handle_tcp_communication(tcp_thread_data *tcp_data) {
             pthread_mutex_lock(&lock_games);
             set_player_dead(tcp_data->game_id, tcp_data->id);
             pthread_mutex_unlock(&lock_games);
-
-            shutdown(client_sock, SHUT_RD);
         }
     }
 
@@ -1213,10 +1201,27 @@ void handle_tcp_communication(tcp_thread_data *tcp_data) {
             tcp_data->lock_nb_players_left = NULL;
         }
 
+        // Close all sockets
+        for (int i = 0; i < PLAYER_NUM; i++) {
+            if (tcp_data->server->sock_clients[i] != -1) {
+                close_socket_client(tcp_data->server, i);
+                tcp_data->server->sock_clients[i] = -1;
+            }
+        }
+
+        close_socket_udp(tcp_data->server);
+        close_socket_mult(tcp_data->server);
+
+        free(tcp_data->server);
+
         unlock_mutex_for_everyone(tcp_data->lock_all_tcp_threads_closed, tcp_data->cond_lock_all_tcp_threads_closed);
 
         return;
     } else {
+        if (*tcp_data->nb_players_left == 0) {
+            handle_game_over(tcp_data->server, tcp_data->game_id);
+        }
+
         (*tcp_data->nb_players_left)++;
     }
     pthread_mutex_unlock(tcp_data->lock_nb_players_left);
