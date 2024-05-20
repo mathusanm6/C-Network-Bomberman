@@ -123,7 +123,9 @@ struct sockaddr_in6 *prepare_address(int port) {
 int try_to_connect_tcp() {
     struct sockaddr_in6 *addrsock = prepare_address(port_tcp);
     RETURN_FAILURE_IF_NULL(addrsock);
-    return connect(sock_tcp, (struct sockaddr *)addrsock, sizeof(struct sockaddr_in6));
+    int res = connect(sock_tcp, (struct sockaddr *)addrsock, sizeof(struct sockaddr_in6));
+    free(addrsock);
+    return res;
 }
 
 int init_diff_info(connection_information *head) {
