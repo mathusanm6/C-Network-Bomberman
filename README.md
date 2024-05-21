@@ -1,4 +1,4 @@
-# L3S6 - Bomberman - GYT
+# C Network Bomberman
 
 ## Description
 
@@ -6,9 +6,21 @@ As part of the **L3S6 course "Programmation Réseaux" (Network Programming)**, w
 
 The project requirements are stated in the pdf file [sujet](sujet.pdf) (in French).
 
-## Visuals
+The project was developed within 8 weeks.
 
-Coming soon...
+## Own contributions
+
+- [x] Implemented the view of the game using `ncurses`.
+
+- [x] Chat feature
+    - [x] Implemented chat model
+    - [x] Implemented chat communications through tcp sockets
+
+- [x] End game feature
+    - [x] Implemented end game communications through tcp sockets
+    - [x] Implemented end game view
+
+- [x] A lot of bug fixes :(
 
 ## Installation
 
@@ -21,7 +33,7 @@ You will need the following dependencies:
 To install the project, run the following commands:
 
 ```bash
-git clone git@moule.informatique.univ-paris-diderot.fr:gdudilli/bomberman-gyt.git
+git clone git@github.com:mathusanm6/C-Network-Bomberman.git
 cd bomberman-gyt
 make
 ```
@@ -42,9 +54,6 @@ To run the server, run the following command:
 ```bash
 ./server
 ```
-
-The server program has a flag :
-- `-p PORT` to create a server with the connexion port `PORT`.
 
 To run the client, run the following command:
 ```bash
