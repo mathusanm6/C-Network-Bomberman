@@ -10,7 +10,7 @@ The project was developed within 8 weeks.
 
 ## Own contributions
 
-- [x] Implemented the view of the game using `ncurses`.
+- [x] Implemented the view for the game using `ncurses`.
 
 - [x] Chat feature
 
