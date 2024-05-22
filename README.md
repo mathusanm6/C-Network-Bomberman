@@ -30,39 +30,39 @@ The project was developed within 8 weeks.
   <tr>
     <td align="center">
       <img src="resources/server.jpeg" width="300px"><br>
-      <b>Server</b>: Setting up the server for the game.
+      Setting up the server for the game.
     </td>
     <td align="center">
       <img src="resources/ready.jpeg" width="300px"><br>
-      <b>Ready</b>: Players are ready to start.
+      Players are ready to start.
     </td>
     <td align="center">
       <img src="resources/game.jpeg" width="300px"><br>
-      <b>Game</b>: In-game action taking place.
+      In-game action taking place.
     </td>
   </tr>
   <tr>
     <td align="center">
       <img src="resources/chat.jpeg" width="300px"><br>
-      <b>Chat</b>: General in-game chat.
+      General in-game chat.
     </td>
     <td align="center">
       <img src="resources/chat2.jpeg" width="300px"><br>
-      <b>Chat 2</b>: Players discussing strategy.
+      Players discussing strategy.
     </td>
     <td align="center">
       <img src="resources/chat_whispering.jpeg" width="300px"><br>
-      <b>Chat Whispering</b>: Players whispering in-game.
+      Players whispering in-game.
     </td>
   </tr>
   <tr>
     <td align="center">
       <img src="resources/lost.jpeg" width="300px"><br>
-      <b>Lost</b>: Player has lost the game.
+      Player has lost the game.
     </td>
     <td align="center">
       <img src="resources/won.jpeg" width="300px"><br>
-      <b>Won</b>: Player has won the game.
+      Player has won the game.
     </td>
     <td align="center">
     </td>
