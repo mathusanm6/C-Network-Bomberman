@@ -13,14 +13,65 @@ The project was developed within 8 weeks.
 - [x] Implemented the view of the game using `ncurses`.
 
 - [x] Chat feature
-    - [x] Implemented chat model
-    - [x] Implemented chat communications through tcp sockets
+
+  - [x] Implemented chat model
+  - [x] Implemented chat communications through tcp sockets
 
 - [x] End game feature
-    - [x] Implemented end game communications through tcp sockets
-    - [x] Implemented end game view
 
-- [x] A lot of bug fixes :(
+  - [x] Implemented end game communications through tcp sockets
+  - [x] Implemented end game view
+
+- [x] A lot of bug fixes :)
+
+## Visuals
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="resources/server.jpeg" width="300px"><br>
+      <b>Server</b>: Setting up the server for the game.
+    </td>
+    <td align="center">
+      <img src="resources/ready.jpeg" width="300px"><br>
+      <b>Ready</b>: Players are ready to start.
+    </td>
+    <td align="center">
+      <img src="resources/game.jpeg" width="300px"><br>
+      <b>Game</b>: In-game action taking place.
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="resources/chat.jpeg" width="300px"><br>
+      <b>Chat</b>: General in-game chat.
+    </td>
+    <td align="center">
+      <img src="resources/chat2.jpeg" width="300px"><br>
+      <b>Chat 2</b>: Players discussing strategy.
+    </td>
+    <td align="center">
+      <img src="resources/chat_whispering.jpeg" width="300px"><br>
+      <b>Chat Whispering</b>: Players whispering in-game.
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="resources/lost.jpeg" width="300px"><br>
+      <b>Lost</b>: Player has lost the game.
+    </td>
+    <td align="center">
+      <img src="resources/won.jpeg" width="300px"><br>
+      <b>Won</b>: Player has won the game.
+    </td>
+    <td align="center">
+    </td>
+  </tr>
+</table>
+
+## Demo
+
+[Demo Video in Youtube](https://youtu.be/4hkg7EBgfLI)
 
 ## Installation
 
@@ -39,11 +90,13 @@ make
 ```
 
 To compile just the server, run the following command:
+
 ```bash
 make server
 ```
 
 To compile just the client, run the following command:
+
 ```bash
 make client
 ```
@@ -51,16 +104,19 @@ make client
 ## Usage
 
 To run the server, run the following command:
+
 ```bash
 ./server
 ```
 
 To run the client, run the following command:
+
 ```bash
 ./client
 ```
 
 The client program has some flags :
+
 - `-p PORT` to connect the client to the server with the port `PORT`.
 - `-m MODE` to choose the mode between `0` for `SOLO` and `1` for `TEAM`.
 
