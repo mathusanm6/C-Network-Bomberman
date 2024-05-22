@@ -71,7 +71,7 @@ The project was developed within 8 weeks.
 
 ## Demo
 
-[Demo Video in Youtube](https://youtu.be/4hkg7EBgfLI)
+[Demo Video on Youtube](https://youtu.be/4hkg7EBgfLI)
 
 ## Installation
 
