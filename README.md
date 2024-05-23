@@ -1,5 +1,7 @@
 # C Network Bomberman
 
+[![Build](https://github.com/mathusanm6/C-Network-Bomberman/actions/workflows/build.yml/badge.svg)](https://github.com/mathusanm6/C-Network-Bomberman/actions/workflows/build.yml) [![Format](https://github.com/mathusanm6/C-Network-Bomberman/actions/workflows/format.yml/badge.svg)](https://github.com/mathusanm6/C-Network-Bomberman/actions/workflows/format.yml) [![Tests and memory checks](https://github.com/mathusanm6/C-Network-Bomberman/actions/workflows/test.yml/badge.svg)](https://github.com/mathusanm6/C-Network-Bomberman/actions/workflows/test.yml)
+
 ## Description
 
 As part of the **L3S6 course "Programmation Réseaux" (Network Programming)**, we were tasked with developing a network game in C. The aim of this project is to implement a server and a client for a network game of **Bomberman**. The server will be able to handle multiple clients, and the clients will be able to play the game in real-time. The user interface will be implemented using `ncurses`.
