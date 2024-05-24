@@ -8,7 +8,9 @@ on:
 
 jobs:
   unit-tests:
-    runs-on: yag000/c_tools:latest
+    runs-on: ubuntu-latest
+    container: 
+      image: yag000/c_tools:latest
 
     steps:
       - name: Checkout
@@ -19,7 +21,9 @@ jobs:
 
 
   valgrind-tests:
-    runs-on: yag000/c_tools:latest
+    runs-on: ubuntu-latest
+    container: 
+      image: yag000/c_tools:latest
 
     steps:
       - name: Checkout
