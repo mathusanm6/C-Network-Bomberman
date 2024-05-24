@@ -1,6 +1,6 @@
 # C Network Bomberman
 
-[![Build](https://github.com/mathusanm6/C-Network-Bomberman/actions/workflows/build.yml/badge.svg)](https://github.com/mathusanm6/C-Network-Bomberman/actions/workflows/build.yml) [![Format](https://github.com/mathusanm6/C-Network-Bomberman/actions/workflows/format.yml/badge.svg)](https://github.com/mathusanm6/C-Network-Bomberman/actions/workflows/format.yml) [![Tests and memory checks](https://github.com/mathusanm6/C-Network-Bomberman/actions/workflows/test.yml/badge.svg)](https://github.com/mathusanm6/C-Network-Bomberman/actions/workflows/test.yml)
+[![Build](https://github.com/mathusanm6/C-Network-Bomberman/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/mathusanm6/C-Network-Bomberman/actions/workflows/build.yml) [![Tests and memory checks](https://github.com/mathusanm6/C-Network-Bomberman/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/mathusanm6/C-Network-Bomberman/actions/workflows/test.yml) [![Format](https://github.com/mathusanm6/C-Network-Bomberman/actions/workflows/format.yml/badge.svg?branch=main)](https://github.com/mathusanm6/C-Network-Bomberman/actions/workflows/format.yml)
 
 ## Description
 
