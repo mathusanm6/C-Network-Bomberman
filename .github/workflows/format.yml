@@ -8,7 +8,9 @@ on:
 
 jobs:
   check-format:
-    runs-on: yag000/c_tools:latest
+    runs-on: ubuntu-latest
+    container: 
+      image: yag000/c_tools:latest
 
     steps:
       - name: Checkout

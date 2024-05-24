@@ -8,7 +8,9 @@ on:
 
 jobs:
   build:
-    runs-on: gcc:latest
+    runs-on: ubuntu-latest
+    container: 
+      image: gcc:latest
 
     steps:
       - name: Checkout
